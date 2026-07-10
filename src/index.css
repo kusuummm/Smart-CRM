@@ -1,0 +1,113 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-primary-500: #3b82f6;
+  --color-primary-600: #2563eb;
+  --color-primary-700: #1d4ed8;
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Light mode background */
+body {
+  margin: 0;
+  min-height: 100vh;
+  background-color: #f1f5f9; /* dark-50 equivalent */
+  color: #1e293b; /* dark-800 equivalent */
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* Dark mode */
+.dark body,
+body.dark {
+  background-color: #0f172a; /* dark-900 equivalent */
+  color: #e2e8f0; /* dark-200 equivalent */
+}
+
+/* Ensure html also gets dark mode */
+html.dark body {
+  background-color: #0f172a;
+  color: #e2e8f0;
+}
+
+html.dark #root {
+  background-color: #0f172a;
+}
+
+/* When dark class is on html element */
+html.dark {
+  color-scheme: dark;
+}
+
+/* Main app background - syncs with dark mode */
+html:not(.dark) .app-bg {
+  background-color: #f1f5f9;
+}
+
+html.dark .app-bg {
+  background-color: #0f172a;
+}
+
+html:not(.dark) .app-card {
+  background-color: #ffffff;
+  border-color: #e2e8f0;
+}
+
+html.dark .app-card {
+  background-color: #1e293b;
+  border-color: #334155;
+}
+
+html:not(.dark) .app-text {
+  color: #1e293b;
+}
+
+html.dark .app-text {
+  color: #f1f5f9;
+}
+
+html:not(.dark) .app-text-muted {
+  color: #64748b;
+}
+
+html.dark .app-text-muted {
+  color: #94a3b8;
+}
+
+@layer utilities {
+  .scrollbar-thin {
+    scrollbar-width: thin;
+  }
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1;
+    border-radius: 3px;
+  }
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
+
+/* Scrollbar dark mode */
+html.dark .scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: #475569;
+}
+
+html.dark .scrollbar-thin::-webkit-scrollbar-track {
+  background-color: #1e293b;
+}
