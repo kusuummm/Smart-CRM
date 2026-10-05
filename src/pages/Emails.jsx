@@ -40,21 +40,27 @@ export default function Emails({ onNavigate }) {
   const handleSend = async () => {
     if (!form.customerId) { addToast('Please select a customer', 'error'); return; }
 
+    const selectedCust = customers.find(c => c._id === form.customerId);
+    if (!selectedCust?.email) {
+      addToast('Selected customer has no email address. Please edit their profile first.', 'error');
+      return;
+    }
+    if (selectedCust.email.endsWith('@example.com')) {
+      addToast('Customer has a placeholder email (example.com). Please edit their profile with a real email.', 'error');
+      return;
+    }
+
     setSending(true);
     try {
       const data = await sendCustomerEmail(form);
       setLogs([data.log, ...logs]);
-      addToast('Email sent successfully!', 'success');
+      addToast('Email dispatched successfully! (Check Spam/Junk if not in Inbox)', 'success');
       setIsModalOpen(false);
       setForm({ customerId: '', subject: '', body: '', type: 'welcome' });
     } catch (error) {
-      // Even if the actual send fails (e.g. email credentials aren't
-      // configured), the backend still logs the attempt.
       const log = error.response?.data?.log;
       if (log) {
         setLogs([log, ...logs]);
-        setIsModalOpen(false);
-        setForm({ customerId: '', subject: '', body: '', type: 'welcome' });
       }
       addToast(error.response?.data?.message || 'Failed to send email', 'error');
     } finally {
@@ -159,7 +165,8 @@ export default function Emails({ onNavigate }) {
         <div className="flex justify-end gap-3 mt-6">
           <button onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-sm font-medium text-dark-700 bg-dark-100 rounded-lg hover:bg-dark-200 dark:text-gray-300 dark:bg-dark-700 dark:hover:bg-dark-600">Cancel</button>
           <button onClick={handleSend} disabled={sending} className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50">
-            <Send size={16} /> {sending ? 'Sending...' : 'Send Email'}
+            {sending ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+            {sending ? 'Sending email...' : 'Send Email'}
           </button>
         </div>
       </Modal>

@@ -407,14 +407,20 @@ export default function UserPanel({ onNavigate }) {
         if (res.log) setWhatsAppLogs((prev) => [res.log, ...prev]);
         addToast('WhatsApp greeting dispatched successfully!', 'success');
       } else {
+        const targetCustomer = customers.find(c => c._id === messageForm.customerId);
+        if (targetCustomer?.email?.endsWith('@example.com')) {
+          addToast('Customer email is a placeholder (example.com). Please edit their profile with a real email.', 'error');
+          setSubmitting(false);
+          return;
+        }
         const res = await sendCustomerEmail({
           customerId: messageForm.customerId,
           subject: messageForm.subject || 'Event Greeting from SmartCRM',
-          body: messageForm.message,
+          body: messageForm.message || 'Greetings from SmartCRM Solutions.',
           type: 'general',
         });
         if (res.log) setEmailLogs((prev) => [res.log, ...prev]);
-        addToast('Email greeting delivered successfully!', 'success');
+        addToast('Email greeting dispatched! (Check Spam/Junk if not in Inbox)', 'success');
       }
       setIsMessageModalOpen(false);
     } catch (err) {
