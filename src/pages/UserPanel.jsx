@@ -408,8 +408,8 @@ export default function UserPanel({ onNavigate }) {
         addToast('WhatsApp greeting dispatched successfully!', 'success');
       } else {
         const targetCustomer = customers.find(c => c._id === messageForm.customerId);
-        if (targetCustomer?.email?.endsWith('@example.com')) {
-          addToast('Customer email is a placeholder (example.com). Please edit their profile with a real email.', 'error');
+        if (targetCustomer?.email?.endsWith('@example.com') || targetCustomer?.email?.endsWith('@crm.com')) {
+          addToast('Customer email is a placeholder (@example.com / @crm.com). Please edit their profile with a real email.', 'error');
           setSubmitting(false);
           return;
         }

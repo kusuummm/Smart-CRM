@@ -45,8 +45,8 @@ export default function Emails({ onNavigate }) {
       addToast('Selected customer has no email address. Please edit their profile first.', 'error');
       return;
     }
-    if (selectedCust.email.endsWith('@example.com')) {
-      addToast('Customer has a placeholder email (example.com). Please edit their profile with a real email.', 'error');
+    if (selectedCust.email.endsWith('@example.com') || selectedCust.email.endsWith('@crm.com')) {
+      addToast('Customer has a placeholder email (@example.com / @crm.com). Please edit their profile with a real email.', 'error');
       return;
     }
 

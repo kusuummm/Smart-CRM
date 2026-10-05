@@ -102,7 +102,11 @@ export default function AdminPanel({ onNavigate }) {
   const [loadingInspector, setLoadingInspector] = useState(false);
 
   // SMTP Testing State
-  const [testEmailRecipient, setTestEmailRecipient] = useState(currentUser?.email || '');
+  const initialRecipient =
+    currentUser?.email && !currentUser.email.endsWith('@crm.com') && !currentUser.email.endsWith('@example.com')
+      ? currentUser.email
+      : '';
+  const [testEmailRecipient, setTestEmailRecipient] = useState(initialRecipient);
   const [isTestingEmail, setIsTestingEmail] = useState(false);
 
   // Unassigned Batch Assigner State
@@ -364,17 +368,23 @@ export default function AdminPanel({ onNavigate }) {
 
   // Live SMTP Test Dispatcher
   const handleTestEmail = async () => {
-    if (!testEmailRecipient || !testEmailRecipient.includes('@')) {
-      addToast('Please enter a valid recipient email address', 'error');
+    const trimmedRecipient = testEmailRecipient.trim();
+    if (!trimmedRecipient || !trimmedRecipient.includes('@')) {
+      addToast('Please enter a valid recipient email address (e.g. your Gmail or Outlook)', 'error');
+      return;
+    }
+
+    if (trimmedRecipient.endsWith('@crm.com') || trimmedRecipient.endsWith('@example.com')) {
+      addToast('Cannot send test to a placeholder domain (@crm.com or @example.com). Please enter your real email.', 'error');
       return;
     }
 
     setIsTestingEmail(true);
     try {
-      const res = await testEmailDelivery({ recipientEmail: testEmailRecipient });
-      addToast(res.message || 'Test email dispatched successfully via one.com!', 'success');
+      const res = await testEmailDelivery({ recipientEmail: trimmedRecipient });
+      addToast(res.message || 'Test email dispatched successfully! Please check your Inbox and Spam/Junk folder.', 'success', 6000);
     } catch (err) {
-      addToast(err.response?.data?.message || 'SMTP Deliverability Test failed. Check .env settings.', 'error');
+      addToast(err.response?.data?.message || err.message || 'SMTP Deliverability Test failed. Check .env settings.', 'error');
     } finally {
       setIsTestingEmail(false);
     }
@@ -1066,25 +1076,28 @@ export default function AdminPanel({ onNavigate }) {
                   Live SMTP Deliverability Verification Tool
                 </h4>
                 <p className="text-xs sm:text-sm text-dark-600 dark:text-dark-300 mt-0.5 max-w-xl">
-                  Test your authenticated relay connection to <strong>send.one.com:587</strong> from <strong>info@paymanent.com</strong> to confirm zero-spam delivery.
+                  Test your authenticated relay connection to <strong>send.one.com</strong> from <strong>info@paymanent.com</strong>.
+                </p>
+                <p className="text-[11px] text-amber-600 dark:text-amber-400 mt-1">
+                  💡 Tip: Enter your real email address (e.g. Gmail). If not found in Primary inbox, check your <strong>Spam / Junk</strong> folder.
                 </p>
               </div>
 
-              <div className="flex items-center gap-2 w-full md:w-auto">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full md:w-auto">
                 <input
                   type="email"
                   value={testEmailRecipient}
                   onChange={(e) => setTestEmailRecipient(e.target.value)}
-                  placeholder="Recipient test email..."
-                  className="px-3.5 py-2 bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 rounded-xl text-xs sm:text-sm text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 w-full md:w-64"
+                  placeholder="Enter recipient email (e.g. Gmail)..."
+                  className="px-3.5 py-2 bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 rounded-xl text-xs sm:text-sm text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 w-full sm:w-72"
                 />
                 <button
                   onClick={handleTestEmail}
                   disabled={isTestingEmail}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white font-semibold text-xs sm:text-sm rounded-xl transition-colors shadow-xs whitespace-nowrap"
+                  className="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white font-semibold text-xs sm:text-sm rounded-xl transition-colors shadow-xs whitespace-nowrap"
                 >
                   {isTestingEmail ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
-                  Send Test
+                  {isTestingEmail ? 'Sending Test...' : 'Send Test'}
                 </button>
               </div>
             </div>
