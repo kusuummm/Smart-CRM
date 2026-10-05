@@ -25,3 +25,25 @@ export const changePasswordRequest = (currentPassword, newPassword) =>
       newPassword,
     })
     .then((res) => res.data);
+
+// Registration with OTP
+export const registerSendOtpRequest = (payload) =>
+  api.post('/auth/register/send-otp', payload).then((res) => res.data);
+
+export const registerVerifyOtpRequest = (payload) =>
+  api.post('/auth/register/verify-otp', payload).then((res) => res.data);
+
+// Forgot Password with OTP
+export const forgotPasswordSendOtpRequest = (payload) =>
+  api.post('/auth/forgot-password/send-otp', payload).then((res) => res.data);
+
+export const forgotPasswordVerifyResetRequest = (payload) =>
+  api.post('/auth/forgot-password/verify-reset', payload).then((res) => res.data);
+
+// Profile Change Password with OTP
+export const profileSendOtpRequest = () =>
+  api.post('/auth/profile/send-otp').then((res) => res.data);
+
+export const profileChangePasswordOtpRequest = (payload) =>
+  api.put('/auth/profile/change-password-otp', payload).then((res) => res.data);
+

@@ -62,14 +62,22 @@ export function AuthProvider({ children }) {
     setAccounts(next);
   };
 
+  const handleAuthSuccess = (data) => {
+    localStorage.setItem('crm_token', data.token);
+    localStorage.setItem('crm_user', JSON.stringify(data.user));
+    setUser(data.user);
+    rememberAccount(data.user, data.token);
+    setAddingAccount(false);
+  };
+
+  const loginWithSession = (authData) => {
+    handleAuthSuccess(authData);
+  };
+
   const login = async (email, password) => {
     try {
       const data = await loginRequest(email, password);
-      localStorage.setItem('crm_token', data.token);
-      localStorage.setItem('crm_user', JSON.stringify(data.user));
-      setUser(data.user);
-      rememberAccount(data.user, data.token);
-      setAddingAccount(false);
+      handleAuthSuccess(data);
       return { success: true, user: data.user };
     } catch (error) {
       const message = error.response?.data?.message || 'Unable to reach the server. Please try again.';
@@ -150,7 +158,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, accounts, login, logout, updateUser, switchAccount, removeAccount, addingAccount, startAddAccount: () => setAddingAccount(true), cancelAddAccount: () => setAddingAccount(false), authLoading }}>
+    <AuthContext.Provider value={{ user, accounts, login, loginWithSession, logout, updateUser, switchAccount, removeAccount, addingAccount, startAddAccount: () => setAddingAccount(true), cancelAddAccount: () => setAddingAccount(false), authLoading }}>
       {children}
     </AuthContext.Provider>
   );

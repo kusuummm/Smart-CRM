@@ -1,11 +1,37 @@
 import { useState, useCallback, useEffect } from 'react';
-import { User, Edit2, Shield, Mail, LogOut, ChevronRight, Calendar, Monitor, Smartphone, Trash2, Plus, Check, Loader2 } from 'lucide-react';
+import {
+  User,
+  Edit2,
+  Shield,
+  Mail,
+  LogOut,
+  ChevronRight,
+  Calendar,
+  Monitor,
+  Smartphone,
+  Trash2,
+  Plus,
+  Check,
+  Loader2,
+  KeyRound,
+  Lock,
+  Eye,
+  EyeOff,
+  ShieldCheck,
+  RefreshCw,
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/Toast';
 import { PageHeader } from '../components/Common';
 import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
-import { updateMeRequest, getSessionsRequest, revokeSessionRequest } from '../api/auth';
+import {
+  updateMeRequest,
+  getSessionsRequest,
+  revokeSessionRequest,
+  profileSendOtpRequest,
+  profileChangePasswordOtpRequest,
+} from '../api/auth';
 
 export default function MyAccount({ onNavigate }) {
   const { user, logout, updateUser, accounts, switchAccount, removeAccount, startAddAccount } = useAuth();
@@ -94,6 +120,72 @@ export default function MyAccount({ onNavigate }) {
 
   const handleLogout = () => {
     logout();
+  };
+
+  // Change password with OTP state
+  const [showPasswordChange, setShowPasswordChange] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [sendingOtp, setSendingOtp] = useState(false);
+  const [updatingPassword, setUpdatingPassword] = useState(false);
+  const [passwordOtp, setPasswordOtp] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [pwdCooldown, setPwdCooldown] = useState(0);
+
+  useEffect(() => {
+    if (pwdCooldown <= 0) return;
+    const timer = setInterval(() => setPwdCooldown((c) => c - 1), 1000);
+    return () => clearInterval(timer);
+  }, [pwdCooldown]);
+
+  const handleRequestPasswordOtp = async () => {
+    setSendingOtp(true);
+    try {
+      const data = await profileSendOtpRequest();
+      addToast(data.message || 'Verification code sent to your email!', 'success');
+      setOtpSent(true);
+      setShowPasswordChange(true);
+      setPwdCooldown(60);
+    } catch (err) {
+      addToast(err.response?.data?.message || 'Failed to send verification code', 'error');
+    } finally {
+      setSendingOtp(false);
+    }
+  };
+
+  const handleUpdatePasswordWithOtp = async (e) => {
+    if (e) e.preventDefault();
+    if (!passwordOtp || passwordOtp.trim().length !== 6) {
+      addToast('Please enter the 6-digit verification code', 'error');
+      return;
+    }
+    if (!newPassword || newPassword.length < 4) {
+      addToast('New password must be at least 4 characters', 'error');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      addToast('Passwords do not match', 'error');
+      return;
+    }
+
+    setUpdatingPassword(true);
+    try {
+      const data = await profileChangePasswordOtpRequest({
+        otp: passwordOtp.trim(),
+        newPassword,
+      });
+      addToast(data.message || 'Password updated successfully!', 'success');
+      setShowPasswordChange(false);
+      setOtpSent(false);
+      setPasswordOtp('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (err) {
+      addToast(err.response?.data?.message || 'Failed to update password', 'error');
+    } finally {
+      setUpdatingPassword(false);
+    }
   };
 
   const formatRelative = (isoString) => {
@@ -278,6 +370,128 @@ export default function MyAccount({ onNavigate }) {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Security & Password Card */}
+          <div className="bg-white rounded-xl border border-dark-200 shadow-sm p-6 dark:bg-dark-800 dark:border-dark-700">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 bg-indigo-50 dark:bg-indigo-950/40 rounded-xl flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                  <KeyRound size={20} />
+                </div>
+                <div>
+                  <h3 className="text-base font-semibold text-dark-900 dark:text-white">Security & Password</h3>
+                  <p className="text-xs text-dark-500 dark:text-dark-400">Manage your password using email OTP verification</p>
+                </div>
+              </div>
+            </div>
+
+            {!showPasswordChange ? (
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-dark-50 dark:bg-dark-700/50 rounded-xl border border-dark-100 dark:border-dark-700">
+                <div>
+                  <p className="text-xs font-semibold text-dark-800 dark:text-dark-200">Change Account Password</p>
+                  <p className="text-xs text-dark-500 dark:text-dark-400 mt-0.5">
+                    A 6-digit OTP will be dispatched to <strong className="text-dark-700 dark:text-dark-300">{user?.email}</strong>.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleRequestPasswordOtp}
+                  disabled={sendingOtp}
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white rounded-lg text-xs font-semibold shadow-xs transition-colors whitespace-nowrap"
+                >
+                  {sendingOtp ? <Loader2 size={14} className="animate-spin" /> : <ShieldCheck size={14} />}
+                  {sendingOtp ? 'Sending OTP...' : 'Request OTP Code'}
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleUpdatePasswordWithOtp} className="space-y-4 p-4 bg-dark-50 dark:bg-dark-700/40 rounded-xl border border-primary-200 dark:border-primary-900/50">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-primary-700 dark:text-primary-300 flex items-center gap-1.5">
+                    <ShieldCheck size={15} /> Enter Verification Code sent to {user?.email}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setShowPasswordChange(false)}
+                    className="text-xs text-dark-400 hover:text-dark-600 dark:hover:text-dark-200"
+                  >
+                    Cancel
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-dark-700 dark:text-dark-300 mb-1">
+                      6-Digit OTP <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      maxLength={6}
+                      value={passwordOtp}
+                      onChange={(e) => setPasswordOtp(e.target.value.replace(/\D/g, ''))}
+                      placeholder="123456"
+                      className="w-full px-3 py-2 border border-dark-200 dark:border-dark-600 rounded-lg text-sm font-mono tracking-widest bg-white dark:bg-dark-800 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-dark-700 dark:text-dark-300 mb-1">
+                      New Password <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showNewPassword ? 'text' : 'password'}
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        placeholder="••••••••"
+                        className="w-full px-3 py-2 pr-8 border border-dark-200 dark:border-dark-600 rounded-lg text-sm bg-white dark:bg-dark-800 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowNewPassword(!showNewPassword)}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-dark-400 hover:text-dark-600"
+                      >
+                        {showNewPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-dark-700 dark:text-dark-300 mb-1">
+                      Confirm Password <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type={showNewPassword ? 'text' : 'password'}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full px-3 py-2 border border-dark-200 dark:border-dark-600 rounded-lg text-sm bg-white dark:bg-dark-800 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-1">
+                  <button
+                    type="button"
+                    disabled={pwdCooldown > 0 || sendingOtp}
+                    onClick={handleRequestPasswordOtp}
+                    className="text-xs text-primary-600 hover:text-primary-700 dark:text-primary-400 disabled:opacity-50 inline-flex items-center gap-1 font-medium"
+                  >
+                    <RefreshCw size={12} className={sendingOtp ? 'animate-spin' : ''} />
+                    {pwdCooldown > 0 ? `Resend code in ${pwdCooldown}s` : 'Resend code'}
+                  </button>
+
+                  <button
+                    type="submit"
+                    disabled={updatingPassword || passwordOtp.length !== 6 || !newPassword}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white rounded-lg text-xs font-semibold shadow-xs transition-colors"
+                  >
+                    {updatingPassword ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
+                    {updatingPassword ? 'Updating Password...' : 'Save New Password'}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
 
           <div className="bg-white rounded-xl border border-dark-200 shadow-sm p-6 dark:bg-dark-800 dark:border-dark-700">
