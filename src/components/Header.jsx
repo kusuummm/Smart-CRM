@@ -81,7 +81,18 @@ export default function Header({ titleKey, user, onToggleSidebar, onNavigate, on
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
-        <h1 className="text-xl font-semibold text-dark-900 dark:text-white">{displayTitle}</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-xl font-semibold text-dark-900 dark:text-white">{displayTitle}</h1>
+          <span
+            className={`px-2.5 py-0.5 text-xs font-semibold rounded-full capitalize ${
+              user?.role === 'admin'
+                ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 border border-purple-200 dark:border-purple-800'
+                : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
+            }`}
+          >
+            {user?.role === 'admin' ? '🛡️ Admin' : '👤 User'}
+          </span>
+        </div>
       </div>
 
       {/* Right Side - Icons */}
@@ -249,7 +260,7 @@ export default function Header({ titleKey, user, onToggleSidebar, onNavigate, on
             </div>
             <div className="hidden md:block text-left">
               <p className="text-sm font-medium text-dark-900 dark:text-white">{user?.name}</p>
-              <p className="text-xs text-dark-500 dark:text-dark-400 capitalize">{user?.role}</p>
+              <p className="text-xs text-dark-500 dark:text-dark-400 capitalize">{user?.role === 'telecaller' ? 'User' : user?.role}</p>
             </div>
             <ChevronDown size={16} className="text-dark-400 dark:text-dark-500 hidden md:block" />
           </button>

@@ -3,10 +3,12 @@ import { Plus, X, Loader2 } from 'lucide-react';
 import { PageHeader } from '../components/Common';
 import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
+import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/Toast';
 import { statusColors } from '../data/mockData';
 import { getCalls, createCall, deleteCall as deleteCallRequest } from '../api/callHistory';
 import { getCustomers } from '../api/customers';
+import { getUsers } from '../api/users';
 
 const emptyForm = {
   customerId: '',
@@ -18,8 +20,11 @@ const emptyForm = {
 };
 
 export default function CallHistory({ onNavigate }) {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
   const [calls, setCalls] = useState([]);
   const [customers, setCustomers] = useState([]);
+  const [telecallers, setTelecallers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [page, setPage] = useState(1);
@@ -27,15 +32,31 @@ export default function CallHistory({ onNavigate }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [statusFilter, setStatusFilter] = useState('');
+  const [agentFilter, setAgentFilter] = useState('');
   const { addToast } = useToast();
 
   const [form, setForm] = useState(emptyForm);
 
+  useEffect(() => {
+    if (isAdmin) {
+      getUsers()
+        .then((res) => {
+          const callers = (res.users || []).filter((u) => u.role === 'telecaller');
+          setTelecallers(callers);
+        })
+        .catch((err) => console.error('Failed to load users for call history', err));
+    }
+  }, [isAdmin]);
+
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
+      const callParams = { limit: 1000 };
+      if (isAdmin && agentFilter) {
+        callParams.telecallerId = agentFilter;
+      }
       const [callData, customerData] = await Promise.all([
-        getCalls({ limit: 1000 }),
+        getCalls(callParams),
         getCustomers({ limit: 1000 }),
       ]);
       setCalls(callData.calls);
@@ -46,7 +67,7 @@ export default function CallHistory({ onNavigate }) {
       setLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [agentFilter, isAdmin]);
 
   useEffect(() => {
     loadData();
@@ -92,8 +113,8 @@ export default function CallHistory({ onNavigate }) {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Call History"
-        subtitle="View and manage all call records"
+        title={isAdmin ? "Call Center Audit Log" : "My Call History"}
+        subtitle={isAdmin ? "Audit all customer interaction calls made across all users" : "Log and review your customer calls and outcomes"}
         action={
           <button onClick={openAdd} className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700">
             <Plus size={18} /> Add Call
@@ -102,13 +123,30 @@ export default function CallHistory({ onNavigate }) {
       />
 
       <div className="bg-white rounded-xl p-4 border border-dark-200 shadow-sm dark:bg-dark-800 dark:border-dark-700">
-        <div className="flex flex-wrap gap-4">
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="px-3 py-2 border border-dark-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-dark-700">
+        <div className="flex flex-wrap items-center gap-4">
+          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="px-3 py-2 border border-dark-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-dark-700 dark:bg-dark-800 dark:text-white">
             <option value="">All Status</option>
             <option value="connected">Connected</option>
             <option value="missed">Missed</option>
             <option value="busy">Busy</option>
           </select>
+          {isAdmin && (
+            <select
+              value={agentFilter}
+              onChange={(e) => {
+                setAgentFilter(e.target.value);
+                setPage(1);
+              }}
+              className="px-3 py-2 border border-dark-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-dark-700 dark:bg-dark-800 dark:text-white"
+            >
+              <option value="">👥 All Users</option>
+              {telecallers.map((tc) => (
+                <option key={tc._id} value={tc._id}>
+                  👤 {tc.name}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
       </div>
 
@@ -122,6 +160,7 @@ export default function CallHistory({ onNavigate }) {
           <thead>
             <tr className="bg-dark-50 dark:bg-dark-700">
               <th className="px-4 py-3 text-left text-xs font-semibold text-dark-500 uppercase dark:text-dark-400">Customer</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-dark-500 uppercase dark:text-dark-400">Caller / User</th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-dark-500 uppercase dark:text-dark-400">Date</th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-dark-500 uppercase dark:text-dark-400">Time</th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-dark-500 uppercase dark:text-dark-400">Duration</th>
@@ -132,20 +171,29 @@ export default function CallHistory({ onNavigate }) {
           </thead>
           <tbody className="divide-y divide-dark-200 dark:divide-dark-700">
             {paginated.length === 0 ? (
-              <tr><td colSpan={7} className="px-4 py-8 text-center text-dark-400 dark:text-dark-500">No call records found</td></tr>
+              <tr><td colSpan={8} className="px-4 py-8 text-center text-dark-400 dark:text-dark-500">No call records found</td></tr>
             ) : (
               paginated.map(call => (
                 <tr key={call._id} className="hover:bg-dark-50 dark:hover:bg-dark-700">
                   <td className="px-4 py-3 font-medium text-dark-900 dark:text-white">{call.customerName}</td>
+                  <td className="px-4 py-3 text-xs text-dark-600 dark:text-dark-300 font-medium">
+                    <span className="px-2 py-0.5 rounded-full bg-dark-100 dark:bg-dark-700 text-dark-700 dark:text-dark-300">
+                      {call.calledByName || (isAdmin ? 'Admin' : 'You')}
+                    </span>
+                  </td>
                   <td className="px-4 py-3 text-dark-700 dark:text-gray-300">{call.date}</td>
                   <td className="px-4 py-3 text-dark-700 dark:text-gray-300">{call.time}</td>
                   <td className="px-4 py-3 text-dark-700 dark:text-gray-300">{call.duration}</td>
                   <td className="px-4 py-3"><span className={`px-2 py-1 text-xs font-medium rounded-full capitalize ${statusColors[call.status]}`}>{call.status}</span></td>
                   <td className="px-4 py-3 text-dark-600 max-w-xs truncate dark:text-dark-300">{call.remarks}</td>
                   <td className="px-4 py-3">
-                    <button onClick={() => setDeleteConfirm(call)} className="p-1.5 rounded-lg hover:bg-red-50 text-red-600" title="Delete">
-                      <X size={16} />
-                    </button>
+                    {isAdmin ? (
+                      <button onClick={() => setDeleteConfirm(call)} className="p-1.5 rounded-lg hover:bg-red-50 text-red-600" title="Delete">
+                        <X size={16} />
+                      </button>
+                    ) : (
+                      <span className="text-xs text-dark-400 dark:text-dark-500">Logged</span>
+                    )}
                   </td>
                 </tr>
               ))

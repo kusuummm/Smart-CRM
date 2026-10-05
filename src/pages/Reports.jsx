@@ -18,7 +18,7 @@ const reports = [
   { id: 'daily', name: 'Daily Follow-up Report', desc: 'Summary of all follow-ups for a given day', icon: CalendarCheck, color: 'blue' },
   { id: 'monthly', name: 'Monthly Report', desc: 'Follow-up activity for a given month', icon: TrendingUp, color: 'green' },
   { id: 'conversion', name: 'Lead Conversion Report', desc: 'Lead status and conversion analysis', icon: TrendingUp, color: 'purple' },
-  { id: 'performance', name: 'Telecaller Performance', desc: 'Individual telecaller performance metrics', icon: Users, color: 'orange' },
+  { id: 'performance', name: 'User Activity & Performance', desc: 'Individual user activity and performance metrics', icon: Users, color: 'orange' },
 ];
 
 export default function Reports({ initialReportId }) {
@@ -147,10 +147,11 @@ export default function Reports({ initialReportId }) {
                   <th className="px-4 py-3 text-left text-xs font-semibold text-dark-500 uppercase dark:text-dark-400">Percentage</th>
                 </>}
                 {selectedReport.id === 'performance' && <>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-dark-500 uppercase dark:text-dark-400">Telecaller</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-dark-500 uppercase dark:text-dark-400">User</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-dark-500 uppercase dark:text-dark-400">Customers Handled</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-dark-500 uppercase dark:text-dark-400">Leads Converted</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-dark-500 uppercase dark:text-dark-400">Follow-ups Completed</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-dark-500 uppercase dark:text-dark-400">Calls Logged</th>
                 </>}
               </tr>
             </thead>
@@ -193,13 +194,14 @@ export default function Reports({ initialReportId }) {
                 </tr>
               )))}
               {selectedReport.id === 'performance' && (reportData.rows.length === 0 ? (
-                <tr><td colSpan={4} className="px-4 py-8 text-center text-dark-400 dark:text-dark-500">No telecallers found</td></tr>
+                <tr><td colSpan={5} className="px-4 py-8 text-center text-dark-400 dark:text-dark-500">No users found</td></tr>
               ) : reportData.rows.map((row, i) => (
                 <tr key={i} className="hover:bg-dark-50 dark:hover:bg-dark-700">
                   <td className="px-4 py-3 font-medium text-dark-900 dark:text-white">{row.name}</td>
                   <td className="px-4 py-3 text-dark-700 dark:text-gray-300">{row.customersHandled}</td>
                   <td className="px-4 py-3 text-dark-700 dark:text-gray-300">{row.leadsConverted}</td>
                   <td className="px-4 py-3 text-dark-700 dark:text-gray-300">{row.followUpsCompleted}</td>
+                  <td className="px-4 py-3 text-dark-700 dark:text-gray-300">{row.callsMade ?? 0}</td>
                 </tr>
               )))}
             </tbody>

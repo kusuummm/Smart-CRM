@@ -14,3 +14,12 @@ export const resetUserPassword = (id, newPassword) =>
 export const toggleUserStatus = (id) => api.put(`/users/${id}/status`).then((res) => res.data);
 
 export const deleteUser = (id) => api.delete(`/users/${id}`).then((res) => res.data);
+
+export const reassignUserWorkload = (payload) =>
+  api.post('/users/reassign-workload', payload).then((res) => res.data);
+
+export const getSystemOverview = () =>
+  api.get('/users/system-overview').then((res) => res.data);
+
+export const getAuditLogs = (params = {}) =>
+  api.get('/users/audit-logs', { params }).then((res) => res.data);

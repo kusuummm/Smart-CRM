@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { Plus, Search, Edit2, Trash2, X, Loader2 } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, X, Loader2, ArrowRightLeft, Users, CheckSquare, Square } from 'lucide-react';
 import { PageHeader } from '../components/Common';
 import { DataTable } from '../components/DataTable';
 import Modal from '../components/Modal';
@@ -8,15 +8,16 @@ import { useToast } from '../components/Toast';
 import { leadSources, indianStates, statusColors } from '../data/mockData';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
-import { getCustomers, createCustomer, updateCustomer, deleteCustomer as deleteCustomerRequest } from '../api/customers';
+import {
+  getCustomers,
+  createCustomer,
+  updateCustomer,
+  deleteCustomer as deleteCustomerRequest,
+  bulkAssignCustomers,
+  bulkDeleteCustomers
+} from '../api/customers';
 import { getUsers } from '../api/users';
 
-// Defined OUTSIDE the Customers component on purpose. If this were defined
-// inside Customers (as it originally was), React would treat it as a brand
-// new component type on every render - since `form`/`setForm` change on
-// every keystroke, that meant this component (and its <input>) unmounted
-// and remounted after every single character, losing focus each time. That
-// was the "only one letter registers" bug.
 function FormField({ label, name, type = 'text', required = false, options, form, setForm }) {
   return (
     <div>
@@ -30,7 +31,11 @@ function FormField({ label, name, type = 'text', required = false, options, form
           className="w-full px-3 py-2 border border-dark-200 dark:border-dark-700 rounded-lg text-sm bg-white dark:bg-dark-800 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
         >
           <option value="">Select {label}</option>
-          {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+          {options.map((opt) => (
+            <option key={opt} value={opt}>
+              {opt}
+            </option>
+          ))}
         </select>
       ) : (
         <input
@@ -50,11 +55,11 @@ export default function Customers({ onNavigate }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [page, setPage] = useState(1);
-  const pageSize = 5;
+  const pageSize = 10;
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
-  const [filters, setFilters] = useState({ city: '', source: '' });
+  const [filters, setFilters] = useState({ city: '', source: '', telecaller: '' });
   const [searchTerm, setSearchTerm] = useState('');
   const [telecallers, setTelecallers] = useState([]);
   const { addToast } = useToast();
@@ -62,44 +67,46 @@ export default function Customers({ onNavigate }) {
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
 
-  // Load customers from the backend. Requesting a high limit here because
-  // the existing DataTable component does its own client-side search/sort/
-  // pagination - this keeps that behavior working unchanged. For very large
-  // customer lists, DataTable would need to be upgraded to server-side
-  // pagination (passing page/search/filters to the API instead).
+  // Admin Bulk Selection & Reassignment State
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [bulkTargetTelecallerId, setBulkTargetTelecallerId] = useState('');
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  const [bulkDeleteConfirmOpen, setBulkDeleteConfirmOpen] = useState(false);
+
+  // Quick Inline Reassign Modal
+  const [quickReassignCustomer, setQuickReassignCustomer] = useState(null);
+  const [quickTargetAgentId, setQuickTargetAgentId] = useState('');
+
+  const [form, setForm] = useState({});
+
   const loadCustomers = useCallback(async () => {
     setLoading(true);
     try {
       const data = await getCustomers({ limit: 1000 });
-      setCustomers(data.customers);
+      setCustomers(data.customers || []);
     } catch (error) {
       addToast(error.response?.data?.message || 'Failed to load customers', 'error');
     } finally {
       setLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // intentionally empty: addToast is a new function reference on every
-          // render (useToast doesn't memoize it), so including it here caused
-          // this callback to be recreated every render, which retriggered the
-          // effect below in an infinite loop - that was the flickering.
+  }, []);
 
   useEffect(() => {
     loadCustomers();
   }, [loadCustomers]);
 
-  // Only admins reassign customers to telecallers, so only fetch the
-  // telecaller list when needed (a telecaller creating their own customer
-  // gets auto-assigned to themselves server-side - see createCustomer).
   useEffect(() => {
     if (!isAdmin) return;
     getUsers({ role: 'telecaller' })
-      .then((data) => setTelecallers(data.users))
+      .then((data) => setTelecallers(data.users || []))
       .catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAdmin]);
 
-  const filtered = customers.filter(c => {
-    const searchMatch = !searchTerm ||
+  const filtered = customers.filter((c) => {
+    const searchMatch =
+      !searchTerm ||
       c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       c.mobile.includes(searchTerm) ||
       (c.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -110,36 +117,201 @@ export default function Customers({ onNavigate }) {
 
     if (filters.city && !(c.city || '').toLowerCase().includes(filters.city.toLowerCase())) return false;
     if (filters.source && c.leadSource !== filters.source) return false;
+
+    if (filters.telecaller) {
+      if (filters.telecaller === 'unassigned') {
+        if (c.telecallerId || (c.assignedTelecaller && c.assignedTelecaller !== 'Unassigned')) return false;
+      } else if (c.assignedTelecaller !== filters.telecaller) {
+        return false;
+      }
+    }
+
     return true;
   });
 
-  const columns = [
-    { key: 'name', label: translate('name'), sortable: true, render: (val, row) => (
-      <button
-        onClick={() => onNavigate?.('leads', val)}
-        className="text-primary-600 hover:text-primary-700 hover:underline font-medium text-left"
-      >
-        {val}
-      </button>
-    ) },
+  // Bulk Operations Handlers
+  const handleSelectAll = (e) => {
+    if (e.target.checked) {
+      setSelectedIds(filtered.map((c) => c._id));
+    } else {
+      setSelectedIds([]);
+    }
+  };
+
+  const handleToggleSelectRow = (id) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const handleApplyBulkAssignment = async () => {
+    if (!bulkTargetTelecallerId) {
+      addToast('Please select a target agent or Unassign', 'error');
+      return;
+    }
+
+    try {
+      const res = await bulkAssignCustomers({
+        customerIds: selectedIds,
+        telecallerId: bulkTargetTelecallerId,
+      });
+      addToast(res.message || 'Customers assigned successfully!', 'success');
+      setSelectedIds([]);
+      setBulkTargetTelecallerId('');
+      loadCustomers();
+    } catch (err) {
+      addToast(err.response?.data?.message || 'Failed to bulk assign customers', 'error');
+    }
+  };
+
+  const handleExecuteBulkDelete = async () => {
+    setIsBulkDeleting(true);
+    try {
+      const res = await bulkDeleteCustomers({ customerIds: selectedIds });
+      addToast(res.message || 'Selected customers deleted successfully!', 'success');
+      setSelectedIds([]);
+      setBulkDeleteConfirmOpen(false);
+      loadCustomers();
+    } catch (err) {
+      addToast(err.response?.data?.message || 'Failed to delete selected customers', 'error');
+    } finally {
+      setIsBulkDeleting(false);
+    }
+  };
+
+  const handleQuickInlineReassign = async () => {
+    if (!quickReassignCustomer) return;
+
+    try {
+      const selectedTc = telecallers.find((tc) => tc._id === quickTargetAgentId);
+      const payload = {
+        telecallerId: quickTargetAgentId || null,
+        assignedTelecaller: selectedTc ? selectedTc.name : 'Unassigned',
+      };
+
+      const res = await updateCustomer(quickReassignCustomer._id, payload);
+      setCustomers((prev) =>
+        prev.map((c) => (c._id === quickReassignCustomer._id ? res.customer : c))
+      );
+      addToast(`Reassigned to ${payload.assignedTelecaller}!`, 'success');
+      setQuickReassignCustomer(null);
+    } catch (err) {
+      addToast(err.response?.data?.message || 'Failed to reassign customer', 'error');
+    }
+  };
+
+  const baseColumns = [
+    {
+      key: 'name',
+      label: translate('name'),
+      sortable: true,
+      render: (val, row) => (
+        <button
+          onClick={() => onNavigate?.('leads', val)}
+          className="text-primary-600 hover:text-primary-700 hover:underline font-semibold text-left"
+        >
+          {val}
+        </button>
+      ),
+    },
     { key: 'mobile', label: translate('mobile') },
     { key: 'email', label: translate('email') },
     { key: 'company', label: translate('company') },
     { key: 'city', label: translate('city') },
     { key: 'leadSource', label: translate('leadSource') },
-    { key: 'status', label: translate('status'), render: (val) => <span className={`px-2 py-1 text-xs font-medium rounded-full ${statusColors[val]}`}>{val}</span> },
-    { key: 'assignedTelecaller', label: translate('assignedTelecaller') },
-    { key: 'actions', label: translate('actions'), align: 'center', render: (_, row) => (
-      <div className="flex items-center justify-center gap-2">
-        <button onClick={() => openEdit(row)} className="p-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-dark-700 text-blue-600" title={translate('edit')}>
-          <Edit2 size={16} />
-        </button>
-        <button onClick={() => setDeleteConfirm(row)} className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-dark-700 text-red-600" title={translate('delete')}>
-          <Trash2 size={16} />
-        </button>
-      </div>
-    ) },
+    {
+      key: 'status',
+      label: translate('status'),
+      render: (val) => (
+        <span className={`px-2.5 py-0.5 text-xs font-semibold rounded-full ${statusColors[val]}`}>
+          {val}
+        </span>
+      ),
+    },
+    {
+      key: 'assignedTelecaller',
+      label: translate('assignedTelecaller'),
+      render: (val, row) => (
+        <div className="flex items-center gap-1.5">
+          <span
+            className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+              val && val !== 'Unassigned'
+                ? 'bg-primary-50 dark:bg-primary-950/60 text-primary-700 dark:text-primary-300'
+                : 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300'
+            }`}
+          >
+            {val || 'Unassigned'}
+          </span>
+          {isAdmin && (
+            <button
+              onClick={() => {
+                setQuickReassignCustomer(row);
+                setQuickTargetAgentId(row.telecallerId || '');
+              }}
+              className="p-1 rounded hover:bg-dark-100 dark:hover:bg-dark-700 text-dark-400 hover:text-primary-600 transition-colors"
+              title="Quick Reassign User"
+            >
+              <ArrowRightLeft size={13} />
+            </button>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: 'actions',
+      label: translate('actions'),
+      align: 'center',
+      render: (_, row) => (
+        <div className="flex items-center justify-center gap-1.5">
+          <button
+            onClick={() => openEdit(row)}
+            className="p-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-dark-700 text-blue-600 transition-colors"
+            title={translate('edit')}
+          >
+            <Edit2 size={16} />
+          </button>
+          {isAdmin && (
+            <button
+              onClick={() => setDeleteConfirm(row)}
+              className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-dark-700 text-red-600 transition-colors"
+              title={translate('delete')}
+            >
+              <Trash2 size={16} />
+            </button>
+          )}
+        </div>
+      ),
+    },
   ];
+
+  // Add Multi-select Checkbox Column for Admins
+  const columns = isAdmin
+    ? [
+        {
+          key: 'select',
+          label: (
+            <input
+              type="checkbox"
+              checked={filtered.length > 0 && selectedIds.length === filtered.length}
+              onChange={handleSelectAll}
+              className="rounded border-dark-300 dark:border-dark-600 text-primary-600 focus:ring-primary-500 cursor-pointer"
+              title="Select all"
+            />
+          ),
+          sortable: false,
+          align: 'center',
+          render: (_, row) => (
+            <input
+              type="checkbox"
+              checked={selectedIds.includes(row._id)}
+              onChange={() => handleToggleSelectRow(row._id)}
+              className="rounded border-dark-300 dark:border-dark-600 text-primary-600 focus:ring-primary-500 cursor-pointer"
+            />
+          ),
+        },
+        ...baseColumns,
+      ]
+    : baseColumns;
 
   const openAdd = () => {
     setEditingCustomer(null);
@@ -169,14 +341,20 @@ export default function Customers({ onNavigate }) {
   };
 
   const handleSave = async () => {
-    if (!form.name.trim()) { addToast('Customer name is required', 'error'); return; }
-    if (!form.mobile.trim()) { addToast('Mobile number is required', 'error'); return; }
+    if (!form.name.trim()) {
+      addToast('Customer name is required', 'error');
+      return;
+    }
+    if (!form.mobile.trim()) {
+      addToast('Mobile number is required', 'error');
+      return;
+    }
 
     setSaving(true);
     try {
       if (editingCustomer) {
         const data = await updateCustomer(editingCustomer._id, form);
-        setCustomers(customers.map(c => c._id === editingCustomer._id ? data.customer : c));
+        setCustomers(customers.map((c) => (c._id === editingCustomer._id ? data.customer : c)));
         addToast('Customer updated successfully!', 'success');
       } else {
         const data = await createCustomer(form);
@@ -194,7 +372,7 @@ export default function Customers({ onNavigate }) {
   const handleDelete = async () => {
     try {
       await deleteCustomerRequest(deleteConfirm._id);
-      setCustomers(customers.filter(c => c._id !== deleteConfirm._id));
+      setCustomers(customers.filter((c) => c._id !== deleteConfirm._id));
       addToast('Customer deleted successfully!', 'success');
     } catch (error) {
       addToast(error.response?.data?.message || 'Failed to delete customer', 'error');
@@ -203,27 +381,76 @@ export default function Customers({ onNavigate }) {
     }
   };
 
-  const [form, setForm] = useState({});
-
-  const totalPages = Math.ceil(filtered.length / pageSize);
-  const paginated = filtered.slice((page - 1) * pageSize, page * pageSize);
-
   return (
     <div className="space-y-6">
       <PageHeader
-        title={translate('customerManagement')}
-        subtitle={translate('manageAllCustomers')}
+        title={isAdmin ? translate('customerManagement') : translate('myCustomers') || 'My Customers'}
+        subtitle={isAdmin ? 'Full company customer roster with user assignment controls' : 'View and manage accounts assigned to your roster'}
         action={
-          <button onClick={openAdd} className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm font-medium">
+          <button
+            onClick={openAdd}
+            className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-sm font-semibold shadow-sm transition-colors"
+          >
             <Plus size={18} /> {translate('addCustomer')}
           </button>
         }
       />
 
+      {/* Admin Bulk Actions Toolbar */}
+      {isAdmin && selectedIds.length > 0 && (
+        <div className="bg-primary-50 dark:bg-primary-950/40 border border-primary-200 dark:border-primary-800 rounded-xl p-3 sm:p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs animate-fadeIn">
+          <div className="flex items-center gap-2 text-sm font-semibold text-primary-900 dark:text-primary-200">
+            <span className="w-6 h-6 rounded-full bg-primary-600 text-white text-xs flex items-center justify-center font-bold">
+              {selectedIds.length}
+            </span>
+            <span>Customer(s) Selected</span>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            <select
+              value={bulkTargetTelecallerId}
+              onChange={(e) => setBulkTargetTelecallerId(e.target.value)}
+              className="px-3 py-1.5 text-xs sm:text-sm bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 rounded-lg text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+            >
+              <option value="">Assign selected to...</option>
+              <option value="unassigned">⚠️ Set to Unassigned</option>
+              {telecallers.map((tc) => (
+                <option key={tc._id} value={tc._id}>
+                  {tc.name}
+                </option>
+              ))}
+            </select>
+
+            <button
+              onClick={handleApplyBulkAssignment}
+              disabled={!bulkTargetTelecallerId}
+              className="px-3 py-1.5 bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white text-xs sm:text-sm font-semibold rounded-lg transition-colors"
+            >
+              Apply Reassignment
+            </button>
+
+            <button
+              onClick={() => setBulkDeleteConfirmOpen(true)}
+              className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs sm:text-sm font-semibold rounded-lg transition-colors"
+            >
+              Delete Selected
+            </button>
+
+            <button
+              onClick={() => setSelectedIds([])}
+              className="px-2.5 py-1.5 bg-dark-100 hover:bg-dark-200 dark:bg-dark-700 text-dark-700 dark:text-dark-300 text-xs sm:text-sm font-medium rounded-lg transition-colors"
+            >
+              Deselect
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Search & Filter Bar */}
       <div className="bg-white dark:bg-dark-800 rounded-xl p-4 border border-dark-200 dark:border-dark-700 shadow-sm">
-        <div className="flex flex-wrap gap-4">
+        <div className="flex flex-wrap gap-3">
           <div className="relative flex-1 min-w-[200px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-dark-400 dark:text-gray-500 dark:text-dark-500" size={18} />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-dark-400 dark:text-dark-500" size={18} />
             <input
               type="text"
               placeholder={translate('searchCustomers')}
@@ -232,23 +459,48 @@ export default function Customers({ onNavigate }) {
               className="w-full pl-10 pr-4 py-2 border border-dark-200 dark:border-dark-700 rounded-lg text-sm bg-white dark:bg-dark-800 text-dark-900 dark:text-white placeholder:text-dark-400 dark:placeholder:text-dark-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
           </div>
+
+          {/* Admin Agent Filter */}
+          {isAdmin && (
+            <select
+              value={filters.telecaller}
+              onChange={(e) => setFilters({ ...filters, telecaller: e.target.value })}
+              className="px-3 py-2 border border-dark-200 dark:border-dark-700 rounded-lg text-sm bg-white dark:bg-dark-800 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+            >
+              <option value="">All Assigned Users</option>
+              <option value="unassigned">⚠️ Unassigned Clients Only</option>
+              {telecallers.map((tc) => (
+                <option key={tc._id} value={tc.name}>
+                  {tc.name}
+                </option>
+              ))}
+            </select>
+          )}
+
           <select
             value={filters.city}
             onChange={(e) => setFilters({ ...filters, city: e.target.value })}
             className="px-3 py-2 border border-dark-200 dark:border-dark-700 rounded-lg text-sm bg-white dark:bg-dark-800 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
           >
             <option value="">All Cities</option>
-            {[...new Set(customers.map(c => c.city).filter(Boolean))].map(city => (
-              <option key={city} value={city}>{city}</option>
+            {[...new Set(customers.map((c) => c.city).filter(Boolean))].map((city) => (
+              <option key={city} value={city}>
+                {city}
+              </option>
             ))}
           </select>
+
           <select
             value={filters.source}
             onChange={(e) => setFilters({ ...filters, source: e.target.value })}
             className="px-3 py-2 border border-dark-200 dark:border-dark-700 rounded-lg text-sm bg-white dark:bg-dark-800 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
           >
             <option value="">All Sources</option>
-            {leadSources.map(s => <option key={s} value={s}>{s}</option>)}
+            {leadSources.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
           </select>
         </div>
       </div>
@@ -268,59 +520,156 @@ export default function Customers({ onNavigate }) {
         />
       )}
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingCustomer ? translate('editCustomer') : translate('addNewCustomer')} size="lg">
+      {/* MODAL: Add / Edit Customer */}
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title={editingCustomer ? translate('editCustomer') : translate('addNewCustomer')}
+        size="lg"
+      >
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField label={translate('customerName')} name="name" required  form={form} setForm={setForm} />
-            <FormField label={translate('mobileNumber')} name="mobile" type="tel" required  form={form} setForm={setForm} />
-            <FormField label={translate('alternateNumber')} name="alternateNumber" type="tel"  form={form} setForm={setForm} />
-            <FormField label={translate('email')} name="email" type="email"  form={form} setForm={setForm} />
-            <FormField label={translate('companyName')} name="company"  form={form} setForm={setForm} />
-            <FormField label={translate('city')} name="city"  form={form} setForm={setForm} />
-            <FormField label={translate('state')} name="state" options={indianStates}  form={form} setForm={setForm} />
-            <FormField label={translate('leadSource')} name="leadSource" options={leadSources}  form={form} setForm={setForm} />
-            <FormField label={translate('interestedProduct')} name="interestedProduct"  form={form} setForm={setForm} />
-            <FormField label={translate('status')} name="status" options={['active', 'inactive']}  form={form} setForm={setForm} />
+            <FormField label={translate('customerName')} name="name" required form={form} setForm={setForm} />
+            <FormField label={translate('mobileNumber')} name="mobile" type="tel" required form={form} setForm={setForm} />
+            <FormField label={translate('alternateNumber')} name="alternateNumber" type="tel" form={form} setForm={setForm} />
+            <FormField label={translate('email')} name="email" type="email" form={form} setForm={setForm} />
+            <FormField label={translate('companyName')} name="company" form={form} setForm={setForm} />
+            <FormField label={translate('city')} name="city" form={form} setForm={setForm} />
+            <FormField label={translate('state')} name="state" options={indianStates} form={form} setForm={setForm} />
+            <FormField label={translate('leadSource')} name="leadSource" options={leadSources} form={form} setForm={setForm} />
+            <FormField label={translate('interestedProduct')} name="interestedProduct" form={form} setForm={setForm} />
+
             {isAdmin && (
               <div>
-                <label className="block text-sm font-medium text-dark-700 dark:text-dark-300 mb-1">{translate('assignedTelecaller')}</label>
+                <label className="block text-sm font-medium text-dark-700 dark:text-dark-300 mb-1">
+                  {translate('assignedTelecaller')}
+                </label>
                 <select
                   value={form.telecallerId || ''}
-                  onChange={(e) => setForm({ ...form, telecallerId: e.target.value })}
+                  onChange={(e) => {
+                    const tcId = e.target.value;
+                    const tcObj = telecallers.find((t) => t._id === tcId);
+                    setForm({
+                      ...form,
+                      telecallerId: tcId,
+                      assignedTelecaller: tcObj ? tcObj.name : 'Unassigned',
+                    });
+                  }}
                   className="w-full px-3 py-2 border border-dark-200 dark:border-dark-700 rounded-lg text-sm bg-white dark:bg-dark-800 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
                 >
                   <option value="">Unassigned</option>
-                  {telecallers.map(tc => <option key={tc._id} value={tc._id}>{tc.name} ({tc.email})</option>)}
+                  {telecallers.map((tc) => (
+                    <option key={tc._id} value={tc._id}>
+                      {tc.name}
+                    </option>
+                  ))}
                 </select>
               </div>
             )}
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-dark-700 dark:text-dark-300 mb-1">{translate('remarks')}</label>
-              <textarea
-                value={form.remarks || ''}
-                onChange={(e) => setForm({ ...form, remarks: e.target.value })}
-                rows={3}
-                className="w-full px-3 py-2 border border-dark-200 dark:border-dark-700 rounded-lg text-sm bg-white dark:bg-dark-800 text-dark-900 dark:text-white placeholder:text-dark-400 dark:placeholder:text-dark-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                placeholder="Enter any additional notes..."
-              />
-            </div>
           </div>
-        </div>
-        <div className="flex justify-end gap-3 mt-6">
-          <button onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-sm font-medium text-dark-700 dark:text-dark-300 bg-dark-100 dark:bg-dark-700 rounded-lg hover:bg-dark-200 dark:hover:bg-dark-600">{translate('cancel')}</button>
-          <button onClick={handleSave} disabled={saving} className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50">
-            {saving ? 'Saving...' : `${editingCustomer ? translate('update') : translate('add')} Customer`}
-          </button>
+
+          <div>
+            <label className="block text-sm font-medium text-dark-700 dark:text-dark-300 mb-1">
+              Remarks
+            </label>
+            <textarea
+              rows={3}
+              value={form.remarks || ''}
+              onChange={(e) => setForm({ ...form, remarks: e.target.value })}
+              className="w-full px-3 py-2 border border-dark-200 dark:border-dark-700 rounded-lg text-sm bg-white dark:bg-dark-800 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
+              placeholder="Notes regarding customer requirements..."
+            />
+          </div>
+
+          <div className="flex justify-end gap-3 pt-3 border-t border-dark-200 dark:border-dark-700">
+            <button
+              onClick={() => setIsModalOpen(false)}
+              className="px-4 py-2 text-sm font-medium text-dark-700 bg-dark-100 rounded-lg hover:bg-dark-200 dark:text-gray-300 dark:bg-dark-700 dark:hover:bg-dark-600 transition-colors"
+            >
+              {translate('cancel')}
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 transition-colors"
+            >
+              {saving ? 'Saving...' : translate('save')}
+            </button>
+          </div>
         </div>
       </Modal>
 
+      {/* QUICK INLINE REASSIGN MODAL */}
+      <Modal
+        isOpen={Boolean(quickReassignCustomer)}
+        onClose={() => setQuickReassignCustomer(null)}
+        title={`Reassign User — ${quickReassignCustomer?.name}`}
+        size="sm"
+      >
+        <div className="space-y-4">
+          <p className="text-xs text-dark-600 dark:text-dark-300">
+            Current Assigned User:{' '}
+            <strong className="text-dark-900 dark:text-white">
+              {quickReassignCustomer?.assignedTelecaller || 'Unassigned'}
+            </strong>
+          </p>
+
+          <div>
+            <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1.5">
+              Select New Assigned User
+            </label>
+            <select
+              value={quickTargetAgentId}
+              onChange={(e) => setQuickTargetAgentId(e.target.value)}
+              className="w-full px-3 py-2 border border-dark-200 dark:border-dark-700 rounded-lg text-sm bg-white dark:bg-dark-800 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+            >
+              <option value="">⚠️ Set to Unassigned</option>
+              {telecallers.map((tc) => (
+                <option key={tc._id} value={tc._id}>
+                  {tc.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-3 border-t border-dark-200 dark:border-dark-700">
+            <button
+              type="button"
+              onClick={() => setQuickReassignCustomer(null)}
+              className="px-4 py-2 text-sm font-medium text-dark-700 dark:text-dark-300 hover:bg-dark-100 dark:hover:bg-dark-700 rounded-lg transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleQuickInlineReassign}
+              className="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors"
+            >
+              Confirm Reassignment
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* SINGLE DELETE CONFIRM DIALOG */}
       <ConfirmDialog
-        isOpen={!!deleteConfirm}
+        isOpen={Boolean(deleteConfirm)}
         onClose={() => setDeleteConfirm(null)}
         onConfirm={handleDelete}
         title={translate('deleteCustomer')}
-        message={translate('areYouSureDelete', { name: deleteConfirm?.name })}
+        message={translate('areYouSureDelete')?.replace('{name}', deleteConfirm?.name || '')}
         confirmText={translate('delete')}
+        type="danger"
+      />
+
+      {/* BULK DELETE CONFIRM DIALOG */}
+      <ConfirmDialog
+        isOpen={bulkDeleteConfirmOpen}
+        onClose={() => setBulkDeleteConfirmOpen(false)}
+        onConfirm={handleExecuteBulkDelete}
+        title="Bulk Delete Customers"
+        message={`Are you sure you want to delete ${selectedIds.length} selected customer records and all their associated leads, calls, and follow-ups? This cannot be undone.`}
+        confirmText="Yes, Delete All Selected"
         type="danger"
       />
     </div>

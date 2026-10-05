@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { AppProvider, useApp } from './context/AppContext';
 import Sidebar from './components/Sidebar';
@@ -15,7 +15,7 @@ import Emails from './pages/Emails';
 import Events from './pages/Events';
 import Reports from './pages/Reports';
 import AdminPanel from './pages/AdminPanel';
-import TelecallerPanel from './pages/TelecallerPanel';
+import UserPanel from './pages/UserPanel';
 import SearchPage from './pages/SearchPage';
 import MyAccount from './pages/MyAccount';
 import Settings from './pages/Settings';
@@ -23,11 +23,25 @@ import Settings from './pages/Settings';
 function AppLayout() {
   const { user, logout } = useAuth();
   const { darkMode, toggleDarkMode } = useApp();
-  const [currentPage, setCurrentPage] = useState('dashboard');
+  const isAdmin = user?.role === 'admin';
+  const [currentPage, setCurrentPage] = useState(() => (user?.role === 'admin' ? 'dashboard' : 'tc-dashboard'));
   const [collapsed, setCollapsed] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState('');
   const [selectedLeadStatus, setSelectedLeadStatus] = useState('');
   const [selectedReportId, setSelectedReportId] = useState('');
+
+  // Automatically enforce role separation when user or role changes
+  useEffect(() => {
+    if (user?.role === 'admin') {
+      if (currentPage === 'tc-dashboard' || currentPage?.startsWith('tc-')) {
+        setCurrentPage('dashboard');
+      }
+    } else {
+      if (currentPage === 'dashboard' || currentPage === 'admin-panel' || currentPage === 'reports') {
+        setCurrentPage('tc-dashboard');
+      }
+    }
+  }, [user?.role]);
 
   // type: 'customer' (default, search Leads by customer name),
   //       'status' (filter Leads by lead status),
@@ -53,6 +67,10 @@ function AppLayout() {
     setSelectedCustomer('');
     setSelectedLeadStatus('');
     setSelectedReportId('');
+    if (!isAdmin && (page === 'admin-panel' || page === 'reports' || page === 'dashboard')) {
+      setCurrentPage('tc-dashboard');
+      return;
+    }
     setCurrentPage(page);
   };
 
@@ -68,14 +86,15 @@ function AppLayout() {
     events: 'events',
     reports: 'reports',
     'admin-panel': 'adminPanel',
-    'tc-dashboard': 'telecallerDashboard',
-    'tc-customers': 'myCustomers',
+    'user-panel': 'userHub',
+    'tc-dashboard': 'userHub',
+    'tc-customers': 'myContacts',
     'tc-leads': 'myLeads',
     'tc-followups': 'followups',
     'tc-calls': 'calls',
-    'tc-whatsapp': 'whatsapp',
-    'tc-emails': 'emails',
-    'tc-events': 'events',
+    'tc-whatsapp': 'messages',
+    'tc-emails': 'emailUpdates',
+    'tc-events': 'eventUpdates',
     'tc-search': 'search',
     search: 'search',
     'my-account': 'myAccount',
@@ -84,7 +103,7 @@ function AppLayout() {
 
   const renderPage = () => {
     switch (currentPage) {
-      case 'dashboard': return <Dashboard onNavigate={navigateWithCustomer} />;
+      case 'dashboard': return isAdmin ? <Dashboard onNavigate={navigateWithCustomer} /> : <UserPanel onNavigate={navigateWithCustomer} />;
       case 'customers': return <Customers onNavigate={navigateToPage} />;
       case 'leads': return <Leads onNavigate={navigateToPage} selectedCustomer={selectedCustomer} selectedLeadStatus={selectedLeadStatus} />;
       case 'followups': return <FollowUps onNavigate={navigateToPage} />;
@@ -92,11 +111,12 @@ function AppLayout() {
       case 'whatsapp': return <WhatsApp onNavigate={navigateToPage} />;
       case 'emails': return <Emails onNavigate={navigateToPage} />;
       case 'events': return <Events onNavigate={navigateToPage} />;
-      case 'reports': return <Reports initialReportId={selectedReportId} />;
-      case 'admin-panel': return <AdminPanel />;
-      case 'tc-dashboard': return <TelecallerPanel onNavigate={navigateWithCustomer} />;
+      case 'reports': return isAdmin ? <Reports initialReportId={selectedReportId} /> : <UserPanel onNavigate={navigateWithCustomer} />;
+      case 'admin-panel': return isAdmin ? <AdminPanel /> : <UserPanel onNavigate={navigateWithCustomer} />;
+      case 'user-panel':
+      case 'tc-dashboard': return <UserPanel onNavigate={navigateWithCustomer} />;
       case 'tc-customers': return <Customers onNavigate={navigateToPage} />;
-      case 'tc-leads': return <Leads onNavigate={navigateToPage} />;
+      case 'tc-leads': return <Leads onNavigate={navigateToPage} selectedCustomer={selectedCustomer} selectedLeadStatus={selectedLeadStatus} />;
       case 'tc-followups': return <FollowUps onNavigate={navigateToPage} />;
       case 'tc-calls': return <CallHistory onNavigate={navigateToPage} />;
       case 'tc-whatsapp': return <WhatsApp onNavigate={navigateToPage} />;
@@ -106,11 +126,11 @@ function AppLayout() {
       case 'search': return <SearchPage onNavigate={navigateToPage} />;
       case 'my-account': return <MyAccount onNavigate={navigateToPage} />;
       case 'settings': return <Settings onNavigate={navigateToPage} />;
-      default: return <Dashboard onNavigate={navigateWithCustomer} />;
+      default: return isAdmin ? <Dashboard onNavigate={navigateWithCustomer} /> : <UserPanel onNavigate={navigateWithCustomer} />;
     }
   };
 
-  const pageContent = useMemo(() => renderPage(), [currentPage, selectedCustomer, selectedLeadStatus, selectedReportId]);
+  const pageContent = useMemo(() => renderPage(), [currentPage, selectedCustomer, selectedLeadStatus, selectedReportId, isAdmin]);
 
   return (
     <div className="flex min-h-screen">

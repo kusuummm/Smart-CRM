@@ -1,13 +1,15 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useApp } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/Toast';
-import { Users, TrendingUp, CalendarCheck, Clock, MessageCircle, Mail, BarChart3 as BarChart3Icon, Phone, Loader2, Bell, Gift } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from 'recharts';
+import { Users, TrendingUp, CalendarCheck, Clock, MessageCircle, Mail, BarChart3 as BarChart3Icon, Phone, Loader2, Bell, Gift, Shield, RefreshCw, AlertTriangle, ArrowRight, UserCheck } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import { getDashboardStats } from '../api/dashboard';
 import { getLeads } from '../api/leads';
 import { getTodayFollowUps, getFollowUps } from '../api/followups';
 import { getCalls } from '../api/callHistory';
 import { getUpcomingEvents } from '../api/events';
+import { getUsers } from '../api/users';
 
 const COLORS = {
   blue: '#3b82f6',
@@ -48,7 +50,10 @@ const CustomTooltip = ({ active, payload, label }) => {
 
 export default function Dashboard({ onNavigate }) {
   const { t } = useApp();
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
   const { addToast } = useToast();
+
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState(null);
   const [leads, setLeads] = useState([]);
@@ -57,33 +62,50 @@ export default function Dashboard({ onNavigate }) {
   const [followUpTrend, setFollowUpTrend] = useState([]);
   const [upcomingEvents, setUpcomingEvents] = useState([]);
 
+  // Admin Executive Filters
+  const [telecallers, setTelecallers] = useState([]);
+  const [selectedAgent, setSelectedAgent] = useState('all');
+  const [unassignedCount, setUnassignedCount] = useState({ customers: 0, leads: 0 });
+
   const handleStatClick = (route) => {
     if (onNavigate) onNavigate(route);
   };
 
+  useEffect(() => {
+    if (isAdmin) {
+      getUsers()
+        .then((res) => {
+          const callers = (res.users || []).filter((u) => u.role === 'telecaller');
+          setTelecallers(callers);
+        })
+        .catch((err) => console.error('Failed to fetch telecallers', err));
+    }
+  }, [isAdmin]);
+
   const loadDashboard = useCallback(async () => {
     setLoading(true);
     try {
+      const params = isAdmin && selectedAgent !== 'all' ? { telecallerId: selectedAgent } : {};
       const [statsData, leadsData, todayData, callsData, allFollowUpsData, upcomingEventsData] = await Promise.all([
-        getDashboardStats(),
-        getLeads({ limit: 1000 }),
-        getTodayFollowUps(),
-        getCalls({ limit: 5 }),
-        getFollowUps({ limit: 1000 }),
+        getDashboardStats(params),
+        getLeads({ limit: 1000, ...params }),
+        getTodayFollowUps(params),
+        getCalls({ limit: 5, ...params }),
+        getFollowUps({ limit: 1000, ...params }),
         getUpcomingEvents(7),
       ]);
 
       setStats(statsData.stats);
-      setLeads(leadsData.leads);
-      setTodayFollowUps(todayData.followUps);
-      setRecentCalls(callsData.calls);
-      setUpcomingEvents(upcomingEventsData.events);
+      if (statsData.unassignedCount) {
+        setUnassignedCount(statsData.unassignedCount);
+      }
+      setLeads(leadsData.leads || []);
+      setTodayFollowUps(todayData.followUps || []);
+      setRecentCalls(callsData.calls || []);
+      setUpcomingEvents(upcomingEventsData.events || []);
 
-      // Build a simple 7-day follow-up trend (pending vs completed by date)
-      // from the real follow-up records, since there's no separate
-      // historical-analytics endpoint.
       const byDate = {};
-      allFollowUpsData.followUps.forEach((fu) => {
+      (allFollowUpsData.followUps || []).forEach((fu) => {
         if (!byDate[fu.date]) byDate[fu.date] = { date: fu.date, pending: 0, completed: 0 };
         byDate[fu.date][fu.status === 'completed' ? 'completed' : 'pending'] += 1;
       });
@@ -98,7 +120,7 @@ export default function Dashboard({ onNavigate }) {
       setLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [selectedAgent, isAdmin]);
 
   useEffect(() => {
     loadDashboard();
@@ -124,18 +146,132 @@ export default function Dashboard({ onNavigate }) {
     );
   }
 
+  const selectedAgentObj = telecallers.find((tc) => String(tc._id) === String(selectedAgent));
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-dark-900 dark:text-white">{t('dashboard')}</h1>
-          <p className="text-sm text-dark-500 dark:text-dark-400 mt-1">{t('welcomeBack') || "Here's your CRM overview"}</p>
+          <h1 className="text-2xl font-bold text-dark-900 dark:text-white flex items-center gap-2">
+            {t('dashboard')}
+            {isAdmin && (
+              <span className="text-xs px-2.5 py-0.5 rounded-full font-semibold bg-primary-100 text-primary-800 dark:bg-primary-900/40 dark:text-primary-300">
+                Executive Control
+              </span>
+            )}
+          </h1>
+          <p className="text-sm text-dark-500 dark:text-dark-400 mt-1">
+            {isAdmin
+              ? `Real-time management & oversight across all customer pipelines`
+              : t('welcomeBack') || "Here's your CRM overview"}
+          </p>
         </div>
         <div className="flex items-center gap-2 text-sm text-dark-600 dark:text-dark-300 bg-white dark:bg-dark-800 px-4 py-2 rounded-lg border border-dark-200 dark:border-dark-700">
           <span className="font-medium">{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
         </div>
       </div>
+
+      {/* Admin Executive Lens & Shortcuts Bar */}
+      {isAdmin && (
+        <div className="bg-gradient-to-r from-dark-900 via-dark-800 to-primary-950 text-white rounded-2xl p-5 shadow-lg border border-dark-700 space-y-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-primary-600/30 border border-primary-500/40 flex items-center justify-center text-primary-400">
+                <Shield size={20} />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs uppercase font-bold tracking-wider text-primary-400">Executive View Filter</span>
+                  <span className="text-xs px-2 py-0.5 rounded bg-dark-700 text-dark-300">
+                    {selectedAgent === 'all'
+                      ? 'Entire Organization'
+                      : selectedAgent === 'unassigned'
+                      ? 'Unassigned Queue'
+                      : selectedAgentObj?.name || 'Selected Agent'}
+                  </span>
+                </div>
+                <p className="text-xs text-dark-300 mt-0.5">Filter all dashboard metrics, charts, and schedules by user</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 flex-wrap">
+              <select
+                value={selectedAgent}
+                onChange={(e) => setSelectedAgent(e.target.value)}
+                className="bg-dark-800 text-white text-sm rounded-xl px-4 py-2 border border-dark-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
+              >
+                <option value="all">🏢 Company Overview (All Users)</option>
+                <option value="unassigned">⚠️ Unassigned Records Only</option>
+                <optgroup label="Filter by User">
+                  {telecallers.map((tc) => (
+                    <option key={tc._id} value={tc._id}>
+                      👤 {tc.name} ({tc.email})
+                    </option>
+                  ))}
+                </optgroup>
+              </select>
+
+              <button
+                onClick={loadDashboard}
+                title="Refresh dashboard stats"
+                className="p-2 bg-dark-800 hover:bg-dark-700 text-dark-300 hover:text-white rounded-xl border border-dark-600 transition-colors"
+              >
+                <RefreshCw size={16} />
+              </button>
+            </div>
+          </div>
+
+          {/* Quick Action Navigation Buttons for Admin */}
+          <div className="flex items-center gap-2 flex-wrap pt-2 border-t border-dark-700/60 text-xs">
+            <span className="text-dark-400 font-medium">Executive Shortcuts:</span>
+            <button
+              onClick={() => onNavigate?.('admin-panel')}
+              className="px-3 py-1.5 rounded-lg bg-dark-800/80 hover:bg-dark-700 text-dark-200 hover:text-white border border-dark-700 flex items-center gap-1.5 transition-colors"
+            >
+              <UserCheck size={14} className="text-primary-400" /> Users & Workloads
+            </button>
+            <button
+              onClick={() => onNavigate?.('customers')}
+              className="px-3 py-1.5 rounded-lg bg-dark-800/80 hover:bg-dark-700 text-dark-200 hover:text-white border border-dark-700 flex items-center gap-1.5 transition-colors"
+            >
+              <Users size={14} className="text-blue-400" /> Bulk Client Actions
+            </button>
+            <button
+              onClick={() => onNavigate?.('leads')}
+              className="px-3 py-1.5 rounded-lg bg-dark-800/80 hover:bg-dark-700 text-dark-200 hover:text-white border border-dark-700 flex items-center gap-1.5 transition-colors"
+            >
+              <TrendingUp size={14} className="text-green-400" /> Pipeline Management
+            </button>
+            <button
+              onClick={() => onNavigate?.('reports')}
+              className="px-3 py-1.5 rounded-lg bg-dark-800/80 hover:bg-dark-700 text-dark-200 hover:text-white border border-dark-700 flex items-center gap-1.5 transition-colors"
+            >
+              <BarChart3Icon size={14} className="text-purple-400" /> Performance Analytics
+            </button>
+          </div>
+
+          {/* Unassigned records alert */}
+          {(unassignedCount.customers > 0 || unassignedCount.leads > 0) && (
+            <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 flex items-center justify-between gap-3 text-amber-200 text-xs">
+              <div className="flex items-center gap-2.5">
+                <AlertTriangle size={16} className="text-amber-400 flex-shrink-0" />
+                <span>
+                  <strong>Unassigned Queue Alert:</strong> You have{' '}
+                  <strong>{unassignedCount.customers} unassigned customers</strong> and{' '}
+                  <strong>{unassignedCount.leads} unassigned leads</strong> waiting for assignment.
+                </span>
+              </div>
+              <button
+                onClick={() => onNavigate?.('admin-panel')}
+                className="px-3 py-1 bg-amber-500 hover:bg-amber-600 text-dark-900 font-semibold rounded-lg flex items-center gap-1 flex-shrink-0 transition-colors shadow-sm"
+              >
+                Reassign Now <ArrowRight size={13} />
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

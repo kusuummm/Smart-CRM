@@ -3,6 +3,7 @@ import { Plus, Calendar, X, Gift, Edit2, Loader2, BellRing, Mail, MessageCircle,
 import { PageHeader } from '../components/Common';
 import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
+import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/Toast';
 import { eventTypes } from '../data/mockData';
 import { getEvents, createEvent, updateEvent, deleteEvent as deleteEventRequest, triggerReminder } from '../api/events';
@@ -17,6 +18,8 @@ const emptyForm = {
 };
 
 export default function Events({ onNavigate }) {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
   const [events, setEvents] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -146,8 +149,8 @@ export default function Events({ onNavigate }) {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Event Calendar"
-        subtitle="Track birthdays, anniversaries, and important dates"
+        title={isAdmin ? "Company Event Calendar" : "My Customer Events & Milestones"}
+        subtitle={isAdmin ? "Track birthdays, anniversaries, and milestones across all customers" : "Track birthdays, anniversaries, and renewal dates for your assigned customers"}
         action={
           <button onClick={openAdd} className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700">
             <Plus size={18} /> Add Event

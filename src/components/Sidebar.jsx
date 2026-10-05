@@ -1,5 +1,5 @@
 import { useApp } from '../context/AppContext';
-import { LayoutDashboard, Users, TrendingUp, CalendarCheck, Phone, MessageCircle, Mail, Calendar, BarChart3, Search, Shield, ChevronLeft, ChevronRight, Bell } from 'lucide-react';
+import { LayoutDashboard, Users, TrendingUp, CalendarCheck, Phone, MessageCircle, Mail, Calendar, BarChart3, Search, Shield, ChevronLeft, ChevronRight, Bell, UserCheck } from 'lucide-react';
 
 export default function Sidebar({ user, currentPage, onNavigate, collapsed, onToggle }) {
   const { t } = useApp();
@@ -22,19 +22,16 @@ export default function Sidebar({ user, currentPage, onNavigate, collapsed, onTo
     { id: 'admin-panel', key: 'adminPanel', icon: Shield },
   ];
 
-  const telecallerMenuItems = [
-    { id: 'tc-dashboard', key: 'telecallerDashboard', icon: LayoutDashboard },
-    { id: 'tc-customers', key: 'myCustomers', icon: Users },
-    { id: 'tc-leads', key: 'myLeads', icon: TrendingUp },
-    { id: 'tc-followups', key: 'followups', icon: CalendarCheck },
-    { id: 'tc-calls', key: 'calls', icon: Phone },
-    { id: 'tc-whatsapp', key: 'whatsapp', icon: MessageCircle },
-    { id: 'tc-emails', key: 'emails', icon: Mail },
-    { id: 'tc-events', key: 'events', icon: Calendar },
+  const userMenuItems = [
+    { id: 'tc-dashboard', key: 'userHub', icon: LayoutDashboard },
+    { id: 'tc-events', key: 'eventUpdates', icon: Calendar },
+    { id: 'tc-whatsapp', key: 'messages', icon: MessageCircle },
+    { id: 'tc-emails', key: 'emailUpdates', icon: Mail },
+    { id: 'tc-customers', key: 'myContacts', icon: Users },
     { id: 'tc-search', key: 'search', icon: Search },
   ];
 
-  const menuItems = isAdmin ? adminMenuItems : telecallerMenuItems;
+  const menuItems = isAdmin ? adminMenuItems : userMenuItems;
   const extraItems = isAdmin ? adminOnlyItems : [];
 
   return (

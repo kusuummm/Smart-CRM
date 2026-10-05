@@ -88,7 +88,7 @@ export default function SearchPage() {
                     </div>
                     <div className="text-right">
                       <p className="text-sm text-dark-600 dark:text-dark-300">{customer.mobile}</p>
-                      <p className="text-xs text-dark-400 dark:text-dark-500">{customer.assignedTelecaller}</p>
+                      <p className="text-xs text-dark-400 dark:text-dark-500">{customer.assignedTelecaller ? `Assigned: ${customer.assignedTelecaller}` : 'Unassigned'}</p>
                     </div>
                   </div>
                 </div>

@@ -114,7 +114,7 @@ export default function Login({ isAddingAccount = false, onCancelAdd }) {
             <p className="text-xs font-semibold text-dark-700 dark:text-dark-300 mb-2 dark:text-gray-300">{t('demoCredentials') || 'Demo Credentials:'}</p>
             <div className="space-y-1 text-xs text-dark-500 dark:text-dark-400">
               <p><span className="font-medium">Admin:</span> admin@crm.com / admin123</p>
-              <p><span className="font-medium">Telecaller:</span> john@crm.com / john123</p>
+              <p><span className="font-medium">User:</span> john@crm.com / john123</p>
             </div>
           </div>
         </div>

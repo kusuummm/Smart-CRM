@@ -17,8 +17,14 @@ const translations = {
     adminPanel: 'Admin Panel',
     settings: 'Settings',
     myAccount: 'My Account',
-    telecallerDashboard: 'My Dashboard',
-    myCustomers: 'My Customers',
+    telecallerDashboard: 'User Panel',
+    userPanel: 'User Hub',
+    userHub: 'User Hub',
+    eventUpdates: 'Event Updates',
+    messages: 'Messages & Updates',
+    emailUpdates: 'Email Updates',
+    myContacts: 'My Contacts',
+    myCustomers: 'My Contacts',
     myLeads: 'My Leads',
 
     // Header & Quick Settings
@@ -48,6 +54,16 @@ const translations = {
     success: 'Success',
     error: 'Error',
 
+    // Auth & Login
+    password: 'Password',
+    signIn: 'Sign In',
+    signingIn: 'Signing in...',
+    loginSuccess: 'Welcome back!',
+    demoCredentials: 'Demo Credentials:',
+
+    // Roles & Panel
+    telecaller: 'User',
+
     // Settings
     appearance: 'Appearance',
     language: 'Language',
@@ -57,9 +73,21 @@ const translations = {
     timezone: 'Timezone',
     currentSettings: 'Current Settings',
     resetDefaults: 'Reset to Defaults',
+    resetToDefaults: 'Settings reset to defaults',
+    settingsSaved: 'Settings saved successfully!',
+    configurePreferences: 'Configure your preferences',
+    customizeAppearance: 'Customize app colors and theme',
+    darkModeActive: 'Dark theme is active',
+    lightModeActive: 'Light theme is active',
+    chooseColor: 'Choose your preferred accent color',
+    chooseLanguage: 'Choose your preferred language',
+    enabled: 'enabled',
+    settingsExported: 'Settings exported!',
     exportSettings: 'Export Settings',
     data: 'Data',
     needHelp: 'Need Help?',
+    helpDesc: 'Get support with your CRM settings',
+    viewDocs: 'View Documentation',
     contactSupport: 'Contact Support',
 
     // Common
@@ -90,7 +118,7 @@ const translations = {
     companyName: 'Company Name',
     leadSource: 'Lead Source',
     interestedProduct: 'Interested Product',
-    assignedTelecaller: 'Assigned Telecaller',
+    assignedTelecaller: 'Assigned User',
     deleteCustomer: 'Delete Customer',
     areYouSureDelete: 'Are you sure you want to delete "{name}"? This action cannot be undone.',
     update: 'Update',
@@ -132,8 +160,14 @@ const translations = {
     adminPanel: 'एडमिन पैनल',
     settings: 'सेटिंग्स',
     myAccount: 'मेरा अकाउंट',
-    telecallerDashboard: 'मेरा डैशबोर्ड',
-    myCustomers: 'मेरे ग्राहक',
+    telecallerDashboard: 'यूज़र हब',
+    userPanel: 'यूज़र हब',
+    userHub: 'यूज़र हब',
+    eventUpdates: 'इवेंट अपडेट्स',
+    messages: 'संदेश और अपडेट्स',
+    emailUpdates: 'ईमेल अपडेट्स',
+    myContacts: 'मेरे संपर्क',
+    myCustomers: 'मेरे संपर्क',
     myLeads: 'मेरी लीड्स',
 
     // Header & Quick Settings
@@ -163,6 +197,16 @@ const translations = {
     success: 'सफल',
     error: 'त्रुटि',
 
+    // Auth & Login
+    password: 'पासवर्ड',
+    signIn: 'साइन इन',
+    signingIn: 'साइन इन हो रहा है...',
+    loginSuccess: 'स्वागत है!',
+    demoCredentials: 'डेमो क्रेडेंशियल:',
+
+    // Roles & Panel
+    telecaller: 'यूज़र',
+
     // Settings
     appearance: 'दिखावट',
     language: 'भाषा',
@@ -172,9 +216,21 @@ const translations = {
     timezone: 'समय क्षेत्र',
     currentSettings: 'वर्तमान सेटिंग्स',
     resetDefaults: 'डिफ़ॉल्ट पर रीसेट करें',
+    resetToDefaults: 'सेटिंग्स डिफ़ॉल्ट पर रीसेट की गईं',
+    settingsSaved: 'सेटिंग्स सफलतापूर्वक सहेजी गईं!',
+    configurePreferences: 'अपनी प्राथमिकताएं कॉन्फ़िगर करें',
+    customizeAppearance: 'ऐप के रंग और थीम अनुकूलित करें',
+    darkModeActive: 'डार्क थीम सक्रिय है',
+    lightModeActive: 'लाइट थीम सक्रिय है',
+    chooseColor: 'अपना पसंदीदा रंग चुनें',
+    chooseLanguage: 'अपनी पसंदीदा भाषा चुनें',
+    enabled: 'सक्षम',
+    settingsExported: 'सेटिंग्स निर्यात की गईं!',
     exportSettings: 'सेटिंग्स निर्यात करें',
     data: 'डेटा',
     needHelp: 'मदद चाहिए?',
+    helpDesc: 'अपनी CRM सेटिंग्स के साथ सहायता प्राप्त करें',
+    viewDocs: 'दस्तावेज़ देखें',
     contactSupport: 'सहायता से संपर्क करें',
 
     // Common
@@ -205,7 +261,7 @@ const translations = {
     companyName: 'कंपनी का नाम',
     leadSource: 'लीड सोर्स',
     interestedProduct: 'इंटरेस्टेड प्रोडक्ट',
-    assignedTelecaller: 'असाइन टेलीकॉलर',
+    assignedTelecaller: 'असाइन यूज़र',
     deleteCustomer: 'ग्राहक हटाएं',
     areYouSureDelete: 'क्या आप "{name}" को हटाना चाहते हैं? यह कार्रवाई पूर्ववत नहीं की जा सकती।',
     update: 'अपडेट करें',
@@ -298,10 +354,15 @@ export function AppProvider({ children }) {
   }, [timezone]);
 
   // Translation function - translates a key to current language
-  const t = (key) => {
-    const value = translations[language]?.[key] || translations.en[key];
+  const t = (key, params) => {
+    let value = translations[language]?.[key] || translations.en[key];
     if (!value && import.meta.env.DEV) {
       console.warn(`[i18n] Missing translation key: "${key}"`);
+    }
+    if (value && params && typeof params === 'object') {
+      Object.entries(params).forEach(([pKey, pVal]) => {
+        value = value.replace(new RegExp(`\\{${pKey}\\}`, 'g'), pVal ?? '');
+      });
     }
     return value || key;
   };

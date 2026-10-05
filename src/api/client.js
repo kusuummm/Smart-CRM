@@ -21,7 +21,8 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const isLoginRequest = error.config?.url?.includes('/auth/login');
+    if (error.response?.status === 401 && !isLoginRequest) {
       localStorage.removeItem('crm_token');
       localStorage.removeItem('crm_user');
       // Full reload is the simplest reliable way to bounce back to the

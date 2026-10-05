@@ -4,3 +4,5 @@ import api from './client';
 export const getEmailLogs = (params = {}) => api.get('/emails', { params }).then((res) => res.data);
 
 export const sendCustomerEmail = (payload) => api.post('/emails/send', payload).then((res) => res.data);
+
+export const testEmailDelivery = (payload) => api.post('/emails/test', payload).then((res) => res.data);

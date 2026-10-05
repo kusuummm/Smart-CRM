@@ -1,12 +1,14 @@
 import { useState, useCallback, useEffect } from 'react';
-import { Plus, X, Edit2, Loader2 } from 'lucide-react';
+import { Plus, X, Edit2, Loader2, UserCheck } from 'lucide-react';
 import { PageHeader } from '../components/Common';
 import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
+import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/Toast';
 import { statusColors } from '../data/mockData';
 import { getFollowUps, createFollowUp, updateFollowUp, deleteFollowUp as deleteFollowUpRequest } from '../api/followups';
 import { getCustomers } from '../api/customers';
+import { getUsers } from '../api/users';
 
 const emptyForm = {
   customerId: '',
@@ -15,11 +17,15 @@ const emptyForm = {
   remarks: '',
   nextFollowUp: '',
   status: 'pending',
+  assignedTo: '',
 };
 
 export default function FollowUps({ onNavigate }) {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
   const [followUps, setFollowUps] = useState([]);
   const [customers, setCustomers] = useState([]);
+  const [telecallers, setTelecallers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [page, setPage] = useState(1);
@@ -29,16 +35,32 @@ export default function FollowUps({ onNavigate }) {
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [statusFilter, setStatusFilter] = useState('');
   const [dateFilter, setDateFilter] = useState('');
+  const [agentFilter, setAgentFilter] = useState('');
   const { addToast } = useToast();
 
   const [form, setForm] = useState(emptyForm);
+
+  useEffect(() => {
+    if (isAdmin) {
+      getUsers()
+        .then((res) => {
+          const callers = (res.users || []).filter((u) => u.role === 'telecaller');
+          setTelecallers(callers);
+        })
+        .catch((err) => console.error('Failed to load users for followups', err));
+    }
+  }, [isAdmin]);
 
   // Load follow-ups + the customer list (for the picker) from the backend.
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
+      const fuParams = { limit: 1000 };
+      if (isAdmin && agentFilter) {
+        fuParams.telecallerId = agentFilter;
+      }
       const [followUpData, customerData] = await Promise.all([
-        getFollowUps({ limit: 1000 }),
+        getFollowUps(fuParams),
         getCustomers({ limit: 1000 }),
       ]);
       setFollowUps(followUpData.followUps);
@@ -49,7 +71,7 @@ export default function FollowUps({ onNavigate }) {
       setLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [agentFilter, isAdmin]);
 
   useEffect(() => {
     loadData();
@@ -79,6 +101,7 @@ export default function FollowUps({ onNavigate }) {
       remarks: fu.remarks,
       nextFollowUp: fu.nextFollowUp || '',
       status: fu.status,
+      assignedTo: fu.createdBy || '',
     });
     setIsModalOpen(true);
   };
@@ -121,8 +144,8 @@ export default function FollowUps({ onNavigate }) {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Follow-up Management"
-        subtitle="Schedule and track all follow-ups"
+        title={isAdmin ? "All Follow-ups Manager" : "My Follow-up Agenda"}
+        subtitle={isAdmin ? "Manage and oversee all follow-up schedules across all users" : "Manage your daily follow-ups and schedule appointments"}
         action={
           <button onClick={openAdd} className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700">
             <Plus size={18} /> Add Follow-up
@@ -131,8 +154,8 @@ export default function FollowUps({ onNavigate }) {
       />
 
       <div className="bg-white rounded-xl p-4 border border-dark-200 shadow-sm dark:bg-dark-800 dark:border-dark-700">
-        <div className="flex flex-wrap gap-4">
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="px-3 py-2 border border-dark-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-dark-700">
+        <div className="flex flex-wrap items-center gap-4">
+          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="px-3 py-2 border border-dark-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-dark-700 dark:bg-dark-800 dark:text-white">
             <option value="">All Status</option>
             <option value="pending">Pending</option>
             <option value="completed">Completed</option>
@@ -141,8 +164,26 @@ export default function FollowUps({ onNavigate }) {
             type="date"
             value={dateFilter}
             onChange={(e) => setDateFilter(e.target.value)}
-            className="px-3 py-2 border border-dark-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-dark-700"
+            className="px-3 py-2 border border-dark-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-dark-700 dark:bg-dark-800 dark:text-white"
           />
+          {isAdmin && (
+            <select
+              value={agentFilter}
+              onChange={(e) => {
+                setAgentFilter(e.target.value);
+                setPage(1);
+              }}
+              className="px-3 py-2 border border-dark-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-dark-700 dark:bg-dark-800 dark:text-white"
+            >
+              <option value="">👥 All Users</option>
+              <option value="unassigned">⚠️ Unassigned Clients Only</option>
+              {telecallers.map((tc) => (
+                <option key={tc._id} value={tc._id}>
+                  👤 {tc.name}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
       </div>
 
@@ -156,6 +197,7 @@ export default function FollowUps({ onNavigate }) {
           <thead>
             <tr className="bg-dark-50 dark:bg-dark-700">
               <th className="px-4 py-3 text-left text-xs font-semibold text-dark-500 uppercase dark:text-dark-400">Customer</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-dark-500 uppercase dark:text-dark-400">Assigned User</th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-dark-500 uppercase dark:text-dark-400">Date</th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-dark-500 uppercase dark:text-dark-400">Time</th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-dark-500 uppercase dark:text-dark-400">Remarks</th>
@@ -166,11 +208,16 @@ export default function FollowUps({ onNavigate }) {
           </thead>
           <tbody className="divide-y divide-dark-200 dark:divide-dark-700">
             {paginated.length === 0 ? (
-              <tr><td colSpan={7} className="px-4 py-8 text-center text-dark-400 dark:text-dark-500">No follow-ups found</td></tr>
+              <tr><td colSpan={8} className="px-4 py-8 text-center text-dark-400 dark:text-dark-500">No follow-ups found</td></tr>
             ) : (
               paginated.map(fu => (
                 <tr key={fu._id} className="hover:bg-dark-50 dark:hover:bg-dark-700">
                   <td className="px-4 py-3 font-medium text-dark-900 dark:text-white">{fu.customerName}</td>
+                  <td className="px-4 py-3 text-xs text-dark-600 dark:text-dark-300 font-medium">
+                    <span className="px-2 py-0.5 rounded-full bg-dark-100 dark:bg-dark-700 text-dark-700 dark:text-dark-300">
+                      {fu.createdByName || 'User'}
+                    </span>
+                  </td>
                   <td className="px-4 py-3 text-dark-700 dark:text-gray-300">{fu.date}</td>
                   <td className="px-4 py-3 text-dark-700 dark:text-gray-300">{fu.time}</td>
                   <td className="px-4 py-3 text-dark-600 max-w-xs truncate dark:text-dark-300">{fu.remarks}</td>
@@ -181,7 +228,9 @@ export default function FollowUps({ onNavigate }) {
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-center gap-2">
                       <button onClick={() => openEdit(fu)} className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-600" title="Edit"><Edit2 size={16} /></button>
-                      <button onClick={() => setDeleteConfirm(fu)} className="p-1.5 rounded-lg hover:bg-red-50 text-red-600" title="Delete"><X size={16} /></button>
+                      {(isAdmin || String(fu.createdBy) === String(user?._id)) && (
+                        <button onClick={() => setDeleteConfirm(fu)} className="p-1.5 rounded-lg hover:bg-red-50 text-red-600" title="Delete"><X size={16} /></button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -263,12 +312,29 @@ export default function FollowUps({ onNavigate }) {
             <select
               value={form.status}
               onChange={(e) => setForm({ ...form, status: e.target.value })}
-              className="w-full px-3 py-2 border border-dark-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-dark-700"
+              className="w-full px-3 py-2 border border-dark-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-dark-700 dark:bg-dark-700 dark:text-white"
             >
               <option value="pending">Pending</option>
               <option value="completed">Completed</option>
             </select>
           </div>
+          {isAdmin && (
+            <div>
+              <label className="block text-sm font-medium text-dark-700 mb-1 dark:text-gray-300">Assigned User (Admin Control)</label>
+              <select
+                value={form.assignedTo}
+                onChange={(e) => setForm({ ...form, assignedTo: e.target.value })}
+                className="w-full px-3 py-2 border border-dark-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-dark-700 dark:bg-dark-700 dark:text-white"
+              >
+                <option value="">Default (Current User)</option>
+                {telecallers.map((tc) => (
+                  <option key={tc._id} value={tc._id}>
+                    👤 {tc.name} ({tc.email})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
         <div className="flex justify-end gap-3 mt-6">
           <button onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-sm font-medium text-dark-700 bg-dark-100 rounded-lg hover:bg-dark-200 dark:text-gray-300 dark:bg-dark-700 dark:hover:bg-dark-600">Cancel</button>
