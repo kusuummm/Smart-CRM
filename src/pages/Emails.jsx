@@ -107,7 +107,14 @@ export default function Emails({ onNavigate }) {
                   <td className="px-4 py-3 text-dark-700 dark:text-gray-300">{log.email}</td>
                   <td className="px-4 py-3 text-dark-600 max-w-md truncate dark:text-dark-300">{log.subject}</td>
                   <td className="px-4 py-3"><span className="px-2 py-1 text-xs bg-dark-100 text-dark-700 rounded-full capitalize dark:text-gray-300 dark:bg-dark-700">{log.type}</span></td>
-                  <td className="px-4 py-3"><span className={`px-2 py-1 text-xs font-medium rounded-full capitalize ${statusColors[log.status]}`}>{log.status}</span></td>
+                  <td className="px-4 py-3">
+                    <span className={`px-2 py-1 text-xs font-medium rounded-full capitalize ${statusColors[log.status]}`}>{log.status}</span>
+                    {log.error && (
+                      <p className="text-[11px] text-red-500 dark:text-red-400 mt-1 max-w-xs truncate" title={log.error}>
+                        {log.error}
+                      </p>
+                    )}
+                  </td>
                   <td className="px-4 py-3 text-dark-700 dark:text-gray-300">{new Date(log.createdAt).toLocaleDateString()}</td>
                 </tr>
               ))
