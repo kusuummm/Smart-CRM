@@ -1,7 +1,7 @@
 // Mock data for Smart CRM frontend
 export const mockUsers = [
-  { id: '1', name: 'Admin User', email: 'admin@crm.com', password: 'admin123', role: 'admin', avatar: 'AU', status: 'active', phone: '9876543200', balance: '₹5,000' },
-  { id: '2', name: 'Caller Agent', email: 'caller@crm.com', password: 'caller123', role: 'telecaller', avatar: 'CA', status: 'active', phone: '9876543210', balance: '₹1,500' },
+  { id: '1', name: 'Admin User', email: 'admin@crm.com', role: 'admin', avatar: 'AU', status: 'active', phone: '9876543200', balance: '₹5,000' },
+  { id: '2', name: 'Caller Agent', email: 'caller@crm.com', role: 'telecaller', avatar: 'CA', status: 'active', phone: '9876543210', balance: '₹1,500' },
 ];
 
 export const mockCustomers = [
