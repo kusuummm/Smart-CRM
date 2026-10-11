@@ -16,9 +16,12 @@ import {
   Loader2,
   ShieldCheck,
   RefreshCw,
+  AlertTriangle,
+  UserPlus,
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import {
+  registerRequest,
   registerSendOtpRequest,
   registerVerifyOtpRequest,
   forgotPasswordSendOtpRequest,
@@ -33,6 +36,7 @@ export default function Login({ isAddingAccount = false, onCancelAdd }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [approvalNotice, setApprovalNotice] = useState('');
 
   // Register form state
   const [registerStep, setRegisterStep] = useState(1); // 1: Info, 2: OTP
@@ -92,7 +96,18 @@ export default function Login({ isAddingAccount = false, onCancelAdd }) {
     const result = await login(email.trim(), password);
     if (result.success) {
       toast.success(t('loginSuccess') || (language === 'hi' ? 'स्वागत है!' : 'Welcome back!'));
+      setApprovalNotice('');
     } else {
+      if (
+        result.message &&
+        (result.message.toLowerCase().includes('pending') ||
+          result.message.toLowerCase().includes('approval') ||
+          result.message.toLowerCase().includes('rejected'))
+      ) {
+        setApprovalNotice(result.message);
+      } else {
+        setApprovalNotice('');
+      }
       toast.error(result.message);
     }
     setLoading(false);
@@ -135,6 +150,31 @@ export default function Login({ isAddingAccount = false, onCancelAdd }) {
     }
   };
 
+  const handleDirectRegister = async (e) => {
+    if (e) e.preventDefault();
+    if (!validateRegStep1()) return;
+
+    setLoading(true);
+    try {
+      const data = await registerRequest({
+        name: regForm.name.trim(),
+        email: regForm.email.trim(),
+        phone: regForm.phone.trim(),
+        password: regForm.password,
+      });
+      toast.success(data.message || 'Registration submitted for administrator approval!', { duration: 6000 });
+      setApprovalNotice(data.message);
+      setAuthMode('login');
+      setEmail(regForm.email.trim());
+      setPassword('');
+      setRegisterStep(1);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Registration failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleVerifyRegOtp = async (e) => {
     e.preventDefault();
     if (!regOtp || regOtp.trim().length !== 6) {
@@ -148,8 +188,18 @@ export default function Login({ isAddingAccount = false, onCancelAdd }) {
         email: regForm.email.trim(),
         otp: regOtp.trim(),
       });
-      toast.success(data.message || 'Account verified and created successfully!');
-      loginWithSession(data);
+      if (data.pendingApproval) {
+        toast.success(data.message || 'Registration verified! Awaiting administrator approval.', { duration: 6000 });
+        setApprovalNotice(data.message);
+        setAuthMode('login');
+        setEmail(regForm.email.trim());
+        setPassword('');
+        setRegisterStep(1);
+        setRegOtp('');
+      } else {
+        toast.success(data.message || 'Account verified and created successfully!');
+        loginWithSession(data);
+      }
     } catch (err) {
       toast.error(err.response?.data?.message || 'Invalid or expired code');
     } finally {
@@ -236,11 +286,8 @@ export default function Login({ isAddingAccount = false, onCancelAdd }) {
                   <ArrowLeft size={18} />
                 </button>
               )}
-              <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center shadow-md">
-                <Building2 className="text-white" size={22} />
-              </div>
               <div>
-                <h1 className="text-xl font-bold text-dark-900 dark:text-white leading-tight">SmartCRM</h1>
+                <h1 className="text-xl font-bold text-dark-900 dark:text-white leading-tight">CRM</h1>
                 <p className="text-xs text-dark-500 dark:text-dark-400">
                   {authMode === 'login'
                     ? 'Customer Relationship Management'
@@ -268,6 +315,23 @@ export default function Login({ isAddingAccount = false, onCancelAdd }) {
                 <p className="text-xs text-dark-500 dark:text-dark-400">Sign in to your CRM workspace</p>
               </div>
 
+              {approvalNotice && (
+                <div className="p-3 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 text-xs flex items-start gap-2.5">
+                  <AlertTriangle className="shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" size={16} />
+                  <div className="flex-1">
+                    <p className="font-semibold">Approval Required</p>
+                    <p className="mt-0.5 leading-relaxed">{approvalNotice}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setApprovalNotice(null)}
+                    className="text-amber-600 hover:text-amber-800 dark:text-amber-400 dark:hover:text-amber-200 text-xs font-bold"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+
               <div>
                 <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1.5">
                   {t('email') || 'Email Address'}
@@ -278,7 +342,7 @@ export default function Login({ isAddingAccount = false, onCancelAdd }) {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="admin@crm.com"
+                    placeholder="caller@crm.com or admin@crm.com"
                     className={`w-full pl-10 pr-4 py-2.5 border rounded-xl text-sm bg-white dark:bg-dark-800 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 ${
                       errors.email ? 'border-red-300 bg-red-50/50' : 'border-dark-200 dark:border-dark-700'
                     }`}
@@ -325,11 +389,63 @@ export default function Login({ isAddingAccount = false, onCancelAdd }) {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full mt-2 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl font-semibold text-sm shadow-sm hover:shadow transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                className="w-full mt-2 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl font-semibold text-sm shadow-sm hover:shadow transition-all disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
               >
                 {loading ? <Loader2 size={16} className="animate-spin" /> : null}
                 {loading ? 'Signing in...' : 'Sign In'}
               </button>
+
+              {/* Quick One-Click Demo Credentials */}
+              <div className="pt-3 border-t border-dark-100 dark:border-dark-800 space-y-2">
+                <p className="text-[11px] font-semibold text-center uppercase tracking-wider text-dark-400 dark:text-dark-400">
+                  Quick One-Click Login
+                </p>
+                <div className="grid grid-cols-2 gap-2.5">
+                  {/* Caller ID Button */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEmail('caller@crm.com');
+                      setPassword('caller123');
+                      setErrors({});
+                    }}
+                    className="p-2.5 rounded-xl border border-blue-200 dark:border-blue-900 bg-blue-50/70 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/50 text-left transition-colors cursor-pointer group"
+                  >
+                    <div className="flex items-center gap-1.5 text-blue-700 dark:text-blue-300 font-bold text-xs">
+                      <Phone size={13} />
+                      <span>Caller ID</span>
+                    </div>
+                    <p className="text-[11px] text-dark-600 dark:text-dark-300 font-mono mt-0.5 truncate">
+                      caller@crm.com
+                    </p>
+                    <span className="text-[10px] text-blue-600 dark:text-blue-400 font-medium block mt-0.5">
+                      Caller Panel →
+                    </span>
+                  </button>
+
+                  {/* Admin ID Button */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEmail('admin@crm.com');
+                      setPassword('admin123');
+                      setErrors({});
+                    }}
+                    className="p-2.5 rounded-xl border border-purple-200 dark:border-purple-900 bg-purple-50/70 dark:bg-purple-950/40 hover:bg-purple-100 dark:hover:bg-purple-900/50 text-left transition-colors cursor-pointer group"
+                  >
+                    <div className="flex items-center gap-1.5 text-purple-700 dark:text-purple-300 font-bold text-xs">
+                      <ShieldCheck size={13} />
+                      <span>Admin ID</span>
+                    </div>
+                    <p className="text-[11px] text-dark-600 dark:text-dark-300 font-mono mt-0.5 truncate">
+                      admin@crm.com
+                    </p>
+                    <span className="text-[10px] text-purple-600 dark:text-purple-400 font-medium block mt-0.5">
+                      Admin Panel →
+                    </span>
+                  </button>
+                </div>
+              </div>
 
               {/* Toggle to Register */}
               <div className="pt-2 text-center border-t border-dark-100 dark:border-dark-800">
@@ -338,38 +454,11 @@ export default function Login({ isAddingAccount = false, onCancelAdd }) {
                   <button
                     type="button"
                     onClick={() => resetAllModes('register')}
-                    className="font-bold text-primary-600 hover:text-primary-700 dark:text-primary-400 hover:underline"
+                    className="font-bold text-primary-600 hover:text-primary-700 dark:text-primary-400 hover:underline cursor-pointer"
                   >
                     Create an account
                   </button>
                 </p>
-              </div>
-
-              {/* Demo Credentials */}
-              <div className="mt-3 p-3 bg-dark-50 dark:bg-dark-800/60 rounded-xl border border-dark-100 dark:border-dark-700/60">
-                <p className="text-[11px] font-semibold text-dark-700 dark:text-dark-300 mb-1">Quick Demo Login:</p>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEmail('admin@crm.com');
-                      setPassword('admin123');
-                    }}
-                    className="px-2.5 py-1 text-[11px] bg-white dark:bg-dark-700 border border-dark-200 dark:border-dark-600 rounded-lg text-dark-700 dark:text-dark-200 hover:bg-dark-100"
-                  >
-                    Admin Fill
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEmail('john@crm.com');
-                      setPassword('john123');
-                    }}
-                    className="px-2.5 py-1 text-[11px] bg-white dark:bg-dark-700 border border-dark-200 dark:border-dark-600 rounded-lg text-dark-700 dark:text-dark-200 hover:bg-dark-100"
-                  >
-                    Telecaller Fill
-                  </button>
-                </div>
               </div>
             </form>
           )}
@@ -488,10 +577,26 @@ export default function Login({ isAddingAccount = false, onCancelAdd }) {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full mt-2 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl font-semibold text-sm shadow-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                    className="w-full mt-2 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl font-semibold text-sm shadow-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
                   >
                     {loading ? <Loader2 size={16} className="animate-spin" /> : <ShieldCheck size={16} />}
                     {loading ? 'Sending Verification Code...' : 'Send Verification OTP'}
+                  </button>
+
+                  <div className="flex items-center gap-2 my-1">
+                    <div className="h-px bg-dark-200 dark:bg-dark-700 flex-1" />
+                    <span className="text-[11px] text-dark-400 font-medium">OR</span>
+                    <div className="h-px bg-dark-200 dark:bg-dark-700 flex-1" />
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleDirectRegister}
+                    disabled={loading}
+                    className="w-full py-2.5 bg-dark-100 hover:bg-dark-200 dark:bg-dark-800 dark:hover:bg-dark-700 text-dark-800 dark:text-dark-200 rounded-xl font-semibold text-xs border border-dark-200 dark:border-dark-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <UserPlus size={15} />
+                    <span>Register Directly (Awaiting Admin Approval)</span>
                   </button>
 
                   <div className="pt-2 text-center">

@@ -36,6 +36,7 @@ import { useToast } from '../components/Toast';
 import { useApp } from '../context/AppContext';
 import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
+import { useConfirm } from '../context/ConfirmContext';
 import {
   getEvents,
   getUpcomingEvents,
@@ -91,6 +92,7 @@ export default function UserPanel({ onNavigate }) {
   const { user } = useAuth();
   const { t } = useApp();
   const { addToast } = useToast();
+  const { confirm } = useConfirm();
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -142,10 +144,18 @@ export default function UserPanel({ onNavigate }) {
     return localStorage.getItem(`crm_user_status_${user?.id || user?._id}`) || 'available';
   });
 
-  const handleStatusChange = (status) => {
+  const handleStatusChange = async (status) => {
+    const item = workStatuses.find((s) => s.id === status);
+    const ok = await confirm({
+      title: 'Update Availability Status?',
+      message: `Are you sure you want to change your working status to "${item?.label || status}"?`,
+      confirmText: 'Change Status',
+      type: 'info'
+    });
+    if (!ok) return;
+
     setWorkStatus(status);
     localStorage.setItem(`crm_user_status_${user?.id || user?._id}`, status);
-    const item = workStatuses.find((s) => s.id === status);
     addToast(`Status set to ${item?.label || status}`, 'success');
   };
 
@@ -280,6 +290,14 @@ export default function UserPanel({ onNavigate }) {
 
   // Actions
   const handleTriggerAutomatedReminder = async (event) => {
+    const ok = await confirm({
+      title: 'Dispatch Automated Reminder?',
+      message: `Trigger automated reminder notification (Email / WhatsApp / Dashboard) for ${event.customerName}?`,
+      confirmText: 'Send Reminders',
+      type: 'info'
+    });
+    if (!ok) return;
+
     setRemindingId(event._id);
     try {
       const data = await triggerReminder(event._id, ['dashboard', 'email', 'whatsapp']);
@@ -304,6 +322,14 @@ export default function UserPanel({ onNavigate }) {
   };
 
   const handleMarkEventDone = async (event) => {
+    const ok = await confirm({
+      title: 'Mark Event as Completed?',
+      message: `Mark the ${event.type || 'scheduled'} event for ${event.customerName || 'customer'} as completed?`,
+      confirmText: 'Complete Event',
+      type: 'success'
+    });
+    if (!ok) return;
+
     setCompletingEventId(event._id);
     try {
       const data = await updateEvent(event._id, { status: 'done' });
@@ -538,10 +564,10 @@ export default function UserPanel({ onNavigate }) {
             setActiveTab('events');
             setEventCategory('birthday');
           }}
-          className="cursor-pointer bg-white dark:bg-dark-800 p-5 rounded-2xl border border-dark-200 dark:border-dark-700 hover:border-rose-400 dark:hover:border-rose-600 transition-all shadow-xs group"
+          className="cursor-pointer bg-white dark:bg-dark-800 p-5 rounded-2xl border border-dark-200 dark:border-dark-700 hover:border-dark-300 dark:hover:border-dark-600 transition-colors shadow-xs"
         >
           <div className="flex items-center justify-between">
-            <div className="w-11 h-11 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+            <div className="w-11 h-11 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 flex items-center justify-center">
               <Gift size={22} />
             </div>
             <span className="text-[11px] font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 px-2 py-0.5 rounded-full">
@@ -564,10 +590,10 @@ export default function UserPanel({ onNavigate }) {
             setActiveTab('events');
             setEventCategory('emi_renewal');
           }}
-          className="cursor-pointer bg-white dark:bg-dark-800 p-5 rounded-2xl border border-dark-200 dark:border-dark-700 hover:border-amber-400 dark:hover:border-amber-600 transition-all shadow-xs group"
+          className="cursor-pointer bg-white dark:bg-dark-800 p-5 rounded-2xl border border-dark-200 dark:border-dark-700 hover:border-dark-300 dark:hover:border-dark-600 transition-colors shadow-xs"
         >
           <div className="flex items-center justify-between">
-            <div className="w-11 h-11 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+            <div className="w-11 h-11 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 flex items-center justify-center">
               <Clock size={22} />
             </div>
             <span className="text-[11px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-full">
@@ -587,10 +613,10 @@ export default function UserPanel({ onNavigate }) {
         {/* Metric 3: Recent Messages */}
         <div
           onClick={() => setActiveTab('messages')}
-          className="cursor-pointer bg-white dark:bg-dark-800 p-5 rounded-2xl border border-dark-200 dark:border-dark-700 hover:border-primary-400 dark:hover:border-primary-600 transition-all shadow-xs group"
+          className="cursor-pointer bg-white dark:bg-dark-800 p-5 rounded-2xl border border-dark-200 dark:border-dark-700 hover:border-dark-300 dark:hover:border-dark-600 transition-colors shadow-xs"
         >
           <div className="flex items-center justify-between">
-            <div className="w-11 h-11 rounded-xl bg-primary-50 dark:bg-primary-950/40 text-primary-600 dark:text-primary-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+            <div className="w-11 h-11 rounded-xl bg-primary-50 dark:bg-primary-950/40 text-primary-600 dark:text-primary-400 flex items-center justify-center">
               <MessageCircle size={22} />
             </div>
             <span className="text-[11px] font-bold uppercase tracking-wider text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-950/40 px-2 py-0.5 rounded-full">
@@ -610,10 +636,10 @@ export default function UserPanel({ onNavigate }) {
         {/* Metric 4: My Contacts */}
         <div
           onClick={() => onNavigate?.('tc-customers')}
-          className="cursor-pointer bg-white dark:bg-dark-800 p-5 rounded-2xl border border-dark-200 dark:border-dark-700 hover:border-emerald-400 dark:hover:border-emerald-600 transition-all shadow-xs group"
+          className="cursor-pointer bg-white dark:bg-dark-800 p-5 rounded-2xl border border-dark-200 dark:border-dark-700 hover:border-dark-300 dark:hover:border-dark-600 transition-colors shadow-xs"
         >
           <div className="flex items-center justify-between">
-            <div className="w-11 h-11 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+            <div className="w-11 h-11 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
               <Users size={22} />
             </div>
             <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full">

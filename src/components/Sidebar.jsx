@@ -1,161 +1,184 @@
-import { useApp } from '../context/AppContext';
-import { LayoutDashboard, Users, TrendingUp, CalendarCheck, Phone, MessageCircle, Mail, Calendar, BarChart3, Search, Shield, ChevronLeft, ChevronRight, Bell, UserCheck } from 'lucide-react';
+import {
+  Home,
+  Users,
+  Phone,
+  Clock,
+  BarChart2,
+  CheckSquare,
+  BookUser,
+  MessageSquare,
+  Radio,
+  Wallet,
+  CreditCard,
+  Settings,
+  Cpu,
+  UserCheck,
+  FileText,
+  Zap,
+  Shield,
+  ArrowRightLeft,
+  Database,
+  Activity,
+  TrendingUp,
+  Mail,
+  Calendar,
+  LayoutDashboard,
+} from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
-export default function Sidebar({ user, currentPage, onNavigate, collapsed, onToggle }) {
-  const { t } = useApp();
+export default function Sidebar({
+  currentPage,
+  onNavigate,
+  collapsed,
+  onToggle,
+}) {
+  const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
+  const isPreviewingCaller =
+    isAdmin &&
+    sessionStorage.getItem('smartcrm_preview_caller') === 'true' &&
+    !currentPage?.startsWith('admin-');
+  const showAdminMenu = isAdmin && !isPreviewingCaller;
 
+  // Caller Panel Navigation items matching Reference Superfone CRM
+  const callerMenuItems = [
+    { type: 'header', label: 'CORE CRM' },
+    { id: 'home', label: 'Home', icon: Home },
+    { id: 'contacts', label: 'Contacts', icon: BookUser },
+    { id: 'leads', label: 'Leads & Pipeline', icon: TrendingUp },
+    { id: 'todos', label: 'To Dos & Tasks', icon: CheckSquare },
+    { id: 'call-history', label: 'Call History', icon: Phone },
+    { id: 'reports', label: 'Reports', icon: Clock },
+    { id: 'insights', label: 'Insights', icon: BarChart2 },
+
+    { type: 'header', label: 'COMMUNICATIONS' },
+    { id: 'whatsapp', label: 'WhatsApp', icon: MessageSquare },
+    { id: 'emails', label: 'Emails', icon: Mail },
+    { id: 'events', label: 'Calendar & Reminders', icon: Calendar },
+    { id: 'broadcast', label: 'Broadcast', icon: Radio },
+    { id: 'quick-message', label: 'Quick Message', icon: Zap },
+    { id: 'notes', label: 'Notes', icon: FileText },
+
+    { type: 'header', label: 'TEAM & SYSTEM' },
+    { id: 'teams', label: 'Teams', icon: Users },
+    { id: 'team-members', label: 'Team Members', icon: UserCheck },
+    { id: 'automations', label: 'Automations', icon: Cpu },
+    { id: 'wallet', label: 'Wallet', icon: Wallet },
+    { id: 'plans-billing', label: 'Plans & Billing', icon: CreditCard },
+    { id: 'settings', label: 'Settings', icon: Settings },
+  ];
+
+  // Dedicated Admin Panel Navigation items (administrative oversight & tools)
   const adminMenuItems = [
-    { id: 'dashboard', key: 'dashboard', icon: LayoutDashboard },
-    { id: 'customers', key: 'customers', icon: Users },
-    { id: 'leads', key: 'leads', icon: TrendingUp },
-    { id: 'followups', key: 'followups', icon: CalendarCheck },
-    { id: 'calls', key: 'calls', icon: Phone },
-    { id: 'whatsapp', key: 'whatsapp', icon: MessageCircle },
-    { id: 'emails', key: 'emails', icon: Mail },
-    { id: 'events', key: 'events', icon: Calendar },
-    { id: 'reports', key: 'reports', icon: BarChart3 },
-    { id: 'search', key: 'search', icon: Search },
+    { type: 'header', label: 'ADMIN CONTROL CENTER' },
+    { id: 'admin-panel', label: 'Dashboard Overview', icon: Shield },
+    { id: 'admin-users', label: 'Users & Approvals', icon: UserCheck },
+    { id: 'admin-agents', label: 'Telecaller Presence', icon: Activity },
+    { id: 'admin-workload', label: 'Workload Balancer', icon: ArrowRightLeft },
+    { id: 'admin-audit', label: 'Audit Activity Log', icon: Clock },
+    { id: 'admin-system', label: 'System Diagnostics', icon: Database },
+
+    { type: 'header', label: 'ORGANIZATION & TOOLS' },
+    { id: 'teams', label: 'Teams', icon: Users },
+    { id: 'automations', label: 'Automations', icon: Cpu },
+    { id: 'broadcast', label: 'Broadcast', icon: Radio },
+    { id: 'wallet', label: 'Wallet', icon: Wallet },
+    { id: 'plans-billing', label: 'Plans & Billing', icon: CreditCard },
+    { id: 'settings', label: 'Settings', icon: Settings },
   ];
 
-  const adminOnlyItems = [
-    { id: 'admin-panel', key: 'adminPanel', icon: Shield },
-  ];
+  const menuItems = showAdminMenu ? adminMenuItems : callerMenuItems;
 
-  const userMenuItems = [
-    { id: 'tc-dashboard', key: 'userHub', icon: LayoutDashboard },
-    { id: 'tc-events', key: 'eventUpdates', icon: Calendar },
-    { id: 'tc-whatsapp', key: 'messages', icon: MessageCircle },
-    { id: 'tc-emails', key: 'emailUpdates', icon: Mail },
-    { id: 'tc-customers', key: 'myContacts', icon: Users },
-    { id: 'tc-search', key: 'search', icon: Search },
-  ];
-
-  const menuItems = isAdmin ? adminMenuItems : userMenuItems;
-  const extraItems = isAdmin ? adminOnlyItems : [];
+  const handleItemClick = (item) => {
+    if (item.id === 'caller-view') {
+      onNavigate('home');
+    } else {
+      onNavigate(item.id);
+    }
+  };
 
   return (
     <aside
-      className={`fixed top-0 left-0 z-40 h-screen transition-all duration-300 ease-in-out bg-white dark:bg-dark-900 border-r border-dark-200 dark:border-dark-700 flex flex-col ${
-        collapsed ? 'w-[72px]' : 'w-[260px]'
+      className={`fixed top-16 left-0 z-20 h-[calc(100vh-4rem)] transition-all duration-300 ease-in-out bg-white/95 dark:bg-dark-900/95 backdrop-blur-md border-r border-dark-200/80 dark:border-dark-700/80 flex flex-col ${
+        collapsed ? 'w-[72px]' : 'w-[230px]'
       }`}
     >
-      {/* Logo */}
-      <div className="flex items-center justify-between h-16 px-4 border-b border-dark-200 dark:border-dark-700 flex-shrink-0">
-        {!collapsed ? (
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-gradient-to-br from-primary-600 to-primary-700 rounded-xl flex items-center justify-center shadow-sm">
-              <span className="text-white font-bold text-sm tracking-tight">CRM</span>
-            </div>
-            <div>
-              <h1 className="font-bold text-base text-dark-900 dark:text-white leading-none">Smart</h1>
-              <h1 className="font-bold text-base text-primary-600 leading-none -mt-0.5">CRM</h1>
-            </div>
-          </div>
-        ) : (
-          <div className="w-9 h-9 bg-gradient-to-br from-primary-600 to-primary-700 rounded-xl flex items-center justify-center mx-auto shadow-sm">
-            <span className="text-white font-bold text-sm tracking-tight">CRM</span>
-          </div>
-        )}
-        <button onClick={onToggle} className="hidden lg:flex p-1.5 rounded-lg hover:bg-dark-100 dark:hover:bg-dark-800 text-dark-500 dark:text-dark-400 transition-colors dark:hover:bg-dark-600">
-          {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
-        </button>
-      </div>
-
-      {/* Navigation */}
-      <nav className="flex-1 mt-3 px-3 py-2 overflow-y-auto scrollbar-thin">
-        <div className="space-y-1">
-          {menuItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = currentPage === item.id;
+      {/* Scrollable Navigation Menu */}
+      <div className="flex-1 overflow-y-auto py-3 px-2.5 space-y-1 scrollbar-thin">
+        {menuItems.map((item, idx) => {
+          if (item.type === 'header') {
+            if (collapsed) {
+              return <div key={`sep-${idx}`} className="border-t border-dark-200/80 dark:border-dark-700/80 my-2" />;
+            }
             return (
-              <button
-                key={item.id}
-                onClick={() => onNavigate(item.id)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                  isActive
-                    ? 'bg-primary-50 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300 shadow-sm'
-                    : 'text-dark-600 dark:text-dark-400 hover:bg-dark-50 dark:hover:bg-dark-800 hover:text-dark-900 dark:hover:text-dark-200'
-                }`}
-                title={collapsed ? t(item.key) : undefined}
+              <div
+                key={`hdr-${idx}`}
+                className="text-[10px] font-bold uppercase tracking-wider text-dark-400 dark:text-dark-400 px-3 pt-3 pb-1"
               >
-                <Icon size={20} strokeWidth={isActive ? 2.5 : 2} className={isActive ? 'text-primary-600' : ''} />
-                {!collapsed && <span>{t(item.key)}</span>}
-              </button>
+                {item.label}
+              </div>
             );
-          })}
-        </div>
+          }
 
-        {extraItems.length > 0 && (
-          <div className="mt-6 pt-4 border-t border-dark-200 dark:border-dark-700">
-            {!collapsed && (
-              <p className="px-3 text-[10px] font-bold text-dark-400 dark:text-dark-500 uppercase tracking-wider mb-2">
-                Administration
-              </p>
-            )}
-            <div className="space-y-1">
-              {extraItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = currentPage === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => onNavigate(item.id)}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                      isActive
-                        ? 'bg-primary-50 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300 shadow-sm'
-                        : 'text-dark-600 dark:text-dark-400 hover:bg-dark-50 dark:hover:bg-dark-800 hover:text-dark-900 dark:hover:text-dark-200'
-                    }`}
-                    title={collapsed ? t(item.key) : undefined}
-                  >
-                    <Icon size={20} strokeWidth={isActive ? 2.5 : 2} className={isActive ? 'text-primary-600' : ''} />
-                    {!collapsed && <span>{t(item.key)}</span>}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-      </nav>
+          const Icon = item.icon;
+          const isActive =
+            currentPage === item.id ||
+            (item.id === 'admin-panel' && currentPage === 'admin') ||
+            (item.id === 'caller-view' && currentPage === 'home') ||
+            (item.id === 'home' &&
+              (currentPage === 'dashboard' || currentPage === 'tc-dashboard')) ||
+            (item.id === 'contacts' &&
+              (currentPage === 'customers' || currentPage === 'tc-customers')) ||
+            (item.id === 'leads' &&
+              (currentPage === 'tc-leads' || currentPage === 'lead-detail')) ||
+            (item.id === 'todos' &&
+              (currentPage === 'followups' || currentPage === 'tc-followups')) ||
+            (item.id === 'call-history' &&
+              (currentPage === 'calls' || currentPage === 'tc-calls')) ||
+            (item.id === 'whatsapp' &&
+              (currentPage === 'whatsapp-archive' || currentPage === 'tc-whatsapp')) ||
+            (item.id === 'emails' &&
+              (currentPage === 'tc-emails')) ||
+            (item.id === 'events' &&
+              (currentPage === 'tc-events')) ||
+            (item.id === 'team-members' &&
+              (currentPage === 'team' || currentPage === 'teams-members')) ||
+            (item.id === 'plans-billing' &&
+              (currentPage === 'plans' || currentPage === 'billing'));
 
-      {/* User Profile Section */}
-      <div className="border-t border-dark-200 dark:border-dark-700 p-3 flex-shrink-0">
-        {!collapsed ? (
-          <button
-            onClick={() => onNavigate?.('my-account')}
-            className="w-full bg-dark-50 dark:bg-dark-800 rounded-xl p-3 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors group"
-          >
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-600 rounded-full flex items-center justify-center shadow-sm">
-                  <span className="text-white font-bold text-xs tracking-wide">{user?.avatar}</span>
-                </div>
-                <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${user?.status === 'active' ? 'bg-green-500' : 'bg-red-500'}`}></span>
+          return (
+            <button
+              key={item.id}
+              onClick={() => handleItemClick(item)}
+              title={collapsed ? item.label : undefined}
+              className={`w-full flex items-center justify-between px-3 h-10 rounded-lg text-[14px] font-normal transition-colors cursor-pointer group ${
+                isActive
+                  ? 'bg-blue-50 text-[#1890ff] dark:bg-blue-950/60 dark:text-blue-400 font-medium'
+                  : 'text-[rgba(0,0,0,0.88)] dark:text-dark-200 hover:bg-dark-50 dark:hover:bg-dark-800 hover:text-[#1890ff] dark:hover:text-white'
+              }`}
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <Icon
+                  size={17}
+                  className={`flex-shrink-0 ${
+                    isActive
+                      ? 'text-[#1890ff] dark:text-blue-400'
+                      : 'text-dark-500 dark:text-dark-400 group-hover:text-dark-800 dark:group-hover:text-dark-200'
+                  }`}
+                />
+                {!collapsed && (
+                  <span className="truncate text-left">{item.label}</span>
+                )}
               </div>
-              <div className="flex-1 min-w-0 text-left">
-                <p className="text-sm font-semibold text-dark-900 dark:text-white group-hover:text-primary-700 truncate">{user?.name}</p>
-                <p className="text-xs text-dark-500 dark:text-dark-400 capitalize flex items-center gap-1">
-                  {isAdmin ? (
-                    <span className="flex items-center gap-1"><Shield size={10} /> {t('adminPanel')}</span>
-                  ) : (
-                    <span className="flex items-center gap-1"><Bell size={10} /> {t('telecaller') || 'Telecaller'}</span>
-                  )}
-                </p>
-              </div>
-            </div>
-          </button>
-        ) : (
-          <button
-            onClick={() => onNavigate?.('my-account')}
-            className="w-full flex flex-col items-center gap-2 p-2 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors"
-            title={user?.name}
-          >
-            <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-600 rounded-full flex items-center justify-center shadow-sm relative">
-              <span className="text-white font-bold text-xs">{user?.avatar}</span>
-              <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${user?.status === 'active' ? 'bg-green-500' : 'bg-red-500'}`}></span>
-            </div>
-          </button>
-        )}
+
+              {!collapsed && item.badge && (
+                <span className="px-1.5 py-0.5 text-[10px] font-semibold rounded bg-[#1890ff] text-white tracking-wide">
+                  {item.badge}
+                </span>
+              )}
+            </button>
+          );
+        })}
       </div>
     </aside>
   );

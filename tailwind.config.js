@@ -4,6 +4,29 @@ export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
+      fontFamily: {
+        sans: [
+          '-apple-system',
+          'BlinkMacSystemFont',
+          '"Segoe UI"',
+          'Roboto',
+          '"Helvetica Neue"',
+          'Arial',
+          '"Noto Sans"',
+          'sans-serif',
+          '"Apple Color Emoji"',
+          '"Segoe UI Emoji"',
+          '"Segoe UI Symbol"',
+          '"Noto Color Emoji"',
+        ],
+        inter: [
+          'Inter',
+          'sans-serif',
+          '"Segoe UI Emoji"',
+          '"Apple Color Emoji"',
+          '"Noto Color Emoji"',
+        ],
+      },
       colors: {
         primary: {
           50: '#eff6ff',

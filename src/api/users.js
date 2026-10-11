@@ -23,3 +23,10 @@ export const getSystemOverview = () =>
 
 export const getAuditLogs = (params = {}) =>
   api.get('/users/audit-logs', { params }).then((res) => res.data);
+
+export const approveUser = (id) => api.put(`/users/${id}/approve`).then((res) => res.data);
+
+export const rejectUser = (id) => api.put(`/users/${id}/reject`).then((res) => res.data);
+
+export const heartbeatRequest = () => api.post('/users/heartbeat').then((res) => res.data);
+

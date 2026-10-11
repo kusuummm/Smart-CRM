@@ -293,10 +293,22 @@ const translations = {
 const AppContext = createContext();
 
 export function AppProvider({ children }) {
-  // Dark mode state - initialized from localStorage
+  // Dark mode state - initialized synchronously with DOM and localStorage
   const [darkMode, setDarkMode] = useState(() => {
-    const saved = localStorage.getItem('darkMode');
-    return saved ? JSON.parse(saved) : false;
+    try {
+      const saved = localStorage.getItem('darkMode');
+      const isDark = saved ? JSON.parse(saved) : false;
+      if (typeof document !== 'undefined') {
+        if (isDark) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      }
+      return isDark;
+    } catch {
+      return false;
+    }
   });
 
   // Language state
@@ -373,9 +385,22 @@ export function AppProvider({ children }) {
   // that data should always be displayed exactly as entered, in any language.
   const tValue = (value) => t(value);
 
-  // Toggle dark mode
+  // Toggle dark mode with instant zero-lag DOM class application
   const toggleDarkMode = () => {
-    setDarkMode(prev => !prev);
+    setDarkMode((prev) => {
+      const next = !prev;
+      if (typeof document !== 'undefined') {
+        if (next) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      }
+      try {
+        localStorage.setItem('darkMode', JSON.stringify(next));
+      } catch {}
+      return next;
+    });
   };
 
   // Toggle language (switch between en and hi)

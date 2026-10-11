@@ -1,6 +1,22 @@
 import { useState, useEffect, useRef } from 'react';
-import { Bell, Settings, User, Moon, Sun, LogOut, Users, ChevronDown, Languages, Loader2 } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import {
+  Bell,
+  Settings,
+  User,
+  Moon,
+  Sun,
+  LogOut,
+  Users,
+  ChevronDown,
+  Languages,
+  Loader2,
+  Wallet,
+  Radio,
+  Menu,
+  Shield,
+  Phone,
+  Eye,
+} from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useNotifications } from '../hooks/useNotifications';
 
@@ -15,8 +31,8 @@ const getNotifIcon = (type) => {
   }
 };
 
-// Formats an ISO timestamp as a short relative string ("5 mins ago").
 const timeAgo = (isoString) => {
+  if (!isoString) return 'Just now';
   const diffMs = Date.now() - new Date(isoString).getTime();
   const mins = Math.floor(diffMs / 60000);
   if (mins < 1) return 'Just now';
@@ -27,19 +43,25 @@ const timeAgo = (isoString) => {
   return `${days} day${days === 1 ? '' : 's'} ago`;
 };
 
-export default function Header({ titleKey, user, onToggleSidebar, onNavigate, onLogout }) {
+export default function Header({
+  user,
+  isAdmin,
+  currentPage,
+  onToggleSidebar,
+  onNavigate,
+  onLogout,
+}) {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+
   const { notifications, unreadCount, loading: notifLoading, markRead, markAllRead } = useNotifications();
   const notifRef = useRef(null);
   const settingsRef = useRef(null);
   const profileRef = useRef(null);
 
-  // Get all settings from AppContext - THIS IS THE SOURCE OF TRUTH
   const { darkMode, toggleDarkMode, language, toggleLanguage, t } = useApp();
 
-  // Close dropdowns when clicking outside
   useEffect(() => {
     function handleClickOutside(e) {
       if (notifRef.current && !notifRef.current.contains(e.target)) setShowNotifications(false);
@@ -51,13 +73,9 @@ export default function Header({ titleKey, user, onToggleSidebar, onNavigate, on
   }, []);
 
   const handleNotifClick = (notif) => {
-    if (!notif.read) {
-      markRead(notif.id);
-    }
+    if (!notif.read) markRead(notif.id);
     setShowNotifications(false);
-    if (notif.route && onNavigate) {
-      onNavigate(notif.route);
-    }
+    if (notif.route && onNavigate) onNavigate(notif.route);
   };
 
   const handleNavigate = (route) => {
@@ -66,242 +84,242 @@ export default function Header({ titleKey, user, onToggleSidebar, onNavigate, on
     if (onNavigate) onNavigate(route);
   };
 
-  // Get the display title based on language
-  const displayTitle = t(titleKey) || titleKey;
+  // Format user display values from authenticated session
+  const displayName = user?.name
+    ? user.name.toUpperCase()
+    : user?.email
+    ? user.email.split('@')[0].toUpperCase()
+    : 'USER';
+  const displayPhone = user?.phone || '';
+  const displayBalance = user?.balance !== undefined ? `₹${user.balance}` : null;
 
   return (
-    <header className="h-16 bg-white dark:bg-dark-900 border-b border-dark-200 dark:border-dark-700 flex items-center justify-between px-6 sticky top-0 z-30 transition-colors dark:bg-dark-800">
-      {/* Left Side */}
-      <div className="flex items-center gap-4">
+    <header className="h-16 bg-white/95 dark:bg-dark-900/95 backdrop-blur-md border-b border-dark-200/80 dark:border-dark-700/80 flex items-center justify-between px-4 sm:px-6 sticky top-0 z-30 transition-all shadow-2xs">
+      {/* Left Section: Sidebar Toggle & Panel Badge */}
+      <div className="flex items-center gap-3 sm:gap-4">
         <button
           onClick={onToggleSidebar}
-          className="p-1.5 rounded-lg hover:bg-dark-100 dark:hover:bg-dark-800 text-dark-500 dark:text-dark-400 transition-colors dark:hover:bg-dark-600"
+          aria-label="Toggle sidebar"
+          className="p-1.5 rounded-lg hover:bg-dark-100 dark:hover:bg-dark-800 text-dark-600 dark:text-dark-300 transition-colors cursor-pointer"
+          title="Toggle Sidebar"
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
+          <Menu size={18} />
         </button>
-        <div className="flex items-center gap-3">
-          <h1 className="text-xl font-semibold text-dark-900 dark:text-white">{displayTitle}</h1>
+
+        {/* Panel Role Badge & Mode Switcher */}
+        {isAdmin ? (
+          <div className="flex items-center gap-2">
+            <span
+              onClick={() => onNavigate?.('admin-panel')}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold tracking-wider uppercase bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200 dark:border-rose-900/60 shadow-2xs cursor-pointer hover:bg-rose-100 dark:hover:bg-rose-900/40 transition-colors"
+              title="Go to Admin Desk Overview"
+            >
+              <Shield size={13} className="text-rose-600 dark:text-rose-400" />
+              ADMIN DESK
+            </span>
+
+            {/* Quick Panel Switcher for Admin */}
+            {currentPage?.startsWith('admin-') || currentPage === 'admin-panel' ? (
+              <button
+                onClick={() => {
+                  sessionStorage.setItem('smartcrm_preview_caller', 'true');
+                  onNavigate?.('home');
+                }}
+                className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-dark-600 dark:text-dark-300 hover:text-dark-900 dark:hover:text-white bg-dark-100 hover:bg-dark-200 dark:bg-dark-800 dark:hover:bg-dark-700 border border-dark-200 dark:border-dark-700 transition-colors cursor-pointer"
+                title="Preview Caller Panel View"
+              >
+                <Eye size={13} />
+                <span>Preview Caller Panel</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => {
+                  sessionStorage.removeItem('smartcrm_preview_caller');
+                  onNavigate?.('admin-panel');
+                }}
+                className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold text-white bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700 transition-all shadow-xs cursor-pointer animate-pulse"
+                title="Return to Admin Desk"
+              >
+                <Shield size={13} />
+                <span>Return to Admin Desk</span>
+              </button>
+            )}
+          </div>
+        ) : (
           <span
-            className={`px-2.5 py-0.5 text-xs font-semibold rounded-full capitalize ${
-              user?.role === 'admin'
-                ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 border border-purple-200 dark:border-purple-800'
-                : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
-            }`}
+            onClick={() => onNavigate?.('home')}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold tracking-wider uppercase bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-900/60 shadow-2xs cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
+            title="Go to Caller Panel Home"
           >
-            {user?.role === 'admin' ? '🛡️ Admin' : '👤 User'}
+            <Phone size={13} className="text-blue-600 dark:text-blue-400" />
+            CALLER PANEL
           </span>
-        </div>
+        )}
       </div>
 
-      {/* Right Side - Icons */}
-      <div className="flex items-center gap-1">
-        {/* Notification Bell */}
+      {/* Right Section: Balance, User Profile, Quick Actions, Logout */}
+      <div className="flex items-center gap-3 sm:gap-4">
+        {/* Available Balance Pill */}
+        <button
+          onClick={() => onNavigate?.('wallet')}
+          title="Open Wallet & Recharges"
+          className="hidden sm:flex items-center gap-1.5 px-2 py-1 text-[13px] text-dark-700 dark:text-dark-300 transition-colors cursor-pointer"
+        >
+          <Wallet size={15} className="text-dark-800 dark:text-dark-100" />
+          <span className="font-normal text-[13px] text-[rgba(0,0,0,0.65)] dark:text-dark-400">AVL BAL :</span>
+          <span className="font-semibold text-[13px] text-blue-600 dark:text-blue-400">{displayBalance || '₹0.0'}</span>
+        </button>
+
+        {/* User Info (Name + Phone) */}
+        <div
+          onClick={() => handleNavigate('settings')}
+          className="cursor-pointer text-right select-none group flex items-center gap-2"
+        >
+          <div className="hidden xs:block text-right">
+            <p className="text-[14px] font-semibold text-dark-900 dark:text-white uppercase tracking-tight leading-tight group-hover:text-blue-600 transition-colors">
+              {displayName}
+            </p>
+            {displayPhone ? (
+              <p className="text-[12px] text-dark-400 font-normal leading-tight mt-0.5">
+                {displayPhone}
+              </p>
+            ) : user?.email ? (
+              <p className="text-[12px] text-dark-400 font-normal leading-tight mt-0.5">
+                {user.email}
+              </p>
+            ) : null}
+          </div>
+        </div>
+
+        {/* Logout Button */}
+        <button
+          onClick={onLogout}
+          className="px-3.5 py-1.5 text-xs sm:text-sm font-medium text-dark-700 dark:text-dark-200 border border-dark-300 dark:border-dark-700 rounded-lg hover:bg-dark-50 dark:hover:bg-dark-800 hover:text-dark-900 dark:hover:text-white transition-colors"
+        >
+          Logout
+        </button>
+
+        {/* Notifications & Quick Settings Menu (Subtle Dropdown / Drawer) */}
         <div className="relative" ref={notifRef}>
           <button
-            onClick={() => { setShowNotifications(!showNotifications); setShowSettings(false); setShowProfile(false); }}
-            className={`relative p-2 rounded-lg transition-colors ${
-              showNotifications
-                ? 'bg-primary-100 dark:bg-primary-900/40 text-primary-600 dark:text-primary-400'
-                : 'hover:bg-dark-100 dark:hover:bg-dark-800 text-dark-500 dark:text-dark-400'
+            onClick={() => {
+              setShowNotifications(!showNotifications);
+              setShowSettings(false);
+              setShowProfile(false);
+            }}
+            className={`p-1.5 rounded-lg text-dark-500 hover:bg-dark-100 dark:hover:bg-dark-800 transition-colors ${
+              showNotifications ? 'bg-blue-50 text-blue-600' : ''
             }`}
+            title="Notifications"
           >
-            <Bell size={20} />
+            <Bell size={18} />
             {unreadCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center min-w-[18px] h-[18px] px-1">
+              <span className="absolute -top-0.5 -right-0.5 bg-rose-500 text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
                 {unreadCount}
               </span>
             )}
           </button>
 
           {showNotifications && (
-            <div className="absolute right-0 mt-2 w-[420px] bg-white dark:bg-dark-800 rounded-xl shadow-2xl border border-dark-200 dark:border-dark-700 z-50 overflow-hidden">
-              <div className="px-4 py-3 border-b border-dark-200 dark:border-dark-700 flex items-center justify-between bg-dark-50/50 dark:bg-dark-900/30">
-                <h3 className="text-sm font-semibold text-dark-900 dark:text-white">{t('notifications')}</h3>
-                <span className="text-xs text-dark-500 dark:text-dark-400">{unreadCount} {t('unread')}</span>
+            <div className="absolute right-0 mt-2 w-[340px] sm:w-[380px] bg-white dark:bg-dark-800 rounded-xl shadow-2xl border border-dark-200 dark:border-dark-700 z-50 overflow-hidden">
+              <div className="px-4 py-2.5 border-b border-dark-200 dark:border-dark-700 flex items-center justify-between bg-dark-50/50 dark:bg-dark-900/30">
+                <h3 className="text-sm font-semibold text-dark-900 dark:text-white">
+                  Notifications
+                </h3>
+                <span className="text-xs text-dark-500">{unreadCount} unread</span>
               </div>
-              <div className="max-h-[380px] overflow-y-auto">
+              <div className="max-h-[300px] overflow-y-auto">
                 {notifLoading ? (
-                  <div className="flex items-center justify-center py-10 text-dark-400 dark:text-dark-500">
-                    <Loader2 className="animate-spin mr-2" size={18} />
+                  <div className="flex items-center justify-center py-8 text-dark-400">
+                    <Loader2 className="animate-spin mr-2" size={16} />
                   </div>
                 ) : notifications.length === 0 ? (
-                  <div className="px-4 py-10 text-center text-sm text-dark-400 dark:text-dark-500">
-                    You're all caught up - no recent activity.
+                  <div className="px-4 py-8 text-center text-xs text-dark-400">
+                    You're all caught up - no new alerts.
                   </div>
                 ) : (
-                  notifications.map(notif => (
+                  notifications.map((notif) => (
                     <div
                       key={notif.id}
                       onClick={() => handleNotifClick(notif)}
-                      className={`px-4 py-3 hover:bg-dark-50 dark:hover:bg-dark-700 cursor-pointer transition-colors border-l-4 ${
-                        !notif.read
-                          ? 'border-primary-500 bg-primary-50/50 dark:bg-primary-900/10'
-                          : 'border-transparent'
+                      className={`px-4 py-2.5 hover:bg-dark-50 dark:hover:bg-dark-700 cursor-pointer border-b border-dark-100 dark:border-dark-700/50 flex gap-2.5 ${
+                        !notif.read ? 'bg-blue-50/40 dark:bg-blue-950/20' : ''
                       }`}
                     >
-                      <div className="flex gap-3">
-                        <span className="text-xl flex-shrink-0 mt-0.5">{getNotifIcon(notif.type)}</span>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between gap-2">
-                            <p className="text-sm font-semibold text-dark-900 dark:text-white truncate">
-                              {notif.title}
-                            </p>
-                            {!notif.read && <span className="w-2 h-2 bg-primary-500 rounded-full flex-shrink-0"></span>}
-                          </div>
-                          <p className="text-xs text-dark-600 dark:text-dark-400 mt-0.5 line-clamp-2 dark:text-dark-300">
-                            {notif.message}
-                          </p>
-                          <p className="text-[11px] text-dark-400 mt-1 dark:text-dark-500">
-                            {timeAgo(notif.time)}
-                          </p>
-                        </div>
+                      <span className="text-base">{getNotifIcon(notif.type)}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-dark-900 dark:text-white truncate">
+                          {notif.title}
+                        </p>
+                        <p className="text-[11px] text-dark-500 truncate">{notif.message}</p>
+                        <p className="text-[10px] text-dark-400 mt-0.5">{timeAgo(notif.time)}</p>
                       </div>
                     </div>
                   ))
                 )}
               </div>
-              <div className="px-4 py-2.5 border-t border-dark-200 dark:border-dark-700 flex justify-between items-center bg-dark-50/50 dark:bg-dark-900/30">
-                <button
-                  onClick={markAllRead}
-                  className="text-xs text-dark-500 hover:text-dark-700 dark:text-dark-400 dark:hover:text-dark-300 font-medium dark:hover:text-white"
-                >
-                  {t('markAllRead')}
+              <div className="px-3 py-2 border-t border-dark-200 dark:border-dark-700 flex justify-between items-center text-xs">
+                <button onClick={markAllRead} className="text-dark-500 hover:text-dark-800 dark:hover:text-dark-200 cursor-pointer">
+                  Mark all as read
                 </button>
                 <button
-                  onClick={() => { setShowNotifications(false); onNavigate?.('dashboard'); }}
-                  className="text-xs text-primary-600 hover:text-primary-700 font-medium"
+                  onClick={() => {
+                    setShowNotifications(false);
+                    onNavigate?.('call-history');
+                  }}
+                  className="text-blue-600 font-medium hover:underline"
                 >
-                  {t('viewAll')}
+                  View Activity
                 </button>
               </div>
             </div>
           )}
         </div>
 
-        {/* Settings Gear Icon */}
+        {/* Quick Settings Icon */}
         <div className="relative" ref={settingsRef}>
           <button
-            onClick={() => { setShowSettings(!showSettings); setShowNotifications(false); setShowProfile(false); }}
-            className={`p-2 rounded-lg transition-colors ${
-              showSettings
-                ? 'bg-primary-100 dark:bg-primary-900/40 text-primary-600 dark:text-primary-400'
-                : 'hover:bg-dark-100 dark:hover:bg-dark-800 text-dark-500 dark:text-dark-400'
-            }`}
+            onClick={() => {
+              setShowSettings(!showSettings);
+              setShowNotifications(false);
+              setShowProfile(false);
+            }}
+            className="p-1.5 rounded-lg text-dark-500 hover:bg-dark-100 dark:hover:bg-dark-800 transition-colors"
+            title="Settings"
           >
-            <Settings size={20} />
+            <Settings size={18} />
           </button>
 
           {showSettings && (
-            <div className="absolute right-0 mt-2 w-72 bg-white dark:bg-dark-800 rounded-xl shadow-2xl border border-dark-200 dark:border-dark-700 z-50 overflow-hidden">
-              <div className="px-4 py-3 border-b border-dark-200 dark:border-dark-700 bg-dark-50/50 dark:bg-dark-900/30">
-                <h3 className="text-sm font-semibold text-dark-900 dark:text-white">{t('quickSettings')}</h3>
-              </div>
-              <div className="p-2 space-y-1">
-                {/* Dark Mode Toggle */}
-                <button
-                  onClick={toggleDarkMode}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm hover:bg-dark-100 dark:hover:bg-dark-700 transition-colors dark:hover:bg-dark-600"
-                >
-                  {darkMode ? <Moon size={18} className="text-primary-500" /> : <Sun size={18} className="text-yellow-500" />}
-                  <span className="text-dark-700 dark:text-dark-300 flex-1 text-left dark:text-gray-300">{darkMode ? t('darkMode') : t('lightMode')}</span>
-                  <span className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${darkMode ? 'bg-primary-600' : 'bg-dark-200 dark:bg-dark-600'}`}>
-                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${darkMode ? 'translate-x-4' : 'translate-x-0.5'}`} />
-                  </span>
-                </button>
-
-                {/* Language Toggle */}
-                <button
-                  onClick={toggleLanguage}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm hover:bg-dark-100 dark:hover:bg-dark-700 transition-colors dark:hover:bg-dark-600"
-                >
-                  <Languages size={18} className="text-green-500" />
-                  <span className="text-dark-700 dark:text-dark-300 flex-1 text-left dark:text-gray-300">
-                    {language === 'en' ? 'हिंदी (Hindi)' : 'English'}
-                  </span>
-                  <span className="text-xs bg-dark-100 dark:bg-dark-700 px-2 py-0.5 rounded text-dark-500 dark:text-dark-400">
-                    {language === 'en' ? 'HI' : 'EN'}
-                  </span>
-                </button>
-
-                <div className="my-2 border-t border-dark-200 dark:border-dark-700"></div>
-
-                {/* My Account */}
-                <button
-                  onClick={() => handleNavigate('my-account')}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm hover:bg-dark-100 dark:hover:bg-dark-700 transition-colors dark:hover:bg-dark-600"
-                >
-                  <User size={18} />
-                  <span className="text-dark-700 dark:text-dark-300 dark:text-gray-300">{t('myAccount')}</span>
-                </button>
-
-                {/* All Settings */}
-                <button
-                  onClick={() => handleNavigate('settings')}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm hover:bg-dark-100 dark:hover:bg-dark-700 transition-colors dark:hover:bg-dark-600"
-                >
-                  <Settings size={18} />
-                  <span className="text-dark-700 dark:text-dark-300 dark:text-gray-300">{t('settings')}</span>
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* User Profile */}
-        <div className="relative" ref={profileRef}>
-          <button
-            onClick={() => { setShowProfile(!showProfile); setShowNotifications(false); setShowSettings(false); }}
-            className="flex items-center gap-2 pl-3 border-l border-dark-200 dark:border-dark-700 hover:bg-dark-100 dark:hover:bg-dark-800 rounded-lg px-3 py-1.5 transition-colors dark:hover:bg-dark-600"
-          >
-            <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-600 rounded-full flex items-center justify-center">
-              <span className="text-white font-semibold text-xs">{user?.avatar}</span>
-            </div>
-            <div className="hidden md:block text-left">
-              <p className="text-sm font-medium text-dark-900 dark:text-white">{user?.name}</p>
-              <p className="text-xs text-dark-500 dark:text-dark-400 capitalize">{user?.role === 'telecaller' ? 'User' : user?.role}</p>
-            </div>
-            <ChevronDown size={16} className="text-dark-400 dark:text-dark-500 hidden md:block" />
-          </button>
-
-          {showProfile && (
-            <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-dark-800 rounded-xl shadow-2xl border border-dark-200 dark:border-dark-700 z-50 overflow-hidden">
-              <div className="px-4 py-3 border-b border-dark-200 dark:border-dark-700 bg-dark-50/50 dark:bg-dark-900/30">
-                <p className="text-sm font-semibold text-dark-900 dark:text-white">{user?.name}</p>
-                <p className="text-xs text-dark-500 dark:text-dark-400">{user?.email}</p>
-              </div>
-              <div className="p-2 space-y-1">
-                <button
-                  onClick={() => handleNavigate('my-account')}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm hover:bg-dark-100 dark:hover:bg-dark-700 transition-colors dark:hover:bg-dark-600"
-                >
-                  <User size={18} />
-                  <span className="text-dark-700 dark:text-dark-300 dark:text-gray-300">{t('myAccount')}</span>
-                </button>
-                <button
-                  onClick={() => handleNavigate('settings')}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm hover:bg-dark-100 dark:hover:bg-dark-700 transition-colors dark:hover:bg-dark-600"
-                >
-                  <Settings size={18} />
-                  <span className="text-dark-700 dark:text-dark-300 dark:text-gray-300">{t('settings')}</span>
-                </button>
-                <div className="my-1 border-t border-dark-200 dark:border-dark-700"></div>
-                <button
-                  onClick={() => { setShowProfile(false); onLogout?.(); }}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm hover:bg-dark-100 dark:hover:bg-dark-700 transition-colors dark:hover:bg-dark-600"
-                >
-                  <Users size={18} />
-                  <span className="text-dark-700 dark:text-dark-300 dark:text-gray-300">{t('switchAccount')}</span>
-                </button>
-                <button
-                  onClick={() => { setShowProfile(false); onLogout?.(); }}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                >
-                  <LogOut size={18} />
-                  <span>{t('logout')}</span>
-                </button>
-              </div>
+            <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-dark-800 rounded-xl shadow-2xl border border-dark-200 dark:border-dark-700 z-50 p-2 space-y-1">
+              <button
+                onClick={toggleDarkMode}
+                className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs hover:bg-dark-100 dark:hover:bg-dark-700 transition-colors"
+              >
+                <div className="flex items-center gap-2 text-dark-700 dark:text-dark-200">
+                  {darkMode ? <Moon size={16} /> : <Sun size={16} />}
+                  <span>{darkMode ? 'Dark Mode' : 'Light Mode'}</span>
+                </div>
+                <span className="text-[10px] text-dark-400">{darkMode ? 'ON' : 'OFF'}</span>
+              </button>
+              <button
+                onClick={toggleLanguage}
+                className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs hover:bg-dark-100 dark:hover:bg-dark-700 transition-colors"
+              >
+                <div className="flex items-center gap-2 text-dark-700 dark:text-dark-200">
+                  <Languages size={16} />
+                  <span>Language</span>
+                </div>
+                <span className="text-[10px] text-dark-400 uppercase">{language}</span>
+              </button>
+              <div className="border-t border-dark-200 dark:border-dark-700 my-1"></div>
+              <button
+                onClick={() => handleNavigate('settings')}
+                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-dark-700 dark:text-dark-200 hover:bg-dark-100 dark:hover:bg-dark-700"
+              >
+                <Settings size={16} />
+                <span>All Settings</span>
+              </button>
             </div>
           )}
         </div>

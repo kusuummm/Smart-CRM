@@ -8,6 +8,7 @@ import { useToast } from '../components/Toast';
 import { leadSources, indianStates, statusColors } from '../data/mockData';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
+import { useConfirm } from '../context/ConfirmContext';
 import {
   getCustomers,
   createCustomer,
@@ -63,6 +64,7 @@ export default function Customers({ onNavigate }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [telecallers, setTelecallers] = useState([]);
   const { addToast } = useToast();
+  const { confirm } = useConfirm();
   const { t: translate } = useApp();
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
@@ -150,6 +152,17 @@ export default function Customers({ onNavigate }) {
       return;
     }
 
+    const targetTc = telecallers.find((t) => t._id === bulkTargetTelecallerId);
+    const targetLabel = bulkTargetTelecallerId === 'unassigned' ? 'Unassigned' : (targetTc?.name || 'selected telecaller');
+    const ok = await confirm({
+      title: 'Bulk Reassign Customers',
+      message: `Are you sure you want to reassign ${selectedIds.length} customer(s) to "${targetLabel}"?`,
+      confirmText: 'Reassign',
+      cancelText: 'Cancel',
+      type: 'primary',
+    });
+    if (!ok) return;
+
     try {
       const res = await bulkAssignCustomers({
         customerIds: selectedIds,
@@ -181,12 +194,22 @@ export default function Customers({ onNavigate }) {
 
   const handleQuickInlineReassign = async () => {
     if (!quickReassignCustomer) return;
+    const selectedTc = telecallers.find((tc) => tc._id === quickTargetAgentId);
+    const targetLabel = selectedTc ? selectedTc.name : 'Unassigned';
+
+    const ok = await confirm({
+      title: 'Reassign Customer',
+      message: `Are you sure you want to reassign "${quickReassignCustomer.name}" to "${targetLabel}"?`,
+      confirmText: 'Reassign',
+      cancelText: 'Cancel',
+      type: 'primary',
+    });
+    if (!ok) return;
 
     try {
-      const selectedTc = telecallers.find((tc) => tc._id === quickTargetAgentId);
       const payload = {
         telecallerId: quickTargetAgentId || null,
-        assignedTelecaller: selectedTc ? selectedTc.name : 'Unassigned',
+        assignedTelecaller: targetLabel,
       };
 
       const res = await updateCustomer(quickReassignCustomer._id, payload);
@@ -348,6 +371,17 @@ export default function Customers({ onNavigate }) {
     if (!form.mobile.trim()) {
       addToast('Mobile number is required', 'error');
       return;
+    }
+
+    if (editingCustomer && editingCustomer.status !== form.status) {
+      const ok = await confirm({
+        title: 'Update Customer Status',
+        message: `Are you sure you want to change status to "${form.status}" for customer "${form.name}"?`,
+        confirmText: `Set to ${form.status}`,
+        cancelText: 'Cancel',
+        type: 'primary',
+      });
+      if (!ok) return;
     }
 
     setSaving(true);

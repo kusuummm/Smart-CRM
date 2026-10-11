@@ -5,6 +5,7 @@ import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/Toast';
+import { useConfirm } from '../context/ConfirmContext';
 import { eventTypes } from '../data/mockData';
 import { getEvents, createEvent, updateEvent, deleteEvent as deleteEventRequest, triggerReminder } from '../api/events';
 import { getCustomers } from '../api/customers';
@@ -19,6 +20,7 @@ const emptyForm = {
 
 export default function Events({ onNavigate }) {
   const { user } = useAuth();
+  const { confirm } = useConfirm();
   const isAdmin = user?.role === 'admin';
   const [events, setEvents] = useState([]);
   const [customers, setCustomers] = useState([]);
@@ -109,6 +111,14 @@ export default function Events({ onNavigate }) {
   };
 
   const handleSendReminder = async (event) => {
+    const ok = await confirm({
+      title: 'Send Event Reminder?',
+      message: `Trigger automated reminder notification (Email, WhatsApp, Dashboard) for ${event.customerName}?`,
+      confirmText: 'Send Reminder',
+      type: 'info'
+    });
+    if (!ok) return;
+
     setReminding(event._id);
     try {
       const data = await triggerReminder(event._id, ['dashboard', 'email', 'whatsapp']);

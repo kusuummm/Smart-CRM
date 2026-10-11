@@ -26,7 +26,10 @@ export const changePasswordRequest = (currentPassword, newPassword) =>
     })
     .then((res) => res.data);
 
-// Registration with OTP
+// Registration
+export const registerRequest = (payload) =>
+  api.post('/auth/register', payload).then((res) => res.data);
+
 export const registerSendOtpRequest = (payload) =>
   api.post('/auth/register/send-otp', payload).then((res) => res.data);
 

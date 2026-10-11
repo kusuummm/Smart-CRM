@@ -12,6 +12,9 @@ export const getLeadConversionReport = () =>
 export const getTelecallerPerformanceReport = () =>
   api.get('/reports/telecaller-performance', { params: { format: 'json' } }).then((res) => res.data);
 
+export const getTelecallerReportGraph = (id) =>
+  api.get(`/reports/telecaller/${id}/graph`).then((res) => res.data);
+
 // Downloads report as excel/csv - triggers a browser file download from the
 // blob response rather than parsing it as JSON.
 const downloadReport = async (path, params, filename) => {

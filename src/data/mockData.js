@@ -1,9 +1,7 @@
 // Mock data for Smart CRM frontend
 export const mockUsers = [
-  { id: '1', name: 'Admin User', email: 'admin@crm.com', password: 'admin123', role: 'admin', avatar: 'AU', status: 'active' },
-  { id: '2', name: 'John Smith', email: 'john@crm.com', password: 'john123', role: 'telecaller', avatar: 'JS', status: 'active' },
-  { id: '3', name: 'Sarah Wilson', email: 'sarah@crm.com', password: 'sarah123', role: 'telecaller', avatar: 'SW', status: 'active' },
-  { id: '4', name: 'Mike Johnson', email: 'mike@crm.com', password: 'mike123', role: 'telecaller', avatar: 'MJ', status: 'inactive' },
+  { id: '1', name: 'Admin User', email: 'admin@crm.com', password: 'admin123', role: 'admin', avatar: 'AU', status: 'active', phone: '9876543200', balance: '₹5,000' },
+  { id: '2', name: 'Caller Agent', email: 'caller@crm.com', password: 'caller123', role: 'telecaller', avatar: 'CA', status: 'active', phone: '9876543210', balance: '₹1,500' },
 ];
 
 export const mockCustomers = [
@@ -130,3 +128,5 @@ export const statusColors = {
   'active': 'bg-green-100 text-green-700',
   'inactive': 'bg-red-100 text-red-700',
 };
+
+export const mockTeamCalls = [];

@@ -10,4 +10,7 @@ export const createLead = (payload) => api.post('/leads', payload).then((res) =>
 export const updateLeadStatus = (id, payload) =>
   api.put(`/leads/${id}/status`, payload).then((res) => res.data);
 
+export const updateLead = (id, payload) =>
+  api.put(`/leads/${id}/status`, payload).then((res) => res.data);
+
 export const deleteLead = (id) => api.delete(`/leads/${id}`).then((res) => res.data);

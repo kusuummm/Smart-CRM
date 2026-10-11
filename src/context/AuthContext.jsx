@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { loginRequest, getMeRequest, logoutRequest } from '../api/auth';
+import { heartbeatRequest } from '../api/users';
 
 const AuthContext = createContext(null);
 
@@ -54,6 +55,26 @@ export function AuthProvider({ children }) {
       })
       .finally(() => setAuthLoading(false));
   }, []);
+
+  // Heartbeat to notify server that user is currently active/online
+  useEffect(() => {
+    if (!user) return;
+    const sendPulse = () => {
+      if (localStorage.getItem('crm_token')) {
+        heartbeatRequest().catch(() => {});
+      }
+    };
+    sendPulse();
+    const interval = setInterval(sendPulse, 60000); // Pulse every 60s
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') sendPulse();
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [user]);
 
   const rememberAccount = (userData, token) => {
     const entry = { id: userData.id, name: userData.name, email: userData.email, role: userData.role, avatar: userData.avatar, token };

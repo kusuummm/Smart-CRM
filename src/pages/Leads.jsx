@@ -5,12 +5,14 @@ import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/Toast';
+import { useConfirm } from '../context/ConfirmContext';
 import { leadStatuses, statusColors } from '../data/mockData';
 import { getLeads, updateLeadStatus, deleteLead as deleteLeadRequest } from '../api/leads';
 import { getUsers } from '../api/users';
 
 export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus }) {
   const { user } = useAuth();
+  const { confirm } = useConfirm();
   const isAdmin = user?.role === 'admin';
   const [leads, setLeads] = useState([]);
   const [telecallers, setTelecallers] = useState([]);
@@ -84,6 +86,15 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
       addToast('Remark is required', 'error');
       return;
     }
+
+    const ok = await confirm({
+      title: 'Update Lead Status',
+      message: `Are you sure you want to update status to "${form.status}" for lead "${editingLead?.customerName}"?`,
+      confirmText: 'Update Status',
+      cancelText: 'Cancel',
+      type: 'primary',
+    });
+    if (!ok) return;
 
     setSaving(true);
     try {

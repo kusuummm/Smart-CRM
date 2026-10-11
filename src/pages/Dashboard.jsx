@@ -275,100 +275,100 @@ export default function Dashboard({ onNavigate }) {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div onClick={() => handleStatClick('customers')} className="group bg-white dark:bg-dark-800 rounded-xl p-6 border border-dark-200 dark:border-dark-700 shadow-sm hover:shadow-md hover:border-primary-400 dark:hover:border-primary-600 transition-all cursor-pointer">
+        <div onClick={() => handleStatClick('customers')} className="bg-white dark:bg-dark-800 rounded-xl p-6 border border-dark-200 dark:border-dark-700 shadow-sm hover:border-dark-300 dark:hover:border-dark-600 transition-colors cursor-pointer">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-dark-500 dark:text-dark-400">{t('totalCustomers')}</p>
               <p className="text-3xl font-bold text-dark-900 dark:text-white mt-1">{stats.totalCustomers}</p>
             </div>
-            <div className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <div className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center">
               <Users className="text-blue-600 dark:text-blue-400" size={24} />
             </div>
           </div>
         </div>
 
-        <div onClick={() => handleStatClick('leads')} className="group bg-white dark:bg-dark-800 rounded-xl p-6 border border-dark-200 dark:border-dark-700 shadow-sm hover:shadow-md hover:border-primary-400 dark:hover:border-primary-600 transition-all cursor-pointer">
+        <div onClick={() => handleStatClick('leads')} className="bg-white dark:bg-dark-800 rounded-xl p-6 border border-dark-200 dark:border-dark-700 shadow-sm hover:border-dark-300 dark:hover:border-dark-600 transition-colors cursor-pointer">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-dark-500 dark:text-dark-400">{t('totalLeads')}</p>
               <p className="text-3xl font-bold text-dark-900 dark:text-white mt-1">{stats.totalLeads}</p>
             </div>
-            <div className="w-12 h-12 rounded-xl bg-green-50 dark:bg-green-900/30 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <div className="w-12 h-12 rounded-xl bg-green-50 dark:bg-green-900/30 flex items-center justify-center">
               <TrendingUp className="text-green-600 dark:text-green-400" size={24} />
             </div>
           </div>
         </div>
 
-        <div onClick={() => handleStatClick('followups')} className="group bg-white dark:bg-dark-800 rounded-xl p-6 border border-dark-200 dark:border-dark-700 shadow-sm hover:shadow-md hover:border-primary-400 dark:hover:border-primary-600 transition-all cursor-pointer">
+        <div onClick={() => handleStatClick('followups')} className="bg-white dark:bg-dark-800 rounded-xl p-6 border border-dark-200 dark:border-dark-700 shadow-sm hover:border-dark-300 dark:hover:border-dark-600 transition-colors cursor-pointer">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-dark-500 dark:text-dark-400">{t('todaysFollowups')}</p>
               <p className="text-3xl font-bold text-dark-900 dark:text-white mt-1">{stats.todayFollowUps}</p>
               <p className="text-xs text-dark-400 dark:text-dark-500 mt-1">{stats.pendingFollowUps} pending</p>
             </div>
-            <div className="w-12 h-12 rounded-xl bg-purple-50 dark:bg-purple-900/30 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <div className="w-12 h-12 rounded-xl bg-purple-50 dark:bg-purple-900/30 flex items-center justify-center">
               <CalendarCheck className="text-purple-600 dark:text-purple-400" size={24} />
             </div>
           </div>
         </div>
 
-        <div onClick={() => handleStatClick('calls')} className="group bg-white dark:bg-dark-800 rounded-xl p-6 border border-dark-200 dark:border-dark-700 shadow-sm hover:shadow-md hover:border-primary-400 dark:hover:border-primary-600 transition-all cursor-pointer">
+        <div onClick={() => handleStatClick('calls')} className="bg-white dark:bg-dark-800 rounded-xl p-6 border border-dark-200 dark:border-dark-700 shadow-sm hover:border-dark-300 dark:hover:border-dark-600 transition-colors cursor-pointer">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-dark-500 dark:text-dark-400">{t('totalCalls')}</p>
               <p className="text-3xl font-bold text-dark-900 dark:text-white mt-1">{recentCalls.length}</p>
               <p className="text-xs text-dark-400 dark:text-dark-500 mt-1">Recent</p>
             </div>
-            <div className="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <div className="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center">
               <Phone className="text-indigo-600 dark:text-indigo-400" size={24} />
             </div>
           </div>
         </div>
 
-        <div onClick={() => handleStatClick('whatsapp')} className="group bg-white dark:bg-dark-800 rounded-xl p-6 border border-dark-200 dark:border-dark-700 shadow-sm hover:shadow-md hover:border-primary-400 dark:hover:border-primary-600 transition-all cursor-pointer">
+        <div onClick={() => handleStatClick('whatsapp')} className="bg-white dark:bg-dark-800 rounded-xl p-6 border border-dark-200 dark:border-dark-700 shadow-sm hover:border-dark-300 dark:hover:border-dark-600 transition-colors cursor-pointer">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-dark-500 dark:text-dark-400">{t('whatsappSent')}</p>
               <p className="text-3xl font-bold text-dark-900 dark:text-white mt-1">{stats.totalWhatsAppSent}</p>
             </div>
-            <div className="w-12 h-12 rounded-xl bg-green-50 dark:bg-green-900/30 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <div className="w-12 h-12 rounded-xl bg-green-50 dark:bg-green-900/30 flex items-center justify-center">
               <MessageCircle className="text-green-600 dark:text-green-400" size={24} />
             </div>
           </div>
         </div>
 
-        <div onClick={() => handleStatClick('emails')} className="group bg-white dark:bg-dark-800 rounded-xl p-6 border border-dark-200 dark:border-dark-700 shadow-sm hover:shadow-md hover:border-primary-400 dark:hover:border-primary-600 transition-all cursor-pointer">
+        <div onClick={() => handleStatClick('emails')} className="bg-white dark:bg-dark-800 rounded-xl p-6 border border-dark-200 dark:border-dark-700 shadow-sm hover:border-dark-300 dark:hover:border-dark-600 transition-colors cursor-pointer">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-dark-500 dark:text-dark-400">{t('emailsSent')}</p>
               <p className="text-3xl font-bold text-dark-900 dark:text-white mt-1">{stats.totalEmailsSent}</p>
             </div>
-            <div className="w-12 h-12 rounded-xl bg-red-50 dark:bg-red-900/30 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <div className="w-12 h-12 rounded-xl bg-red-50 dark:bg-red-900/30 flex items-center justify-center">
               <Mail className="text-red-600 dark:text-red-400" size={24} />
             </div>
           </div>
         </div>
 
-        <div className="group bg-white dark:bg-dark-800 rounded-xl p-6 border border-dark-200 dark:border-dark-700 shadow-sm hover:shadow-md hover:border-primary-400 dark:hover:border-primary-600 transition-all cursor-pointer" onClick={() => handleStatClick('reports')}>
+        <div className="bg-white dark:bg-dark-800 rounded-xl p-6 border border-dark-200 dark:border-dark-700 shadow-sm hover:border-dark-300 dark:hover:border-dark-600 transition-colors cursor-pointer" onClick={() => handleStatClick('reports')}>
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-dark-500 dark:text-dark-400">{t('conversionRate')}</p>
               <p className="text-3xl font-bold text-dark-900 dark:text-white mt-1">{conversionRate}%</p>
             </div>
-            <div className="w-12 h-12 rounded-xl bg-orange-50 dark:bg-orange-900/30 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <div className="w-12 h-12 rounded-xl bg-orange-50 dark:bg-orange-900/30 flex items-center justify-center">
               <BarChart3Icon className="text-orange-600 dark:text-orange-400" size={24} />
             </div>
           </div>
         </div>
 
-        <div className="group bg-white dark:bg-dark-800 rounded-xl p-6 border border-dark-200 dark:border-dark-700 shadow-sm hover:shadow-md hover:border-primary-400 dark:hover:border-primary-600 transition-all cursor-pointer" onClick={() => handleStatClick('followups')}>
+        <div className="bg-white dark:bg-dark-800 rounded-xl p-6 border border-dark-200 dark:border-dark-700 shadow-sm hover:border-dark-300 dark:hover:border-dark-600 transition-colors cursor-pointer" onClick={() => handleStatClick('followups')}>
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-dark-500 dark:text-dark-400">{t('pendingFollowups')}</p>
               <p className="text-3xl font-bold text-dark-900 dark:text-white mt-1">{stats.pendingFollowUps}</p>
               <p className="text-xs text-dark-400 dark:text-dark-500 mt-1">{stats.completedFollowUps} completed</p>
             </div>
-            <div className="w-12 h-12 rounded-xl bg-orange-50 dark:bg-orange-900/30 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <div className="w-12 h-12 rounded-xl bg-orange-50 dark:bg-orange-900/30 flex items-center justify-center">
               <Clock className="text-orange-600 dark:text-orange-400" size={24} />
             </div>
           </div>

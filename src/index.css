@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -6,8 +8,9 @@
   --color-primary-500: #3b82f6;
   --color-primary-600: #2563eb;
   --color-primary-700: #1d4ed8;
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  font-size: 14px;
+  line-height: 22px;
   font-weight: 400;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -15,12 +18,40 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+*,
+*::before,
+*::after,
+button,
+input,
+optgroup,
+select,
+textarea {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+}
+
+.font-inter,
+.font-inter *,
+[data-font="inter"] {
+  font-family: Inter, sans-serif, "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji" !important;
+}
+
+code,
+kbd,
+samp,
+pre,
+.font-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
+}
+
 /* Light mode background */
 body {
   margin: 0;
   min-height: 100vh;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  font-size: 14px;
+  line-height: 22px;
   background-color: #f1f5f9; /* dark-50 equivalent */
-  color: #1e293b; /* dark-800 equivalent */
+  color: rgba(0, 0, 0, 0.88);
 }
 
 #root {
@@ -111,3 +142,53 @@ html.dark .scrollbar-thin::-webkit-scrollbar-thumb {
 html.dark .scrollbar-thin::-webkit-scrollbar-track {
   background-color: #1e293b;
 }
+
+/* =========================================================================
+   Instant & High-Contrast Dark Mode Overrides
+   Ensures text using rgba(0,0,0,...) or hardcoded light borders never
+   becomes invisible when dark mode is toggled on.
+   ========================================================================= */
+
+html.dark {
+  background-color: #0f172a;
+  color: #f1f5f9;
+  color-scheme: dark;
+}
+
+/* Fallback text colors for rgba black opacity classes in dark mode */
+html.dark .text-\[rgba\(0\,0\,0\,0\.88\)\]:not([class*="dark:text-"]),
+html.dark .text-\[rgba\(0\,0\,0\,0\.85\)\]:not([class*="dark:text-"]) {
+  color: #f8fafc !important;
+}
+
+html.dark .text-\[rgba\(0\,0\,0\,0\.65\)\]:not([class*="dark:text-"]) {
+  color: #cbd5e1 !important;
+}
+
+html.dark .text-\[rgba\(0\,0\,0\,0\.45\)\]:not([class*="dark:text-"]) {
+  color: #94a3b8 !important;
+}
+
+html.dark .text-\[rgba\(0\,0\,0\,0\.25\)\]:not([class*="dark:text-"]) {
+  color: #64748b !important;
+}
+
+/* Fallback border colors for light hex borders in dark mode */
+html.dark .border-\[\#d9d9d9\]:not([class*="dark:border-"]),
+html.dark .border-\[\#e8e8e8\]:not([class*="dark:border-"]),
+html.dark .border-\[\#f0f0f0\]:not([class*="dark:border-"]) {
+  border-color: #334155 !important;
+}
+
+/* Form selects, dropdown options, and inputs in dark mode */
+html.dark input,
+html.dark textarea,
+html.dark select {
+  color-scheme: dark;
+}
+
+html.dark select option {
+  background-color: #1e293b !important;
+  color: #f8fafc !important;
+}
+

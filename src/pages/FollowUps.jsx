@@ -5,6 +5,7 @@ import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/Toast';
+import { useConfirm } from '../context/ConfirmContext';
 import { statusColors } from '../data/mockData';
 import { getFollowUps, createFollowUp, updateFollowUp, deleteFollowUp as deleteFollowUpRequest } from '../api/followups';
 import { getCustomers } from '../api/customers';
@@ -22,6 +23,7 @@ const emptyForm = {
 
 export default function FollowUps({ onNavigate }) {
   const { user } = useAuth();
+  const { confirm } = useConfirm();
   const isAdmin = user?.role === 'admin';
   const [followUps, setFollowUps] = useState([]);
   const [customers, setCustomers] = useState([]);
@@ -109,6 +111,17 @@ export default function FollowUps({ onNavigate }) {
   const handleSave = async () => {
     if (!form.customerId) { addToast('Please select a customer', 'error'); return; }
     if (!form.date) { addToast('Date is required', 'error'); return; }
+
+    if (editingFollowUp && editingFollowUp.status !== form.status) {
+      const ok = await confirm({
+        title: 'Update Follow-up Status',
+        message: `Are you sure you want to change follow-up status from "${editingFollowUp.status}" to "${form.status}"?`,
+        confirmText: `Set to ${form.status}`,
+        cancelText: 'Cancel',
+        type: 'primary',
+      });
+      if (!ok) return;
+    }
 
     setSaving(true);
     try {

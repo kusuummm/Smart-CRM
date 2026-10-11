@@ -3,6 +3,7 @@ import { Send, Mail, Loader2 } from 'lucide-react';
 import { PageHeader } from '../components/Common';
 import Modal from '../components/Modal';
 import { useToast } from '../components/Toast';
+import { useConfirm } from '../context/ConfirmContext';
 import { statusColors } from '../data/mockData';
 import { getEmailLogs, sendCustomerEmail } from '../api/emails';
 import { getCustomers } from '../api/customers';
@@ -15,6 +16,7 @@ export default function Emails({ onNavigate }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form, setForm] = useState({ customerId: '', subject: '', body: '', type: 'welcome' });
   const { addToast } = useToast();
+  const { confirm } = useConfirm();
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -49,6 +51,14 @@ export default function Emails({ onNavigate }) {
       addToast('Customer has a placeholder email (@example.com / @crm.com). Please edit their profile with a real email.', 'error');
       return;
     }
+
+    const ok = await confirm({
+      title: 'Dispatch Email?',
+      message: `Send this email to "${selectedCust.name}" (${selectedCust.email})?`,
+      confirmText: 'Send Email',
+      type: 'primary',
+    });
+    if (!ok) return;
 
     setSending(true);
     try {
