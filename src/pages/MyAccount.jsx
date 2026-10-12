@@ -25,6 +25,7 @@ import { useToast } from '../components/Toast';
 import { PageHeader } from '../components/Common';
 import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
+import LogoutModal from '../components/LogoutModal';
 import {
   updateMeRequest,
   getSessionsRequest,
@@ -33,7 +34,7 @@ import {
   profileChangePasswordOtpRequest,
 } from '../api/auth';
 
-export default function MyAccount({ onNavigate }) {
+export default function MyAccount({ onNavigate, onLogout }) {
   const { user, logout, updateUser, accounts, switchAccount, removeAccount, startAddAccount } = useAuth();
   const { addToast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
@@ -43,6 +44,10 @@ export default function MyAccount({ onNavigate }) {
     email: user?.email || '',
     role: user?.role || 'telecaller',
   });
+
+  // Logout confirmation modal
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   // Active Sessions modal
   const [showSessions, setShowSessions] = useState(false);
@@ -119,7 +124,21 @@ export default function MyAccount({ onNavigate }) {
   };
 
   const handleLogout = () => {
-    logout();
+    if (onLogout) {
+      onLogout();
+    } else {
+      setShowLogoutModal(true);
+    }
+  };
+
+  const handleConfirmLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      await logout();
+    } finally {
+      setIsLoggingOut(false);
+      setShowLogoutModal(false);
+    }
   };
 
   // Change password with OTP state
@@ -618,6 +637,15 @@ export default function MyAccount({ onNavigate }) {
           </button>
         </div>
       </Modal>
+
+      {/* Logout Confirmation Modal */}
+      <LogoutModal
+        isOpen={showLogoutModal}
+        onClose={() => setShowLogoutModal(false)}
+        onConfirm={handleConfirmLogout}
+        user={user}
+        isLoading={isLoggingOut}
+      />
     </div>
   );
 }

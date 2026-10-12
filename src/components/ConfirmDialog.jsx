@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { AlertTriangle, AlertCircle, CheckCircle2, Info, X } from 'lucide-react';
 
 export default function ConfirmDialog({
@@ -9,7 +10,17 @@ export default function ConfirmDialog({
   confirmText = 'Confirm',
   cancelText = 'Cancel',
   type = 'warning', // 'danger' | 'warning' | 'primary' | 'info'
+  icon = null,
 }) {
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') onClose?.();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const colorStyles = {
@@ -36,7 +47,7 @@ export default function ConfirmDialog({
   };
 
   const style = colorStyles[type] || colorStyles.warning;
-  const IconComponent = style.icon;
+  const IconComponent = icon || style.icon;
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">

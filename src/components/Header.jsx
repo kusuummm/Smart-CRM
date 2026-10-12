@@ -194,7 +194,7 @@ export default function Header({
         {/* Logout Button */}
         <button
           onClick={onLogout}
-          className="px-3.5 py-1.5 text-xs sm:text-sm font-medium text-dark-700 dark:text-dark-200 border border-dark-300 dark:border-dark-700 rounded-lg hover:bg-dark-50 dark:hover:bg-dark-800 hover:text-dark-900 dark:hover:text-white transition-colors"
+          className="px-3.5 py-1.5 text-xs sm:text-sm font-medium text-dark-700 dark:text-dark-200 border border-dark-300 dark:border-dark-700 rounded-lg hover:bg-dark-50 dark:hover:bg-dark-800 hover:text-dark-900 dark:hover:text-white transition-colors cursor-pointer"
         >
           Logout
         </button>

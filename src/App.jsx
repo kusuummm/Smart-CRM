@@ -39,6 +39,7 @@ import Settings from './pages/Settings';
 
 // Interactive Modals matching reference UI
 import BuyNumberModal from './components/BuyNumberModal';
+import LogoutModal from './components/LogoutModal';
 
 // Route path to internal page ID mapping
 const pathToPage = {
@@ -202,6 +203,20 @@ function AppLayout() {
 
   // Modals visibility
   const [isBuyNumberOpen, setIsBuyNumberOpen] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleConfirmLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      await logout();
+    } catch (err) {
+      console.error('Logout error:', err);
+    } finally {
+      setIsLoggingOut(false);
+      setShowLogoutModal(false);
+    }
+  };
 
   // Clear legacy mock data cache once so user starts with a clean slate
   useEffect(() => {
@@ -398,7 +413,12 @@ function AppLayout() {
       case 'tc-search':
         return <SearchPage onNavigate={navigateToPage} />;
       case 'my-account':
-        return <MyAccount onNavigate={navigateToPage} />;
+        return (
+          <MyAccount
+            onNavigate={navigateToPage}
+            onLogout={() => setShowLogoutModal(true)}
+          />
+        );
       case 'settings':
         return <Settings onNavigate={navigateToPage} />;
       case 'team-members':
@@ -433,7 +453,7 @@ function AppLayout() {
         isAdmin={isAdmin}
         currentPage={currentPage}
         onToggleSidebar={() => setCollapsed(!collapsed)}
-        onLogout={logout}
+        onLogout={() => setShowLogoutModal(true)}
         onNavigate={navigateToPage}
       />
 
@@ -459,6 +479,15 @@ function AppLayout() {
       <BuyNumberModal
         isOpen={isBuyNumberOpen}
         onClose={() => setIsBuyNumberOpen(false)}
+      />
+
+      {/* Logout Confirmation Modal */}
+      <LogoutModal
+        isOpen={showLogoutModal}
+        onClose={() => setShowLogoutModal(false)}
+        onConfirm={handleConfirmLogout}
+        user={user}
+        isLoading={isLoggingOut}
       />
     </div>
   );
