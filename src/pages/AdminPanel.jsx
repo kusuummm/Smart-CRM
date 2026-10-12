@@ -4181,14 +4181,16 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
       />
 
       {/* EXCEL / CSV BULK LEAD IMPORTER MODAL */}
-      <ExcelLeadImportModal
-        isOpen={isExcelModalOpen}
-        onClose={() => setIsExcelModalOpen(false)}
-        onImportSuccess={() => {
-          loadData(true);
-          addToast('Leads successfully imported & assigned!', 'success');
-        }}
-      />
+      {isExcelModalOpen && (
+        <ExcelLeadImportModal
+          isOpen={isExcelModalOpen}
+          onClose={() => setIsExcelModalOpen(false)}
+          onImportSuccess={() => {
+            loadData(true);
+            addToast('Leads successfully imported & assigned!', 'success');
+          }}
+        />
+      )}
     </div>
   );
 }

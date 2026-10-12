@@ -111,8 +111,6 @@ export default function ExcelLeadImportModal({ isOpen, onClose, onImportSuccess 
     }
   }, [isOpen]);
 
-  if (!isOpen) return null;
-
   // ================= 1. FILE PARSING =================
   const handleFileProcess = (selectedFile) => {
     if (!selectedFile) return;
