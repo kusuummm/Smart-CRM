@@ -193,9 +193,11 @@ function AppLayout() {
 
   // Clear legacy mock data cache once so user starts with a clean slate
   useEffect(() => {
-    const purged = sessionStorage.getItem('smartcrm_data_purged_v2');
-    if (!purged) {
-      sessionStorage.setItem('smartcrm_data_purged_v2', 'true');
+    const contactsCache = localStorage.getItem('smartcrm_contacts') || '';
+    const hasLegacyPrivate = contactsCache.includes('Private Client');
+    const purged = sessionStorage.getItem('smartcrm_data_purged_v3');
+    if (!purged || hasLegacyPrivate) {
+      sessionStorage.setItem('smartcrm_data_purged_v3', 'true');
       localStorage.removeItem('smartcrm_contacts');
       localStorage.removeItem('smartcrm_all_calls');
       localStorage.removeItem('smartcrm_all_tasks');

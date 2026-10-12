@@ -141,9 +141,9 @@ export default function CallHistory({ onNavigate, initialCallType = 'all' }) {
         if (res.calls && res.calls.length > 0) {
           const mapped = res.calls.map((c) => ({
             id: c._id,
-            customerNumber: c.customerPhone || c.mobile || '',
-            customerName: c.customerName || 'Customer',
-            displayPhone: c.customerPhone || '',
+            customerNumber: c.customerPhone || c.customerId?.mobile || c.mobile || '',
+            customerName: c.customerName || c.customerId?.name || 'Customer',
+            displayPhone: c.customerPhone || c.customerId?.mobile || '',
             team: 'Main Team',
             staff: c.calledByName || user?.name || 'Agent',
             tags: c.status || '-',

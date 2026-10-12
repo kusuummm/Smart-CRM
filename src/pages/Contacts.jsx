@@ -116,11 +116,12 @@ export default function Contacts({ onNavigate }) {
     getCustomers({ limit: 500 })
       .then((res) => {
         if (res.customers) {
-          const mapped = res.customers.map((c) => ({
+          const cleanCustomers = res.customers.filter((c) => !/private client/i.test(c.name || ''));
+          const mapped = cleanCustomers.map((c) => ({
             id: c._id,
             name: c.name,
             phone: c.mobile || c.phone || '',
-            additionalInfo: c.remarks || '-',
+            additionalInfo: c.company ? (c.remarks ? `${c.company} • ${c.remarks}` : c.company) : c.remarks || '-',
             email: c.email || '-',
             tags: c.interestedProduct || '-',
             leadStage: c.status || '-',

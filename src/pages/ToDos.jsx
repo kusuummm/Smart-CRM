@@ -84,8 +84,8 @@ export default function ToDos({ onNavigate }) {
         if (followUpsRes.followUps) {
           const apiMapped = followUpsRes.followUps.map((f) => ({
             _id: f._id,
-            customerName: f.customerName || 'Customer',
-            phone: f.phone || '',
+            customerName: f.customerName || f.customerId?.name || 'Customer',
+            phone: f.phone || f.customerId?.mobile || '',
             category: f.type || 'FOLLOW-UP CALL',
             type: f.type || 'REMINDER',
             date: f.date ? `${f.date} ${f.time || ''}` : 'Today',

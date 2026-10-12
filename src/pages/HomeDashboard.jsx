@@ -117,10 +117,10 @@ export default function HomeDashboard({
       const calls = [...serverCalls, ...localCalls.filter((c) => !existingCallIds.has(c.id))];
 
       // Merge unique customers
-      const existingCustPhones = new Set(serverCusts.map((c) => (c.mobile || c.phone || '').slice(-10)));
+      const validLocalContacts = localContacts.filter((c) => !/private client/i.test(c.name || ''));
       const customers = [
         ...serverCusts,
-        ...localContacts.filter((c) => !existingCustPhones.has((c.phone || '').slice(-10))),
+        ...validLocalContacts.filter((c) => !existingCustPhones.has((c.phone || '').slice(-10))),
       ];
       const usersList = usersRes.users || [];
 

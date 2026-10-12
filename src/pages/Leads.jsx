@@ -252,7 +252,15 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
                         </button>
                       </td>
                       <td className="px-4 py-3 font-medium text-dark-900 dark:text-white">
-                        {lead.customerName}
+                        <div>
+                          <p className="font-semibold">{lead.customerName || lead.customerId?.name || 'Customer'}</p>
+                          {(lead.customerId?.mobile || lead.customerId?.phone) && (
+                            <p className="text-xs text-dark-500 dark:text-dark-400 font-mono mt-0.5">
+                              {lead.customerId?.mobile || lead.customerId?.phone}
+                              {lead.customerId?.company ? ` • ${lead.customerId.company}` : ''}
+                            </p>
+                          )}
+                        </div>
                       </td>
                       <td className="px-4 py-3">
                         <span className={`px-2.5 py-0.5 text-xs font-medium rounded-full capitalize ${statusColors[lead.status]}`}>
