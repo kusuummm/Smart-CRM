@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { getCalls } from '../api/callHistory';
 import {
   ArrowLeft,
   PhoneCall,
@@ -27,6 +28,7 @@ export default function ReportDetails({
   onNavigate,
   staffName = 'Kusum Rathore',
   period = 'Oct 09, 2026',
+  calls: propCalls = null,
 }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(filter.category || 'all');
@@ -39,258 +41,114 @@ export default function ReportDetails({
     if (filter.subStatus) setSelectedSubStatus(filter.subStatus);
   }, [filter]);
 
-  // Master Call Dataset Matching Reports Dashboard Exact Metrics
-  const allCallRecords = useMemo(
-    () => [
-      // 1. Missed calls (2) - Not answered
-      {
-        _id: 'call-m1',
-        customerName: 'Ramesh Verma',
-        phone: '+91 98765 43210',
-        company: 'Verma Exports Pvt Ltd',
-        calledByName: staffName,
-        callType: 'missed',
-        subStatus: 'Not answered',
-        date: 'Oct 09, 2026',
-        time: '10:45 AM',
-        duration: '0s',
-        durationSec: 0,
-        remarks: 'Ringing timeout, customer did not pick up after 6 rings',
-      },
-      {
-        _id: 'call-m2',
-        customerName: 'Anita Desai',
-        phone: '+91 98123 45678',
-        company: 'Desai Solutions & Tech',
-        calledByName: staffName,
-        callType: 'missed',
-        subStatus: 'Not answered',
-        date: 'Oct 09, 2026',
-        time: '03:15 PM',
-        duration: '0s',
-        durationSec: 0,
-        remarks: 'Incoming customer call missed while agent was on another call',
-      },
+  // Duration calculation helper
+  const parseDurationSeconds = (dur) => {
+    if (!dur) return 0;
+    if (typeof dur === 'number') return dur;
+    const str = String(dur).trim().toLowerCase();
+    let totalSec = 0;
+    const mMatch = str.match(/(\d+)\s*m/);
+    if (mMatch) totalSec += parseInt(mMatch[1], 10) * 60;
+    const sMatch = str.match(/(\d+)\s*s/);
+    if (sMatch) totalSec += parseInt(sMatch[1], 10);
+    if (!mMatch && !sMatch) {
+      const num = parseInt(str, 10);
+      if (!isNaN(num)) totalSec += num;
+    }
+    return totalSec;
+  };
 
-      // 2. Incoming calls (4 total: 2 Answered, 2 Missed)
-      {
-        _id: 'call-i1',
-        customerName: 'Vikram Singh',
-        phone: '+91 99334 55667',
-        company: 'Apex Realty Group',
-        calledByName: staffName,
-        callType: 'incoming',
-        subStatus: 'Answered',
-        date: 'Oct 09, 2026',
-        time: '11:30 AM',
-        duration: '1m 50s',
-        durationSec: 110,
-        remarks: 'Inbound inquiry regarding WhatsApp CRM API & pricing quotation',
-      },
-      {
-        _id: 'call-i2',
-        customerName: 'Swati Kulkarni',
-        phone: '+91 99445 66778',
-        company: 'Kulkarni Tech Solutions',
-        calledByName: staffName,
-        callType: 'incoming',
-        subStatus: 'Answered',
-        date: 'Oct 09, 2026',
-        time: '03:00 PM',
-        duration: '1m 24s',
-        durationSec: 84,
-        remarks: 'Customer requested consultation with sales team regarding CRM migration',
-      },
-      {
-        _id: 'call-i3',
-        customerName: 'Ramesh Verma',
-        phone: '+91 98765 43210',
-        company: 'Verma Exports Pvt Ltd',
-        calledByName: staffName,
-        callType: 'incoming',
-        subStatus: 'Missed',
-        date: 'Oct 09, 2026',
-        time: '10:45 AM',
-        duration: '0s',
-        durationSec: 0,
-        remarks: 'Inbound customer call missed',
-      },
-      {
-        _id: 'call-i4',
-        customerName: 'Anita Desai',
-        phone: '+91 98123 45678',
-        company: 'Desai Solutions & Tech',
-        calledByName: staffName,
-        callType: 'incoming',
-        subStatus: 'Missed',
-        date: 'Oct 09, 2026',
-        time: '03:15 PM',
-        duration: '0s',
-        durationSec: 0,
-        remarks: 'Inbound customer call disconnected',
-      },
+  // Real Calls State loaded dynamically
+  const [internalCalls, setInternalCalls] = useState([]);
 
-      // 3. Outgoing calls (11 total: 5 Connected, 6 Not connected)
-      // Connected total talktime = 7m 55s (475 seconds)
-      {
-        _id: 'call-o1',
-        customerName: 'Rajesh Gupta',
-        phone: '+91 98220 11223',
-        company: 'Gupta Traders',
-        calledByName: staffName,
-        callType: 'outgoing',
-        subStatus: 'Connected',
-        date: 'Oct 09, 2026',
-        time: '11:10 AM',
-        duration: '2m 15s',
-        durationSec: 135,
-        remarks: 'Discussed Enterprise Pro subscription and user license requirements',
-      },
-      {
-        _id: 'call-o2',
-        customerName: 'Sunita Rao',
-        phone: '+91 98334 55667',
-        company: 'Rao Logistics Hub',
-        calledByName: staffName,
-        callType: 'outgoing',
-        subStatus: 'Connected',
-        date: 'Oct 09, 2026',
-        time: '12:05 PM',
-        duration: '1m 40s',
-        durationSec: 100,
-        remarks: 'Follow-up on product demonstration, scheduled consultation meeting',
-      },
-      {
-        _id: 'call-o3',
-        customerName: 'Deepak Kumar',
-        phone: '+91 98445 66778',
-        company: 'Kumar Infotech',
-        calledByName: staffName,
-        callType: 'outgoing',
-        subStatus: 'Connected',
-        date: 'Oct 09, 2026',
-        time: '02:20 PM',
-        duration: '1m 20s',
-        durationSec: 80,
-        remarks: 'Clarified payment terms and GST invoice requirements',
-      },
-      {
-        _id: 'call-o4',
-        customerName: 'Pooja Mehta',
-        phone: '+91 98556 77889',
-        company: 'Mehta Textiles',
-        calledByName: staffName,
-        callType: 'outgoing',
-        subStatus: 'Connected',
-        date: 'Oct 09, 2026',
-        time: '04:10 PM',
-        duration: '1m 35s',
-        durationSec: 95,
-        remarks: 'Onboarding walkthrough for 5 telecaller accounts',
-      },
-      {
-        _id: 'call-o5',
-        customerName: 'Manish Joshi',
-        phone: '+91 98667 88990',
-        company: 'Joshi Automations',
-        calledByName: staffName,
-        callType: 'outgoing',
-        subStatus: 'Connected',
-        date: 'Oct 09, 2026',
-        time: '05:30 PM',
-        duration: '1m 05s',
-        durationSec: 65,
-        remarks: 'Introductory follow-up completed, marked lead status as Contacted',
-      },
+  useEffect(() => {
+    if (propCalls && Array.isArray(propCalls)) {
+      setInternalCalls(propCalls);
+      return;
+    }
+    const localCalls = JSON.parse(localStorage.getItem('smartcrm_all_calls') || '[]');
+    getCalls({ limit: 500 })
+      .then((res) => {
+        const serverCalls = res.calls || [];
+        const existingIds = new Set(serverCalls.map((c) => c._id));
+        const localOnly = localCalls
+          .filter((l) => !existingIds.has(l.id))
+          .map((l) => ({
+            _id: l.id,
+            customerName: l.customerName || 'Customer',
+            phone: l.customerPhone || l.customerNumber || '',
+            company: l.company || '-',
+            calledByName: l.calledByName || l.staff || staffName,
+            callType: (l.callType || 'outgoing').toLowerCase(),
+            status: l.status || (l.callStatus === 'Answered' ? 'connected' : 'missed'),
+            subStatus: l.status === 'connected' ? 'Connected' : 'Not answered',
+            duration: l.duration || '0s',
+            durationSec: parseDurationSeconds(l.duration),
+            date: l.date || 'Today',
+            time: l.time || '',
+            remarks: l.remarks || '',
+          }));
 
-      // Not connected calls (6 total)
-      {
-        _id: 'call-o6',
-        customerName: 'Amit Shah',
-        phone: '+91 98778 99001',
-        company: 'Shah Motors',
-        calledByName: staffName,
-        callType: 'outgoing',
-        subStatus: 'Line busy',
-        date: 'Oct 09, 2026',
-        time: '10:15 AM',
-        duration: '0s',
-        durationSec: 0,
-        remarks: 'Customer was busy on another phone call',
-      },
-      {
-        _id: 'call-o7',
-        customerName: 'Neha Agarwal',
-        phone: '+91 98889 00112',
-        company: 'Agarwal Spices',
-        calledByName: staffName,
-        callType: 'outgoing',
-        subStatus: 'Not answered',
-        date: 'Oct 09, 2026',
-        time: '11:45 AM',
-        duration: '0s',
-        durationSec: 0,
-        remarks: 'Dialed 30 seconds, no answer from customer',
-      },
-      {
-        _id: 'call-o8',
-        customerName: 'Rahul Nair',
-        phone: '+91 98990 11223',
-        company: 'Nair Logistics',
-        calledByName: staffName,
-        callType: 'outgoing',
-        subStatus: 'No network',
-        date: 'Oct 09, 2026',
-        time: '01:10 PM',
-        duration: '0s',
-        durationSec: 0,
-        remarks: 'Out of coverage area / network issue',
-      },
-      {
-        _id: 'call-o9',
-        customerName: 'Kavita Roy',
-        phone: '+91 99001 22334',
-        company: 'Roy Creations',
-        calledByName: staffName,
-        callType: 'outgoing',
-        subStatus: 'Line busy',
-        date: 'Oct 09, 2026',
-        time: '02:45 PM',
-        duration: '0s',
-        durationSec: 0,
-        remarks: 'Call rejected / disconnected by customer',
-      },
-      {
-        _id: 'call-o10',
-        customerName: 'Sanjay Patel',
-        phone: '+91 99112 33445',
-        company: 'Patel Electronics',
-        calledByName: staffName,
-        callType: 'outgoing',
-        subStatus: 'Not answered',
-        date: 'Oct 09, 2026',
-        time: '03:50 PM',
-        duration: '0s',
-        durationSec: 0,
-        remarks: 'No pickup after ringing',
-      },
-      {
-        _id: 'call-o11',
-        customerName: 'Divya Jain',
-        phone: '+91 99223 44556',
-        company: 'Jain Chemicals',
-        calledByName: staffName,
-        callType: 'outgoing',
-        subStatus: 'No network',
-        date: 'Oct 09, 2026',
-        time: '04:40 PM',
-        duration: '0s',
-        durationSec: 0,
-        remarks: 'Customer mobile switched off',
-      },
-    ],
-    [staffName]
-  );
+        const mappedServer = serverCalls.map((c) => {
+          const type = (c.callType || (c.type || 'outgoing')).toLowerCase();
+          const isConn = c.status === 'connected';
+          let subStatus = 'Not answered';
+          if (type === 'outgoing') {
+            subStatus = isConn ? 'Connected' : 'Not answered';
+          } else if (type === 'incoming') {
+            subStatus = isConn ? 'Answered' : 'Missed';
+          } else if (type === 'missed') {
+            subStatus = 'Not answered';
+          }
+          return {
+            _id: c._id,
+            customerName: c.customerName || c.customerId?.name || 'Customer',
+            phone: c.customerPhone || c.customerId?.mobile || c.mobile || '',
+            company: c.company || c.customerId?.company || '-',
+            calledByName: c.calledByName || staffName,
+            callType: type,
+            status: c.status || (isConn ? 'connected' : 'missed'),
+            subStatus: c.subStatus || subStatus,
+            duration: c.duration ? (String(c.duration).includes('s') ? c.duration : `${c.duration}s`) : '0s',
+            durationSec: parseDurationSeconds(c.duration),
+            date: c.date || 'Today',
+            time: c.time || '',
+            remarks: c.remarks || '',
+          };
+        });
+
+        setInternalCalls([...localOnly, ...mappedServer]);
+      })
+      .catch(() => {
+        const fallbackLocal = localCalls.map((l) => ({
+          _id: l.id,
+          customerName: l.customerName || 'Customer',
+          phone: l.customerPhone || l.customerNumber || '',
+          company: l.company || '-',
+          calledByName: l.calledByName || l.staff || staffName,
+          callType: (l.callType || 'outgoing').toLowerCase(),
+          status: l.status || (l.callStatus === 'Answered' ? 'connected' : 'missed'),
+          subStatus: l.status === 'connected' ? 'Connected' : 'Not answered',
+          duration: l.duration || '0s',
+          durationSec: parseDurationSeconds(l.duration),
+          date: l.date || 'Today',
+          time: l.time || '',
+          remarks: l.remarks || '',
+        }));
+        setInternalCalls(fallbackLocal);
+      });
+  }, [propCalls, staffName]);
+
+  const allCallRecords = propCalls && Array.isArray(propCalls) ? propCalls : internalCalls;
+
+  // Category counts
+  const categoryCounts = useMemo(() => ({
+    all: allCallRecords.length,
+    missed: allCallRecords.filter((c) => c.callType === 'missed' || c.status === 'missed').length,
+    outgoing: allCallRecords.filter((c) => c.callType === 'outgoing').length,
+    incoming: allCallRecords.filter((c) => c.callType === 'incoming').length,
+    talktime: allCallRecords.filter((c) => (c.durationSec || 0) > 0).length,
+  }), [allCallRecords]);
 
   // Filter records based on category, subStatus, and search term
   const filteredCalls = useMemo(() => {
@@ -496,11 +354,11 @@ export default function ReportDetails({
       {/* 2. Category Switcher Tabs */}
       <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs font-semibold border-b border-dark-200 dark:border-dark-700">
         {[
-          { id: 'all', label: 'All Report Calls', count: 17 },
-          { id: 'missed', label: 'Missed Calls', count: 2 },
-          { id: 'outgoing', label: 'Outgoing Calls', count: 11 },
-          { id: 'incoming', label: 'Incoming Calls', count: 4 },
-          { id: 'talktime', label: 'Talktime Calls', count: 7 },
+          { id: 'all', label: 'All Report Calls', count: categoryCounts.all },
+          { id: 'missed', label: 'Missed Calls', count: categoryCounts.missed },
+          { id: 'outgoing', label: 'Outgoing Calls', count: categoryCounts.outgoing },
+          { id: 'incoming', label: 'Incoming Calls', count: categoryCounts.incoming },
+          { id: 'talktime', label: 'Talktime Calls', count: categoryCounts.talktime },
         ].map((tab) => (
           <button
             key={tab.id}

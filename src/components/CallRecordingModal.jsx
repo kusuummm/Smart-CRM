@@ -153,58 +153,10 @@ export default function CallRecordingModal({ isOpen, onClose, call }) {
     setIsPlaying(true);
   };
 
-  // Mocked rich transcript if call has none
-  const transcriptData = call.transcript && call.transcript.length > 0
-    ? call.transcript
-    : [
-        {
-          speaker: call.staff || 'Agent',
-          role: 'agent',
-          time: '00:02',
-          text: `Hello, thank you for calling CRM Solutions. My name is ${call.staff || 'Support'}. How can I assist you today?`,
-        },
-        {
-          speaker: call.customerName || 'Customer',
-          role: 'customer',
-          time: '00:07',
-          text: 'Hello, I wanted to inquire about the Cloud Telephony integration and call recording feature for our team.',
-        },
-        {
-          speaker: call.staff || 'Agent',
-          role: 'agent',
-          time: '00:14',
-          text: 'Certainly! Our platform provides automated cloud call recording, live softphone dialing, and AI-powered transcripts with sentiment analysis.',
-        },
-        {
-          speaker: call.customerName || 'Customer',
-          role: 'customer',
-          time: '00:20',
-          text: 'That sounds great. Could you please share the pricing breakdown and onboarding steps?',
-        },
-        {
-          speaker: call.staff || 'Agent',
-          role: 'agent',
-          time: '00:24',
-          text: 'Absolutely! I will send over the detailed brochure and license pricing directly right away.',
-        },
-      ];
+  // Real transcript if available, or empty array
+  const transcriptData = Array.isArray(call.transcript) ? call.transcript : [];
 
-  const aiSummaryData = call.aiSummary || {
-    sentiment: 'Positive (92%)',
-    score: 92,
-    summary:
-      `Customer inquired about cloud telephony and call recording features. Agent ${call.staff || 'Support'} provided feature explanations and committed to sharing quotation.`,
-    keyPoints: [
-      'Inquired about Cloud Telephony & Call Recording',
-      'Confirmed interest in WhatsApp Business API integration',
-      'Requested pricing quotation and onboarding guide',
-    ],
-    followUps: [
-      'Send WhatsApp brochure with Unlimited All-in-One Pro pricing',
-      'Schedule follow-up demo call for tomorrow 3:00 PM',
-      'Add customer to High-Intent Lead group',
-    ],
-  };
+  const aiSummaryData = call.aiSummary?.summary ? call.aiSummary : null;
 
   const filteredTranscript = transcriptData.filter(
     (t) =>
@@ -459,57 +411,68 @@ export default function CallRecordingModal({ isOpen, onClose, call }) {
 
               {/* Turn-by-Turn Dialogue */}
               <div className="space-y-3 pt-1">
-                {filteredTranscript.map((turn, idx) => {
-                  const turnSec = audioEngine.parseDuration(turn.time);
-                  const isCurrent = currentTime >= turnSec && currentTime < turnSec + 6;
-                  const isAgent = turn.role === 'agent';
+                {transcriptData.length === 0 ? (
+                  <div className="py-12 text-center text-dark-400 dark:text-dark-500 text-xs space-y-1">
+                    <p className="font-semibold text-dark-700 dark:text-dark-300">No Transcript Available</p>
+                    <p>This call recording does not contain an automated transcript.</p>
+                  </div>
+                ) : filteredTranscript.length === 0 ? (
+                  <div className="py-8 text-center text-dark-400 dark:text-dark-500 text-xs">
+                    No transcript dialogue matches your search query.
+                  </div>
+                ) : (
+                  filteredTranscript.map((turn, idx) => {
+                    const turnSec = audioEngine.parseDuration(turn.time);
+                    const isCurrent = currentTime >= turnSec && currentTime < turnSec + 6;
+                    const isAgent = turn.role === 'agent';
 
-                  return (
-                    <div
-                      key={idx}
-                      onClick={() => handleSeek(turnSec)}
-                      className={`p-3 rounded-xl border transition-all cursor-pointer ${
-                        isCurrent
-                          ? 'border-blue-400 bg-blue-50/80 dark:bg-blue-950/40 shadow-xs'
-                          : 'border-dark-100 dark:border-dark-800 hover:border-dark-300 dark:hover:border-dark-700 bg-white dark:bg-dark-800/50'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between mb-1">
-                        <div className="flex items-center gap-2">
-                          <div
-                            className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold ${
-                              isAgent
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-emerald-600 text-white'
-                            }`}
-                          >
-                            {isAgent ? 'A' : 'C'}
+                    return (
+                      <div
+                        key={idx}
+                        onClick={() => handleSeek(turnSec)}
+                        className={`p-3 rounded-xl border transition-all cursor-pointer ${
+                          isCurrent
+                            ? 'border-blue-400 bg-blue-50/80 dark:bg-blue-950/40 shadow-xs'
+                            : 'border-dark-100 dark:border-dark-800 hover:border-dark-300 dark:hover:border-dark-700 bg-white dark:bg-dark-800/50'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="flex items-center gap-2">
+                            <div
+                              className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold ${
+                                isAgent
+                                  ? 'bg-blue-600 text-white'
+                                  : 'bg-emerald-600 text-white'
+                              }`}
+                            >
+                              {isAgent ? 'A' : 'C'}
+                            </div>
+                            <span className="text-xs font-bold text-dark-900 dark:text-white">
+                              {turn.speaker}
+                            </span>
+                            <span
+                              className={`text-[10px] font-semibold px-1.5 py-0.2 rounded-md ${
+                                isAgent
+                                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
+                                  : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
+                              }`}
+                            >
+                              {isAgent ? 'Staff Line' : 'Customer'}
+                            </span>
                           </div>
-                          <span className="text-xs font-bold text-dark-900 dark:text-white">
-                            {turn.speaker}
-                          </span>
-                          <span
-                            className={`text-[10px] font-semibold px-1.5 py-0.2 rounded-md ${
-                              isAgent
-                                ? 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
-                                : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
-                            }`}
-                          >
-                            {isAgent ? 'Staff Line' : 'Customer'}
+
+                          <span className="text-[11px] font-mono text-dark-400 hover:text-blue-600 font-semibold">
+                            {turn.time} ⏩
                           </span>
                         </div>
 
-                        <span className="text-[11px] font-mono text-dark-400 hover:text-blue-600 font-semibold">
-                          {turn.time} ⏩
-                        </span>
+                        <p className="text-xs text-dark-700 dark:text-dark-200 pl-8 leading-relaxed">
+                          {turn.text}
+                        </p>
                       </div>
-
-                      <p className="text-xs text-dark-700 dark:text-dark-200 pl-8 leading-relaxed">
-                        {turn.text}
-                      </p>
-                    </div>
-                  );
-                })}
+                    );
+                  })
+                )}
               </div>
             </div>
           )}
@@ -517,102 +480,113 @@ export default function CallRecordingModal({ isOpen, onClose, call }) {
           {/* TAB 2: AI INSIGHTS */}
           {activeTab === 'ai-insights' && (
             <div className="space-y-4">
-              
-              {/* Sentiment Score Card */}
-              <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-blue-500/10 to-transparent border border-emerald-500/30 dark:border-emerald-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0">
-                    <Sparkles size={24} />
-                  </div>
-                  <div>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
-                      Customer Call Engagement
-                    </span>
-                    <h4 className="text-base font-bold text-dark-900 dark:text-white">
-                      {aiSummaryData.sentiment}
-                    </h4>
-                    <p className="text-xs text-dark-500">
-                      High purchase intent & responsive communication during call
-                    </p>
-                  </div>
+              {!aiSummaryData ? (
+                <div className="py-12 text-center text-dark-400 dark:text-dark-500 text-xs space-y-1">
+                  <p className="font-semibold text-dark-700 dark:text-dark-300">No Call Summary Available</p>
+                  <p>AI insights will be generated when transcripts are processed for this call.</p>
                 </div>
-
-                <div className="flex items-center gap-2">
-                  <div className="text-right">
-                    <span className="text-[10px] text-dark-400 uppercase font-bold">Intent Score</span>
-                    <p className="text-xl font-black font-mono text-emerald-600 dark:text-emerald-400">
-                      {aiSummaryData.score}/100
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Executive Summary */}
-              <div className="p-4 rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 space-y-2">
-                <h4 className="text-xs font-bold text-dark-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
-                  <Bot size={14} className="text-blue-600" />
-                  <span>Call Executive Summary</span>
-                </h4>
-                <p className="text-xs text-dark-700 dark:text-dark-200 leading-relaxed">
-                  {aiSummaryData.summary}
-                </p>
-              </div>
-
-              {/* Key Topics Tags */}
-              <div className="p-4 rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 space-y-2">
-                <h4 className="text-xs font-bold text-dark-900 dark:text-white uppercase tracking-wider">
-                  Key Topics Discussed
-                </h4>
-                <div className="flex flex-wrap gap-2">
-                  {aiSummaryData.keyPoints.map((point, idx) => (
-                    <span
-                      key={idx}
-                      className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-dark-100 dark:bg-dark-700 text-dark-700 dark:text-dark-200"
-                    >
-                      #{point}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              {/* Action Items / Follow-ups */}
-              <div className="p-4 rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 space-y-2.5">
-                <h4 className="text-xs font-bold text-dark-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
-                  <CheckCircle2 size={14} className="text-emerald-600" />
-                  <span>Recommended Action Items & Next Steps</span>
-                </h4>
-                <div className="space-y-2">
-                  {aiSummaryData.followUps.map((action, idx) => {
-                    const isDone = !!actionItemsDone[idx];
-                    return (
-                      <div
-                        key={idx}
-                        onClick={() => toggleActionItem(idx)}
-                        className={`flex items-start gap-2.5 p-2 rounded-lg cursor-pointer transition-colors ${
-                          isDone ? 'bg-emerald-50/60 dark:bg-emerald-950/20' : 'hover:bg-dark-50 dark:hover:bg-dark-700/50'
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={isDone}
-                          onChange={() => {}}
-                          className="mt-0.5 rounded text-blue-600"
-                        />
-                        <span
-                          className={`text-xs ${
-                            isDone
-                              ? 'line-through text-dark-400'
-                              : 'text-dark-800 dark:text-dark-200 font-medium'
-                          }`}
-                        >
-                          {action}
-                        </span>
+              ) : (
+                <>
+                  {/* Sentiment Score Card */}
+                  <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-blue-500/10 to-transparent border border-emerald-500/30 dark:border-emerald-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0">
+                        <Sparkles size={24} />
                       </div>
-                    );
-                  })}
-                </div>
-              </div>
+                      <div>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
+                          Customer Call Engagement
+                        </span>
+                        <h4 className="text-base font-bold text-dark-900 dark:text-white">
+                          {aiSummaryData.sentiment}
+                        </h4>
+                        <p className="text-xs text-dark-500">
+                          High purchase intent & responsive communication during call
+                        </p>
+                      </div>
+                    </div>
 
+                    <div className="flex items-center gap-2">
+                      <div className="text-right">
+                        <span className="text-[10px] text-dark-400 uppercase font-bold">Intent Score</span>
+                        <p className="text-xl font-black font-mono text-emerald-600 dark:text-emerald-400">
+                          {aiSummaryData.score}/100
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Executive Summary */}
+                  <div className="p-4 rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 space-y-2">
+                    <h4 className="text-xs font-bold text-dark-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
+                      <Bot size={14} className="text-blue-600" />
+                      <span>Call Executive Summary</span>
+                    </h4>
+                    <p className="text-xs text-dark-700 dark:text-dark-200 leading-relaxed">
+                      {aiSummaryData.summary}
+                    </p>
+                  </div>
+
+                  {/* Key Topics Tags */}
+                  {aiSummaryData.keyPoints && aiSummaryData.keyPoints.length > 0 && (
+                    <div className="p-4 rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 space-y-2">
+                      <h4 className="text-xs font-bold text-dark-900 dark:text-white uppercase tracking-wider">
+                        Key Topics Discussed
+                      </h4>
+                      <div className="flex flex-wrap gap-2">
+                        {aiSummaryData.keyPoints.map((point, idx) => (
+                          <span
+                            key={idx}
+                            className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-dark-100 dark:bg-dark-700 text-dark-700 dark:text-dark-200"
+                          >
+                            #{point}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Action Items / Follow-ups */}
+                  {aiSummaryData.followUps && aiSummaryData.followUps.length > 0 && (
+                    <div className="p-4 rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 space-y-2.5">
+                      <h4 className="text-xs font-bold text-dark-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
+                        <CheckCircle2 size={14} className="text-emerald-600" />
+                        <span>Recommended Action Items & Next Steps</span>
+                      </h4>
+                      <div className="space-y-2">
+                        {aiSummaryData.followUps.map((action, idx) => {
+                          const isDone = !!actionItemsDone[idx];
+                          return (
+                            <div
+                              key={idx}
+                              onClick={() => toggleActionItem(idx)}
+                              className={`flex items-start gap-2.5 p-2 rounded-lg cursor-pointer transition-colors ${
+                                isDone ? 'bg-emerald-50/60 dark:bg-emerald-950/20' : 'hover:bg-dark-50 dark:hover:bg-dark-700/50'
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isDone}
+                                onChange={() => {}}
+                                className="mt-0.5 rounded text-blue-600"
+                              />
+                              <span
+                                className={`text-xs ${
+                                  isDone
+                                    ? 'line-through text-dark-400'
+                                    : 'text-dark-800 dark:text-dark-200 font-medium'
+                                }`}
+                              >
+                                {action}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           )}
 

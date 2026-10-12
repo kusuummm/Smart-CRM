@@ -55,241 +55,123 @@ export default function Reports({ onNavigate }) {
     title: '',
   });
 
-  // Base Call Records Matching Screenshot Metrics
-  const baseCallRecords = useMemo(
-    () => [
-      // 1. Missed calls (2) - Not answered
-      {
-        _id: 'call-m1',
-        customerName: 'Ramesh Verma',
-        phone: '+91 98765 43210',
-        company: 'Verma Exports Pvt Ltd',
-        calledByName: selectedStaffList[0] || 'Kusum Rathore',
-        callType: 'missed',
-        subStatus: 'Not answered',
-        date: 'Oct 09, 2026',
-        time: '10:45 AM',
-        duration: '0s',
-        remarks: 'Ringing timeout, customer did not pick up after 6 rings',
-      },
-      {
-        _id: 'call-m2',
-        customerName: 'Anita Desai',
-        phone: '+91 98123 45678',
-        company: 'Desai Solutions & Tech',
-        calledByName: selectedStaffList[0] || 'Kusum Rathore',
-        callType: 'missed',
-        subStatus: 'Not answered',
-        date: 'Oct 09, 2026',
-        time: '03:15 PM',
-        duration: '0s',
-        remarks: 'Incoming customer call missed while agent was on call',
-      },
+  // Duration calculation helpers
+  const parseDurationSeconds = (dur) => {
+    if (!dur) return 0;
+    if (typeof dur === 'number') return dur;
+    const str = String(dur).trim().toLowerCase();
+    let totalSec = 0;
+    const mMatch = str.match(/(\d+)\s*m/);
+    if (mMatch) totalSec += parseInt(mMatch[1], 10) * 60;
+    const sMatch = str.match(/(\d+)\s*s/);
+    if (sMatch) totalSec += parseInt(sMatch[1], 10);
+    if (!mMatch && !sMatch) {
+      const num = parseInt(str, 10);
+      if (!isNaN(num)) totalSec += num;
+    }
+    return totalSec;
+  };
 
-      // 2. Incoming calls (4 total: 2 Answered, 2 Missed)
-      {
-        _id: 'call-i1',
-        customerName: 'Vikram Singh',
-        phone: '+91 99334 55667',
-        company: 'Apex Realty Group',
-        calledByName: selectedStaffList[0] || 'Kusum Rathore',
-        callType: 'incoming',
-        subStatus: 'Answered',
-        date: 'Oct 09, 2026',
-        time: '11:30 AM',
-        duration: '1m 50s',
-        remarks: 'Inbound inquiry regarding WhatsApp CRM API & pricing quotation',
-      },
-      {
-        _id: 'call-i2',
-        customerName: 'Swati Kulkarni',
-        phone: '+91 99445 66778',
-        company: 'Kulkarni Tech Solutions',
-        calledByName: selectedStaffList[0] || 'Kusum Rathore',
-        callType: 'incoming',
-        subStatus: 'Answered',
-        date: 'Oct 09, 2026',
-        time: '03:00 PM',
-        duration: '1m 24s',
-        remarks: 'Customer requested consultation with sales team regarding CRM migration',
-      },
-      {
-        _id: 'call-i3',
-        customerName: 'Ramesh Verma',
-        phone: '+91 98765 43210',
-        company: 'Verma Exports Pvt Ltd',
-        calledByName: selectedStaffList[0] || 'Kusum Rathore',
-        callType: 'incoming',
-        subStatus: 'Missed',
-        date: 'Oct 09, 2026',
-        time: '10:45 AM',
-        duration: '0s',
-        remarks: 'Inbound customer call missed',
-      },
-      {
-        _id: 'call-i4',
-        customerName: 'Anita Desai',
-        phone: '+91 98123 45678',
-        company: 'Desai Solutions & Tech',
-        calledByName: selectedStaffList[0] || 'Kusum Rathore',
-        callType: 'incoming',
-        subStatus: 'Missed',
-        date: 'Oct 09, 2026',
-        time: '03:15 PM',
-        duration: '0s',
-        remarks: 'Inbound customer call disconnected',
-      },
+  const formatSeconds = (sec) => {
+    if (!sec || sec <= 0) return '0s';
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    if (m > 0 && s > 0) return `${m}m ${s}s`;
+    if (m > 0) return `${m}m`;
+    return `${s}s`;
+  };
 
-      // 3. Outgoing calls (11 total: 5 Connected, 6 Not connected)
-      // Connected calls total talktime = 7m 55s
-      {
-        _id: 'call-o1',
-        customerName: 'Rajesh Gupta',
-        phone: '+91 98220 11223',
-        company: 'Gupta Traders',
-        calledByName: selectedStaffList[0] || 'Kusum Rathore',
-        callType: 'outgoing',
-        subStatus: 'Connected',
-        date: 'Oct 09, 2026',
-        time: '11:10 AM',
-        duration: '2m 15s',
-        remarks: 'Discussed Enterprise Pro subscription and user license requirements',
-      },
-      {
-        _id: 'call-o2',
-        customerName: 'Sunita Rao',
-        phone: '+91 98334 55667',
-        company: 'Rao Logistics Hub',
-        calledByName: selectedStaffList[0] || 'Kusum Rathore',
-        callType: 'outgoing',
-        subStatus: 'Connected',
-        date: 'Oct 09, 2026',
-        time: '12:05 PM',
-        duration: '1m 40s',
-        remarks: 'Follow-up on product demonstration, scheduled consultation meeting',
-      },
-      {
-        _id: 'call-o3',
-        customerName: 'Deepak Kumar',
-        phone: '+91 98445 66778',
-        company: 'Kumar Infotech',
-        calledByName: selectedStaffList[0] || 'Kusum Rathore',
-        callType: 'outgoing',
-        subStatus: 'Connected',
-        date: 'Oct 09, 2026',
-        time: '02:20 PM',
-        duration: '1m 20s',
-        remarks: 'Clarified payment terms and GST invoice requirements',
-      },
-      {
-        _id: 'call-o4',
-        customerName: 'Pooja Mehta',
-        phone: '+91 98556 77889',
-        company: 'Mehta Textiles',
-        calledByName: selectedStaffList[0] || 'Kusum Rathore',
-        callType: 'outgoing',
-        subStatus: 'Connected',
-        date: 'Oct 09, 2026',
-        time: '04:10 PM',
-        duration: '1m 35s',
-        remarks: 'Onboarding walkthrough for 5 telecaller accounts',
-      },
-      {
-        _id: 'call-o5',
-        customerName: 'Manish Joshi',
-        phone: '+91 98667 88990',
-        company: 'Joshi Automations',
-        calledByName: selectedStaffList[0] || 'Kusum Rathore',
-        callType: 'outgoing',
-        subStatus: 'Connected',
-        date: 'Oct 09, 2026',
-        time: '05:30 PM',
-        duration: '1m 05s',
-        remarks: 'Introductory follow-up completed, marked lead status as Contacted',
-      },
+  // Real Call Records loaded dynamically from CRM backend and live calls
+  const [calls, setCalls] = useState([]);
+  const [loadingCalls, setLoadingCalls] = useState(false);
 
-      // Not connected calls (6 total)
-      {
-        _id: 'call-o6',
-        customerName: 'Amit Shah',
-        phone: '+91 98778 99001',
-        company: 'Shah Motors',
-        calledByName: selectedStaffList[0] || 'Kusum Rathore',
-        callType: 'outgoing',
-        subStatus: 'Line busy',
-        date: 'Oct 09, 2026',
-        time: '10:15 AM',
-        duration: '0s',
-        remarks: 'Customer was busy on another phone call',
-      },
-      {
-        _id: 'call-o7',
-        customerName: 'Neha Agarwal',
-        phone: '+91 98889 00112',
-        company: 'Agarwal Spices',
-        calledByName: selectedStaffList[0] || 'Kusum Rathore',
-        callType: 'outgoing',
-        subStatus: 'Not answered',
-        date: 'Oct 09, 2026',
-        time: '11:45 AM',
-        duration: '0s',
-        remarks: 'Dialed 30 seconds, no answer from customer',
-      },
-      {
-        _id: 'call-o8',
-        customerName: 'Rahul Nair',
-        phone: '+91 98990 11223',
-        company: 'Nair Logistics',
-        calledByName: selectedStaffList[0] || 'Kusum Rathore',
-        callType: 'outgoing',
-        subStatus: 'No network',
-        date: 'Oct 09, 2026',
-        time: '01:10 PM',
-        duration: '0s',
-        remarks: 'Out of coverage area / network issue',
-      },
-      {
-        _id: 'call-o9',
-        customerName: 'Kavita Roy',
-        phone: '+91 99001 22334',
-        company: 'Roy Creations',
-        calledByName: selectedStaffList[0] || 'Kusum Rathore',
-        callType: 'outgoing',
-        subStatus: 'Line busy',
-        date: 'Oct 09, 2026',
-        time: '02:45 PM',
-        duration: '0s',
-        remarks: 'Call rejected / disconnected by customer',
-      },
-      {
-        _id: 'call-o10',
-        customerName: 'Sanjay Patel',
-        phone: '+91 99112 33445',
-        company: 'Patel Electronics',
-        calledByName: selectedStaffList[0] || 'Kusum Rathore',
-        callType: 'outgoing',
-        subStatus: 'Not answered',
-        date: 'Oct 09, 2026',
-        time: '03:50 PM',
-        duration: '0s',
-        remarks: 'No pickup after ringing',
-      },
-      {
-        _id: 'call-o11',
-        customerName: 'Divya Jain',
-        phone: '+91 99223 44556',
-        company: 'Jain Chemicals',
-        calledByName: selectedStaffList[0] || 'Kusum Rathore',
-        callType: 'outgoing',
-        subStatus: 'No network',
-        date: 'Oct 09, 2026',
-        time: '04:40 PM',
-        duration: '0s',
-        remarks: 'Customer mobile switched off',
-      },
-    ],
-    [selectedStaffList]
-  );
+  useEffect(() => {
+    setLoadingCalls(true);
+    const localCalls = JSON.parse(localStorage.getItem('smartcrm_all_calls') || '[]');
+    getCalls({ limit: 500 })
+      .then((res) => {
+        const serverCalls = res.calls || [];
+        const existingIds = new Set(serverCalls.map((c) => c._id));
+        const localOnly = localCalls
+          .filter((l) => !existingIds.has(l.id))
+          .map((l) => ({
+            _id: l.id,
+            customerName: l.customerName || 'Customer',
+            phone: l.customerPhone || l.customerNumber || '',
+            company: l.company || '-',
+            calledByName: l.calledByName || l.staff || user?.name || 'Agent',
+            callType: (l.callType || 'outgoing').toLowerCase(),
+            status: l.status || (l.callStatus === 'Answered' ? 'connected' : 'missed'),
+            subStatus: l.status === 'connected' ? 'Connected' : 'Not answered',
+            duration: l.duration || '0s',
+            durationSec: parseDurationSeconds(l.duration),
+            date: l.date || 'Today',
+            time: l.time || '',
+            remarks: l.remarks || '',
+          }));
+
+        const mappedServer = serverCalls.map((c) => {
+          const type = (c.callType || (c.type || 'outgoing')).toLowerCase();
+          const isConn = c.status === 'connected';
+          let subStatus = 'Not answered';
+          if (type === 'outgoing') {
+            subStatus = isConn ? 'Connected' : 'Not answered';
+          } else if (type === 'incoming') {
+            subStatus = isConn ? 'Answered' : 'Missed';
+          } else if (type === 'missed') {
+            subStatus = 'Not answered';
+          }
+          return {
+            _id: c._id,
+            customerName: c.customerName || c.customerId?.name || 'Customer',
+            phone: c.customerPhone || c.customerId?.mobile || c.mobile || '',
+            company: c.company || c.customerId?.company || '-',
+            calledByName: c.calledByName || user?.name || 'Agent',
+            callType: type,
+            status: c.status || (isConn ? 'connected' : 'missed'),
+            subStatus: c.subStatus || subStatus,
+            duration: c.duration ? (String(c.duration).includes('s') ? c.duration : `${c.duration}s`) : '0s',
+            durationSec: parseDurationSeconds(c.duration),
+            date: c.date || 'Today',
+            time: c.time || '',
+            remarks: c.remarks || '',
+          };
+        });
+
+        setCalls([...localOnly, ...mappedServer]);
+      })
+      .catch(() => {
+        const fallbackLocal = localCalls.map((l) => ({
+          _id: l.id,
+          customerName: l.customerName || 'Customer',
+          phone: l.customerPhone || l.customerNumber || '',
+          company: l.company || '-',
+          calledByName: l.calledByName || l.staff || user?.name || 'Agent',
+          callType: (l.callType || 'outgoing').toLowerCase(),
+          status: l.status || (l.callStatus === 'Answered' ? 'connected' : 'missed'),
+          subStatus: l.status === 'connected' ? 'Connected' : 'Not answered',
+          duration: l.duration || '0s',
+          durationSec: parseDurationSeconds(l.duration),
+          date: l.date || 'Today',
+          time: l.time || '',
+          remarks: l.remarks || '',
+        }));
+        setCalls(fallbackLocal);
+      })
+      .finally(() => setLoadingCalls(false));
+  }, [user]);
+
+  // Filtered by selected staff
+  const filteredCalls = useMemo(() => {
+    if (selectedStaffList.length === 0) return calls;
+    return calls.filter((c) =>
+      selectedStaffList.some(
+        (st) =>
+          (c.calledByName || '').toLowerCase().includes(st.toLowerCase()) ||
+          st.toLowerCase().includes((c.calledByName || '').toLowerCase())
+      )
+    );
+  }, [calls, selectedStaffList]);
 
   // Open Dedicated Report Element Details Page (No Popups)
   const handleOpenDetailPage = ({ category, subStatus = 'all', title }) => {
@@ -330,40 +212,73 @@ export default function Reports({ onNavigate }) {
     return null;
   };
 
-  // KPI Metrics
-  const metrics = {
-    missed: 2,
-    outgoing: 11,
-    incoming: 2,
-    totalTalktime: '11m 9s',
-  };
+  // Real KPI Metrics
+  const metrics = useMemo(() => {
+    const missed = filteredCalls.filter((c) => c.callType === 'missed' || c.status === 'missed').length;
+    const outgoing = filteredCalls.filter((c) => c.callType === 'outgoing').length;
+    const incoming = filteredCalls.filter((c) => c.callType === 'incoming').length;
+    const totalSec = filteredCalls.reduce((acc, c) => acc + (c.durationSec || 0), 0);
+    return {
+      missed,
+      outgoing,
+      incoming,
+      totalTalktime: formatSeconds(totalSec),
+      totalSec,
+    };
+  }, [filteredCalls]);
 
-  // Donut 1: Missed calls breakdown
-  const missedData = [
-    { name: 'DND/Decline', value: 0, color: '#94a3b8' },
-    { name: 'Line busy', value: 0, color: '#f59e0b' },
-    { name: 'No network', value: 0, color: '#ef4444' },
-    { name: 'Not answered', value: 2, color: '#8b5cf6' },
-  ];
+  // Donut 1: Real Missed calls breakdown
+  const missedData = useMemo(() => {
+    const missedCalls = filteredCalls.filter((c) => c.callType === 'missed' || c.status === 'missed');
+    const dnd = missedCalls.filter((c) => /dnd|decline/i.test(c.subStatus || c.remarks || '')).length;
+    const busy = missedCalls.filter((c) => /busy/i.test(c.subStatus || c.remarks || '')).length;
+    const noNetwork = missedCalls.filter((c) => /network|unreachable|coverage/i.test(c.subStatus || c.remarks || '')).length;
+    const notAnswered = Math.max(0, missedCalls.length - dnd - busy - noNetwork);
+    return [
+      { name: 'DND/Decline', value: dnd, color: '#94a3b8' },
+      { name: 'Line busy', value: busy, color: '#f59e0b' },
+      { name: 'No network', value: noNetwork, color: '#ef4444' },
+      { name: 'Not answered', value: notAnswered, color: '#8b5cf6' },
+    ];
+  }, [filteredCalls]);
 
-  // Donut 2: Incoming calls breakdown
-  const incomingData = [
-    { name: 'Answered', value: 2, color: '#10b981' },
-    { name: 'Missed', value: 2, color: '#ef4444' },
-    { name: 'DND', value: 0, color: '#64748b' },
-  ];
+  // Donut 2: Real Incoming calls breakdown
+  const incomingData = useMemo(() => {
+    const incomingCalls = filteredCalls.filter((c) => c.callType === 'incoming');
+    const answered = incomingCalls.filter((c) => c.status === 'connected' || /answered/i.test(c.subStatus || '')).length;
+    const missed = incomingCalls.filter((c) => c.status === 'missed' || /missed|unanswered/i.test(c.subStatus || '')).length;
+    const dnd = incomingCalls.filter((c) => /dnd/i.test(c.subStatus || c.remarks || '')).length;
+    return [
+      { name: 'Answered', value: answered, color: '#10b981' },
+      { name: 'Missed', value: missed, color: '#ef4444' },
+      { name: 'DND', value: dnd, color: '#64748b' },
+    ];
+  }, [filteredCalls]);
 
-  // Donut 3: Outgoing calls breakdown
-  const outgoingData = [
-    { name: 'Not connected', value: 6, color: '#ef4444' },
-    { name: 'Connected', value: 5, color: '#10b981' },
-  ];
+  // Donut 3: Real Outgoing calls breakdown
+  const outgoingData = useMemo(() => {
+    const outgoingCalls = filteredCalls.filter((c) => c.callType === 'outgoing');
+    const connected = outgoingCalls.filter((c) => c.status === 'connected' || /connected/i.test(c.subStatus || '')).length;
+    const notConnected = Math.max(0, outgoingCalls.length - connected);
+    return [
+      { name: 'Not connected', value: notConnected, color: '#ef4444' },
+      { name: 'Connected', value: connected, color: '#10b981' },
+    ];
+  }, [filteredCalls]);
 
-  // Donut 4: Total talktime breakdown
-  const talktimeData = [
-    { name: 'Outgoing', value: 475, label: '7m 55s', color: '#3b82f6' },
-    { name: 'Incoming', value: 194, label: '3m 14s', color: '#06b6d4' },
-  ];
+  // Donut 4: Real Total talktime breakdown
+  const talktimeData = useMemo(() => {
+    const outgoingSec = filteredCalls
+      .filter((c) => c.callType === 'outgoing')
+      .reduce((acc, c) => acc + (c.durationSec || 0), 0);
+    const incomingSec = filteredCalls
+      .filter((c) => c.callType === 'incoming')
+      .reduce((acc, c) => acc + (c.durationSec || 0), 0);
+    return [
+      { name: 'Outgoing', value: outgoingSec, label: formatSeconds(outgoingSec), color: '#3b82f6' },
+      { name: 'Incoming', value: incomingSec, label: formatSeconds(incomingSec), color: '#06b6d4' },
+    ];
+  }, [filteredCalls]);
 
   const removeStaffFilter = (staffName) => {
     setSelectedStaffList((prev) => prev.filter((s) => s !== staffName));
@@ -384,6 +299,7 @@ export default function Reports({ onNavigate }) {
         onNavigate={onNavigate}
         staffName={selectedStaffList[0] || user?.name || 'Kusum Rathore'}
         period={period}
+        calls={filteredCalls}
       />
     );
   }
@@ -776,12 +692,18 @@ export default function Reports({ onNavigate }) {
                   title="Click to view all missed calls"
                 >
                   <span className="text-[10px] text-dark-400 font-bold uppercase">TOTAL</span>
-                  <p className="font-extrabold text-dark-900 dark:text-white text-lg">2</p>
+                  <p className="font-extrabold text-dark-900 dark:text-white text-lg">{metrics.missed}</p>
                 </div>
               </div>
 
               <div className="flex items-center gap-6 pt-2">
-                <div className="w-36 h-36 relative flex-shrink-0">
+                <div className="w-36 h-36 relative flex-shrink-0 flex items-center justify-center">
+                  {missedData.reduce((acc, d) => acc + d.value, 0) === 0 ? (
+                    <div className="w-28 h-28 rounded-full border-2 border-dashed border-dark-200 dark:border-dark-700 flex flex-col items-center justify-center text-center p-2">
+                      <span className="text-lg font-bold text-dark-400 dark:text-dark-500">0</span>
+                      <span className="text-[9px] text-dark-400 dark:text-dark-500">No calls</span>
+                    </div>
+                  ) : (
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
@@ -821,6 +743,7 @@ export default function Reports({ onNavigate }) {
                       <Tooltip content={<ClickableChartTooltip />} />
                     </PieChart>
                   </ResponsiveContainer>
+                  )}
                 </div>
 
                 <div className="flex-1 space-y-1.5 text-xs">
@@ -892,12 +815,18 @@ export default function Reports({ onNavigate }) {
                   title="Click to view all incoming calls"
                 >
                   <span className="text-[10px] text-dark-400 font-bold uppercase">TOTAL</span>
-                  <p className="font-extrabold text-dark-900 dark:text-white text-lg">4</p>
+                  <p className="font-extrabold text-dark-900 dark:text-white text-lg">{incomingData.reduce((a, b) => a + b.value, 0)}</p>
                 </div>
               </div>
 
               <div className="flex items-center gap-6 pt-2">
-                <div className="w-36 h-36 relative flex-shrink-0">
+                <div className="w-36 h-36 relative flex-shrink-0 flex items-center justify-center">
+                  {incomingData.reduce((acc, d) => acc + d.value, 0) === 0 ? (
+                    <div className="w-28 h-28 rounded-full border-2 border-dashed border-dark-200 dark:border-dark-700 flex flex-col items-center justify-center text-center p-2">
+                      <span className="text-lg font-bold text-dark-400 dark:text-dark-500">0</span>
+                      <span className="text-[9px] text-dark-400 dark:text-dark-500">No calls</span>
+                    </div>
+                  ) : (
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
@@ -937,6 +866,7 @@ export default function Reports({ onNavigate }) {
                       <Tooltip content={<ClickableChartTooltip />} />
                     </PieChart>
                   </ResponsiveContainer>
+                  )}
                 </div>
 
                 <div className="flex-1 space-y-1.5 text-xs">
@@ -1008,12 +938,18 @@ export default function Reports({ onNavigate }) {
                   title="Click to view all outgoing calls"
                 >
                   <span className="text-[10px] text-dark-400 font-bold uppercase">TOTAL</span>
-                  <p className="font-extrabold text-dark-900 dark:text-white text-lg">11</p>
+                  <p className="font-extrabold text-dark-900 dark:text-white text-lg">{metrics.outgoing}</p>
                 </div>
               </div>
 
               <div className="flex items-center gap-6 pt-2">
-                <div className="w-36 h-36 relative flex-shrink-0">
+                <div className="w-36 h-36 relative flex-shrink-0 flex items-center justify-center">
+                  {outgoingData.reduce((acc, d) => acc + d.value, 0) === 0 ? (
+                    <div className="w-28 h-28 rounded-full border-2 border-dashed border-dark-200 dark:border-dark-700 flex flex-col items-center justify-center text-center p-2">
+                      <span className="text-lg font-bold text-dark-400 dark:text-dark-500">0</span>
+                      <span className="text-[9px] text-dark-400 dark:text-dark-500">No calls</span>
+                    </div>
+                  ) : (
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
@@ -1053,6 +989,7 @@ export default function Reports({ onNavigate }) {
                       <Tooltip content={<ClickableChartTooltip />} />
                     </PieChart>
                   </ResponsiveContainer>
+                  )}
                 </div>
 
                 <div className="flex-1 space-y-1.5 text-xs">
@@ -1125,12 +1062,18 @@ export default function Reports({ onNavigate }) {
                     title="Click to view all talktime calls"
                   >
                     <span className="text-[10px] text-dark-400 font-bold uppercase">TOTAL</span>
-                    <p className="font-extrabold text-dark-900 dark:text-white text-lg">11m 9s</p>
+                    <p className="font-extrabold text-dark-900 dark:text-white text-lg">{metrics.totalTalktime}</p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-6 pt-4">
-                  <div className="w-36 h-36 relative flex-shrink-0">
+                  <div className="w-36 h-36 relative flex-shrink-0 flex items-center justify-center">
+                    {talktimeData.reduce((acc, d) => acc + d.value, 0) === 0 ? (
+                      <div className="w-28 h-28 rounded-full border-2 border-dashed border-dark-200 dark:border-dark-700 flex flex-col items-center justify-center text-center p-2">
+                        <span className="text-lg font-bold text-dark-400 dark:text-dark-500">0s</span>
+                        <span className="text-[9px] text-dark-400 dark:text-dark-500">No talktime</span>
+                      </div>
+                    ) : (
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie
@@ -1170,6 +1113,7 @@ export default function Reports({ onNavigate }) {
                         <Tooltip content={<ClickableChartTooltip />} />
                       </PieChart>
                     </ResponsiveContainer>
+                    )}
                   </div>
 
                   <div className="flex-1 space-y-1.5 text-xs">
@@ -1239,7 +1183,7 @@ export default function Reports({ onNavigate }) {
               </thead>
               <tbody className="divide-y divide-dark-100 dark:divide-dark-700/60">
                 {[
-                  { name: user?.name || 'Current User', out: 0, inc: 0, conn: 0, talk: '0m 00s', eff: '—' },
+                  { name: user?.name || 'Current User', out: metrics.outgoing, inc: metrics.incoming, conn: filteredCalls.filter((c) => c.status === 'connected').length, talk: metrics.totalTalktime, eff: metrics.outgoing > 0 ? `${Math.round((filteredCalls.filter((c) => c.status === 'connected').length / metrics.outgoing) * 100)}%` : '—' },
                 ].map((row) => (
                   <tr key={row.name} className="hover:bg-dark-50/50">
                     <td className="py-3 px-3 font-bold text-dark-900 dark:text-white">{row.name}</td>

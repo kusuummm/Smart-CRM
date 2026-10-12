@@ -218,13 +218,24 @@ function AppLayout() {
     }
   };
 
-  // Clear legacy mock data cache once so user starts with a clean slate
+  // Clear all legacy dummy/mock data caches so user has a 100% clean slate
   useEffect(() => {
+    const purgeKey = 'smartcrm_data_purged_v6';
     const contactsCache = localStorage.getItem('smartcrm_contacts') || '';
-    const hasLegacyPrivate = contactsCache.includes('Private Client');
-    const purged = sessionStorage.getItem('smartcrm_data_purged_v3');
-    if (!purged || hasLegacyPrivate) {
-      sessionStorage.setItem('smartcrm_data_purged_v3', 'true');
+    const callsCache = localStorage.getItem('smartcrm_all_calls') || '';
+
+    const hasDummyContacts =
+      /aarav sharma|priya patel|vikram singh|private client|sharma enterprises|patel logistics|apex realty|9876543210|9812345678|9988776655/i.test(
+        contactsCache
+      );
+    const hasDummyCalls =
+      /ramesh verma|anita desai|vikram singh|swati kulkarni|rajesh gupta|sunita rao|amit shah|neha agarwal/i.test(
+        callsCache
+      );
+    const isPurged = localStorage.getItem(purgeKey);
+
+    if (!isPurged || hasDummyContacts || hasDummyCalls) {
+      localStorage.setItem(purgeKey, 'true');
       localStorage.removeItem('smartcrm_contacts');
       localStorage.removeItem('smartcrm_all_calls');
       localStorage.removeItem('smartcrm_all_tasks');

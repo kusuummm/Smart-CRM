@@ -1850,9 +1850,12 @@ export default function Contacts({ onNavigate }) {
                 <Volume2 size={14} />
                 <span>
                   Past Call Recordings (
-                  {(
-                    customerRecordings[viewingContact.phone.replace(/[^0-9]/g, '').slice(-10)] || [1]
-                  ).length}
+                  {(() => {
+                    const pk = (viewingContact.phone || '').replace(/[^0-9]/g, '').slice(-10);
+                    const savedCalls = JSON.parse(localStorage.getItem(`smartcrm_calls_${pk}`) || '[]');
+                    const list = customerRecordings[pk] || savedCalls;
+                    return list.length;
+                  })()}
                   )
                 </span>
               </button>
@@ -1882,48 +1885,25 @@ export default function Contacts({ onNavigate }) {
 
                   {/* List of customer recordings */}
                   {(() => {
-                    const phoneKey = viewingContact.phone.replace(/[^0-9]/g, '').slice(-10);
-                    const recList = customerRecordings[phoneKey] || [
-                      {
-                        id: `default-rec-${viewingContact.id}`,
-                        customerNumber: `+91${viewingContact.phone}`,
-                        customerName: viewingContact.name,
-                        staff: user?.name || 'Agent',
-                        date: '09 Oct 2026, 11:30 AM',
-                        duration: '1m 24s',
-                        recordingDuration: '1m 24s',
-                        callType: 'Outgoing',
-                        callStatus: 'Answered',
-                        waveform: generateWaveform(24),
-                        transcript: [
-                          {
-                            speaker: user?.name || 'Agent',
-                            role: 'agent',
-                            time: '00:02',
-                            text: `Hello, ${viewingContact.name}? ${user?.name || 'Support'} here from CRM.`,
-                          },
-                          {
-                            speaker: viewingContact.name,
-                            role: 'customer',
-                            time: '00:07',
-                            text: 'Yes, we wanted to confirm our CRM cloud telephony package.',
-                          },
-                          {
-                            speaker: user?.name || 'Agent',
-                            role: 'agent',
-                            time: '00:15',
-                            text: 'All set! Automatic call recording and messaging integrations are active.',
-                          },
-                        ],
-                        aiSummary: {
-                          sentiment: 'Positive (94%)',
-                          score: 94,
-                          summary: `Customer confirmed cloud telephony setup with agent ${user?.name || 'Agent'}. Inquired about recording archives.`,
-                          keyPoints: ['Package Confirmation', 'Cloud Telephony', 'Call Recording Archive'],
-                          followUps: ['Verify API permissions', 'Send receipt voucher'],
-                        },
-                      },
-                    ];
+                    const phoneKey = (viewingContact.phone || '').replace(/[^0-9]/g, '').slice(-10);
+                    const savedCalls = JSON.parse(localStorage.getItem(`smartcrm_calls_${phoneKey}`) || '[]');
+                    const recList = customerRecordings[phoneKey] || savedCalls;
+
+                    if (recList.length === 0) {
+                      return (
+                        <div className="py-12 px-4 text-center space-y-2 bg-dark-50/50 dark:bg-dark-900/50 rounded-2xl border border-dashed border-dark-200 dark:border-dark-700">
+                          <div className="w-10 h-10 rounded-xl bg-dark-100 dark:bg-dark-800 text-dark-400 mx-auto flex items-center justify-center">
+                            <Volume2 size={20} />
+                          </div>
+                          <p className="text-sm font-semibold text-dark-800 dark:text-dark-200">
+                            No Call Recordings
+                          </p>
+                          <p className="text-xs text-dark-500 max-w-xs mx-auto">
+                            No recorded calls found for this contact yet. Make an audio call using the phone button above to log real recordings.
+                          </p>
+                        </div>
+                      );
+                    }
 
                     return (
                       <div className="space-y-3">
