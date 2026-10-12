@@ -445,6 +445,11 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
     try {
       await approveUser(userId);
       addToast(`${userName || 'Telecaller'} approved successfully! They can now access the system.`, 'success');
+      setInspectorUser((prev) =>
+        prev && String(prev._id) === String(userId)
+          ? { ...prev, status: 'active', isApproved: true }
+          : prev
+      );
       loadData(true);
     } catch (err) {
       addToast(err.response?.data?.message || 'Failed to approve telecaller', 'error');
@@ -464,6 +469,11 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
     try {
       await rejectUser(userId);
       addToast(`${userName || 'Telecaller'} registration rejected.`, 'info');
+      setInspectorUser((prev) =>
+        prev && String(prev._id) === String(userId)
+          ? { ...prev, status: 'rejected', isApproved: false }
+          : prev
+      );
       loadData(true);
     } catch (err) {
       addToast(err.response?.data?.message || 'Failed to reject telecaller', 'error');
@@ -557,7 +567,14 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
       } else {
         const data = await createUser(form);
         setUsers((prev) => [data.user, ...prev]);
-        addToast('New user account created successfully!', 'success');
+        addToast(
+          data.message ||
+            (form.role === 'admin'
+              ? 'New admin account created successfully!'
+              : 'New telecaller account created! Pending admin approval before caller can log in.'),
+          'success',
+          5000
+        );
       }
       setIsModalOpen(false);
     } catch (error) {
@@ -2558,7 +2575,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
         </div>
       )}
 
-      {/* 7. DEDICATED TELECALLER PORTFOLIO & REPORT GRAPH PAGE */}
+      {/* 7. DEDICATED TELECALLER PORTFOLIO, PERSONAL DETAILS & REPORT GRAPH PAGE */}
       {(currentView === 'admin-portfolio' || currentView === 'portfolio') && (
         <div className="space-y-6">
           {/* Top Breadcrumb & Actions Bar */}
@@ -2576,31 +2593,50 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
               <div className="hidden sm:flex items-center gap-1.5 text-xs text-dark-400">
                 <span>/</span>
                 <span className="font-medium text-dark-600 dark:text-dark-300">
-                  {inspectorUser ? inspectorUser.name : 'Telecaller Portfolio'}
+                  {inspectorUser ? inspectorUser.name : 'Telecaller Oversight'}
                 </span>
+                {inspectorUser && (!inspectorUser.isApproved || inspectorUser.status === 'pending') && (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+                    Awaiting Approval
+                  </span>
+                )}
               </div>
             </div>
 
             <div className="flex items-center gap-2">
-              {/* Telecaller Switcher Dropdown */}
-              {telecallers.length > 1 && (
+              {/* Telecaller Switcher Dropdown (includes all callers, active and pending) */}
+              {users.filter((u) => u.role === 'telecaller' || u.role === 'user').length > 1 && (
                 <div className="relative">
                   <select
                     value={inspectorUser?._id || ''}
                     onChange={(e) => {
-                      const selected = telecallers.find((u) => u._id === e.target.value);
+                      const selected = users.find((u) => u._id === e.target.value);
                       if (selected) openInspector(selected);
                     }}
                     className="px-3 py-2 bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 rounded-xl text-xs font-semibold text-dark-800 dark:text-dark-200 focus:outline-none focus:ring-2 focus:ring-primary-500 cursor-pointer shadow-2xs"
                   >
                     <option value="" disabled>Switch Caller...</option>
-                    {telecallers.map((tc) => (
-                      <option key={tc._id} value={tc._id}>
-                        {tc.name} ({tc.assignedCustomers || 0} clients)
-                      </option>
-                    ))}
+                    {users
+                      .filter((u) => u.role === 'telecaller' || u.role === 'user')
+                      .map((tc) => (
+                        <option key={tc._id} value={tc._id}>
+                          {tc.name} {(!tc.isApproved || tc.status === 'pending') ? '(Pending Approval)' : `(${tc.assignedCustomers || 0} clients)`}
+                        </option>
+                      ))}
                   </select>
                 </div>
+              )}
+
+              {/* Approve Caller Access Button (if pending) */}
+              {inspectorUser && (!inspectorUser.isApproved || inspectorUser.status === 'pending') && (
+                <button
+                  type="button"
+                  onClick={() => handleApproveCaller(inspectorUser._id, inspectorUser.name)}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-colors cursor-pointer shadow-xs"
+                >
+                  <Check size={14} />
+                  <span>Approve Caller Access</span>
+                </button>
               )}
 
               <button
@@ -2632,6 +2668,43 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
           {/* If caller selected */}
           {inspectorUser ? (
             <div className="space-y-6">
+              {/* Approval Alert Banner if Caller is Pending */}
+              {(!inspectorUser.isApproved || inspectorUser.status === 'pending') && (
+                <div className="p-4 sm:p-5 rounded-2xl border border-amber-300 dark:border-amber-800 bg-amber-50/90 dark:bg-amber-950/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
+                  <div className="flex items-start gap-3">
+                    <Clock size={22} className="text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="font-bold text-amber-900 dark:text-amber-200 text-sm flex items-center gap-2">
+                        <span>Awaiting Administrator Approval</span>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-200 text-amber-900 dark:bg-amber-900 dark:text-amber-200">
+                          PENDING
+                        </span>
+                      </h4>
+                      <p className="text-xs text-amber-800 dark:text-amber-300 mt-1 leading-relaxed">
+                        This telecaller is assigned to the CRM but cannot log in or access caller tools until you approve their account. You can verify their personal details below and grant system access.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => handleApproveCaller(inspectorUser._id, inspectorUser.name)}
+                      className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <Check size={14} />
+                      <span>Approve Access Now</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleRejectCaller(inspectorUser._id, inspectorUser.name)}
+                      className="px-3.5 py-2.5 bg-red-100 hover:bg-red-200 text-red-700 dark:bg-red-950/50 dark:hover:bg-red-900/60 dark:text-red-300 font-semibold text-xs rounded-xl transition-colors cursor-pointer"
+                    >
+                      Reject
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Header Profile Card: Avatar, Name, Live Presence, Tabs */}
               <div className="p-5 sm:p-6 rounded-2xl bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
@@ -2649,13 +2722,22 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                     />
                   </div>
                   <div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <h3 className="font-extrabold text-dark-900 dark:text-white text-xl">
                         {inspectorUser.name}
                       </h3>
                       <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-primary-100 text-primary-700 dark:bg-primary-950/60 dark:text-primary-300">
                         Telecaller
                       </span>
+                      {(!inspectorUser.isApproved || inspectorUser.status === 'pending') ? (
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+                          Pending Approval
+                        </span>
+                      ) : (
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-700 dark:bg-green-950/50 dark:text-green-300">
+                          Approved & Active
+                        </span>
+                      )}
                       <span
                         className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
                           inspectorUser.isOnline
@@ -2668,12 +2750,14 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                       </span>
                     </div>
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-dark-500 dark:text-dark-400 mt-1.5">
-                      <span>{inspectorUser.email}</span>
+                      <a href={`mailto:${inspectorUser.email}`} className="hover:text-primary-600 transition-colors">
+                        {inspectorUser.email}
+                      </a>
                       <span>•</span>
                       <span>{inspectorUser.phone || 'Phone not set'}</span>
                       <span>•</span>
-                      <span className="capitalize font-medium text-emerald-600 dark:text-emerald-400">
-                        {inspectorUser.status === 'active' ? 'Active Account' : 'Account Paused'}
+                      <span>
+                        Joined {new Date(inspectorUser.createdAt || Date.now()).toLocaleDateString()}
                       </span>
                     </div>
                   </div>
@@ -2684,25 +2768,37 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                   <button
                     type="button"
                     onClick={() => setInspectorTab('report')}
-                    className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 ${
+                    className={`px-3 py-2 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 ${
                       inspectorTab === 'report'
                         ? 'bg-primary-600 text-white shadow-xs'
                         : 'text-dark-600 dark:text-dark-400 hover:text-dark-900 dark:hover:text-white'
                     }`}
                   >
-                    <BarChart3 size={15} />
-                    <span>Report Graph & Analytics</span>
+                    <BarChart3 size={14} />
+                    <span>Work Report Graph</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setInspectorTab('profile')}
+                    className={`px-3 py-2 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 ${
+                      inspectorTab === 'profile'
+                        ? 'bg-primary-600 text-white shadow-xs'
+                        : 'text-dark-600 dark:text-dark-400 hover:text-dark-900 dark:hover:text-white'
+                    }`}
+                  >
+                    <User size={14} />
+                    <span>Personal Details</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setInspectorTab('workload')}
-                    className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 ${
+                    className={`px-3 py-2 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 ${
                       inspectorTab === 'workload'
                         ? 'bg-primary-600 text-white shadow-xs'
                         : 'text-dark-600 dark:text-dark-400 hover:text-dark-900 dark:hover:text-white'
                     }`}
                   >
-                    <ArrowRightLeft size={15} />
+                    <ArrowRightLeft size={14} />
                     <span>Workload & Transfer</span>
                   </button>
                 </div>
@@ -2737,7 +2833,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                         {inspectorReport?.metrics?.customersHandled ?? inspectorUser.assignedCustomers ?? 0}
                       </p>
                       <span className="text-[11px] text-dark-400 block mt-1">
-                        Customer Accounts
+                        Total Volume Count
                       </span>
                     </div>
 
@@ -2949,16 +3045,181 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                     </div>
                   </div>
 
-                  {/* Privacy Badge */}
-                  <div className="p-4 rounded-xl bg-blue-50/80 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/50 flex items-start gap-2.5 text-xs text-blue-900 dark:text-blue-300">
-                    <Info size={16} className="text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
-                    <p>
-                      <strong>Executive Analytics View:</strong> Administrators have full visibility into productivity timelines, conversion percentages, and volume trends. Telecaller customer contact details and call recording audio files remain private and caller-isolated.
-                    </p>
+                  {/* Customer / Client Data Isolation Privacy Badge */}
+                  <div className="p-4 rounded-xl bg-blue-50/80 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/50 flex items-start gap-3 text-xs text-blue-900 dark:text-blue-300">
+                    <Shield size={18} className="text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-bold">Customer & Client Privacy Isolation Policy Active</p>
+                      <p className="mt-0.5 text-blue-800 dark:text-blue-300 leading-relaxed">
+                        Administrators have full executive visibility into productivity timelines, outreach graphs, and conversion analytics. In accordance with strict caller isolation, individual customer/client contact records, phone numbers, and call logs assigned to <strong>{inspectorUser.name}</strong> remain strictly private and accessible only within the telecaller portal.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ) : inspectorTab === 'profile' ? (
+                /* Tab 2: Caller Personal Details & Credentials */
+                <div className="space-y-6">
+                  <div className="bg-white dark:bg-dark-800 rounded-2xl border border-dark-200 dark:border-dark-700 p-6 shadow-xs">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-dark-100 dark:border-dark-700/60">
+                      <div>
+                        <h4 className="text-base font-bold text-dark-900 dark:text-white flex items-center gap-2">
+                          <User size={18} className="text-primary-600" />
+                          <span>Caller Personal Details & Credentials</span>
+                        </h4>
+                        <p className="text-xs text-dark-500 dark:text-dark-400 mt-0.5">
+                          Account identity, authentication status, and personal contact parameters
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {(!inspectorUser.isApproved || inspectorUser.status === 'pending') && (
+                          <button
+                            type="button"
+                            onClick={() => handleApproveCaller(inspectorUser._id, inspectorUser.name)}
+                            className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+                          >
+                            <Check size={14} />
+                            <span>Approve Account</span>
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setResetPasswordUser(inspectorUser);
+                            setNewPassword('');
+                          }}
+                          className="px-3 py-2 border border-dark-200 dark:border-dark-700 hover:bg-dark-50 dark:hover:bg-dark-700 text-dark-700 dark:text-dark-300 font-semibold text-xs rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <KeyRound size={13} />
+                          <span>Reset Password</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Personal Details Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
+                      <div className="p-4 rounded-xl bg-dark-50/60 dark:bg-dark-900/40 border border-dark-100 dark:border-dark-700/60">
+                        <span className="text-xs text-dark-400 font-medium block">Full Name</span>
+                        <span className="font-bold text-sm text-dark-900 dark:text-white mt-1 block">
+                          {inspectorUser.name}
+                        </span>
+                        <span className="text-[11px] text-dark-400 mt-1 block">Registered display identity</span>
+                      </div>
+
+                      <div className="p-4 rounded-xl bg-dark-50/60 dark:bg-dark-900/40 border border-dark-100 dark:border-dark-700/60">
+                        <span className="text-xs text-dark-400 font-medium block">Personal Email</span>
+                        <a
+                          href={`mailto:${inspectorUser.email}`}
+                          className="font-bold text-sm text-primary-600 dark:text-primary-400 mt-1 block hover:underline truncate"
+                        >
+                          {inspectorUser.email}
+                        </a>
+                        <span className="text-[11px] text-dark-400 mt-1 block">Primary login username</span>
+                      </div>
+
+                      <div className="p-4 rounded-xl bg-dark-50/60 dark:bg-dark-900/40 border border-dark-100 dark:border-dark-700/60">
+                        <span className="text-xs text-dark-400 font-medium block">Phone Number</span>
+                        {inspectorUser.phone ? (
+                          <a
+                            href={`tel:${inspectorUser.phone}`}
+                            className="font-bold text-sm text-dark-900 dark:text-white mt-1 block hover:text-primary-600 transition-colors"
+                          >
+                            {inspectorUser.phone}
+                          </a>
+                        ) : (
+                          <span className="text-sm text-dark-400 italic mt-1 block">Not configured</span>
+                        )}
+                        <span className="text-[11px] text-dark-400 mt-1 block">Direct telecaller contact</span>
+                      </div>
+
+                      <div className="p-4 rounded-xl bg-dark-50/60 dark:bg-dark-900/40 border border-dark-100 dark:border-dark-700/60">
+                        <span className="text-xs text-dark-400 font-medium block">System Role</span>
+                        <span className="font-bold text-sm text-dark-900 dark:text-white mt-1 block flex items-center gap-1.5">
+                          <User size={14} className="text-primary-600" />
+                          <span>Telecaller</span>
+                        </span>
+                        <span className="text-[11px] text-dark-400 mt-1 block">Restricted caller panel access</span>
+                      </div>
+
+                      <div className="p-4 rounded-xl bg-dark-50/60 dark:bg-dark-900/40 border border-dark-100 dark:border-dark-700/60">
+                        <span className="text-xs text-dark-400 font-medium block">Account Status</span>
+                        <div className="mt-1 flex items-center gap-2">
+                          {(!inspectorUser.isApproved || inspectorUser.status === 'pending') ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+                              <Clock size={12} /> Pending Approval
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700 dark:bg-green-950/50 dark:text-green-300">
+                              <CheckCircle2 size={12} /> Approved & Active
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-[11px] text-dark-400 mt-1 block">
+                          {(!inspectorUser.isApproved || inspectorUser.status === 'pending')
+                            ? 'Cannot log in until admin approves'
+                            : 'Authenticated and authorized'}
+                        </span>
+                      </div>
+
+                      <div className="p-4 rounded-xl bg-dark-50/60 dark:bg-dark-900/40 border border-dark-100 dark:border-dark-700/60">
+                        <span className="text-xs text-dark-400 font-medium block">Member Since</span>
+                        <span className="font-bold text-sm text-dark-900 dark:text-white mt-1 block">
+                          {new Date(inspectorUser.createdAt || Date.now()).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                          })}
+                        </span>
+                        <span className="text-[11px] text-dark-400 mt-1 block">Account assignment date</span>
+                      </div>
+
+                      <div className="p-4 rounded-xl bg-dark-50/60 dark:bg-dark-900/40 border border-dark-100 dark:border-dark-700/60">
+                        <span className="text-xs text-dark-400 font-medium block">Live Presence</span>
+                        <span className="font-bold text-sm mt-1 flex items-center gap-1.5">
+                          <span className={`w-2 h-2 rounded-full ${inspectorUser.isOnline ? 'bg-emerald-500' : 'bg-gray-400'}`} />
+                          <span className={inspectorUser.isOnline ? 'text-emerald-600 dark:text-emerald-400' : 'text-dark-500'}>
+                            {inspectorUser.isOnline ? 'Online (Active Session)' : 'Offline'}
+                          </span>
+                        </span>
+                        <span className="text-[11px] text-dark-400 mt-1 block">Real-time socket presence</span>
+                      </div>
+
+                      <div className="p-4 rounded-xl bg-dark-50/60 dark:bg-dark-900/40 border border-dark-100 dark:border-dark-700/60">
+                        <span className="text-xs text-dark-400 font-medium block">Last Active Session</span>
+                        <span className="font-bold text-sm text-dark-900 dark:text-white mt-1 block">
+                          {inspectorUser.lastActive
+                            ? new Date(inspectorUser.lastActive).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                            : 'N/A'}
+                        </span>
+                        <span className="text-[11px] text-dark-400 mt-1 block">Heartbeat timestamp</span>
+                      </div>
+
+                      <div className="p-4 rounded-xl bg-dark-50/60 dark:bg-dark-900/40 border border-dark-100 dark:border-dark-700/60">
+                        <span className="text-xs text-dark-400 font-medium block">Security Hash</span>
+                        <span className="font-mono font-bold text-xs text-dark-900 dark:text-white mt-1 block">
+                          Bcrypt (Salt 10 Rounds)
+                        </span>
+                        <span className="text-[11px] text-emerald-600 dark:text-emerald-400 mt-1 block font-medium">
+                          STARTTLS Encrypted
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Customer / Client Data Privacy Notice */}
+                  <div className="p-5 rounded-2xl bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/50 flex items-start gap-3.5 text-xs text-emerald-900 dark:text-emerald-200 shadow-xs">
+                    <Shield size={20} className="text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
+                    <div className="space-y-1">
+                      <p className="font-bold text-sm text-emerald-950 dark:text-emerald-100">
+                        Client Records Confidentiality & Privacy Guarantee
+                      </p>
+                      <p className="leading-relaxed text-emerald-800 dark:text-emerald-300">
+                        In accordance with Smart CRM security design, individual customer/client names, phone numbers, notes, and call recordings assigned to <strong>{inspectorUser.name}</strong> are strictly private and isolated to this telecaller. Administrators have full access to caller personal credentials, approval status, and performance work report graphs, but not caller client records.
+                      </p>
+                    </div>
                   </div>
                 </div>
               ) : (
-                /* Tab 2: Workload & Transfer Portfolio */
+                /* Tab 3: Workload & Transfer Portfolio */
                 <div className="space-y-6">
                   <div className="bg-white dark:bg-dark-800 rounded-2xl border border-dark-200 dark:border-dark-700 p-6 shadow-xs">
                     <h4 className="text-base font-bold text-dark-900 dark:text-white flex items-center gap-2">
@@ -3033,29 +3294,33 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
               <Users size={32} className="text-dark-400 mx-auto mb-2 opacity-50" />
               <h4 className="font-bold text-dark-900 dark:text-white text-base">Select a Telecaller to Inspect</h4>
               <p className="text-xs text-dark-500 dark:text-dark-400 mt-1 max-w-sm mx-auto">
-                Choose a caller below to view their 7-day outreach report graph and portfolio balance.
+                Choose a caller below to view their personal details, approval status, and 7-day outreach report graph.
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-2xl mx-auto mt-6">
-                {telecallers.map((tc) => (
-                  <button
-                    key={tc._id}
-                    type="button"
-                    onClick={() => openInspector(tc)}
-                    className="p-3.5 rounded-xl border border-dark-200 dark:border-dark-700 hover:border-primary-500 bg-dark-50 dark:bg-dark-900/50 hover:bg-white dark:hover:bg-dark-800 transition-colors text-left cursor-pointer group flex items-center gap-3"
-                  >
-                    <div className="w-10 h-10 rounded-xl bg-primary-100 dark:bg-primary-950/60 text-primary-600 font-bold flex items-center justify-center flex-shrink-0">
-                      {initials(tc.name)}
-                    </div>
-                    <div className="truncate">
-                      <p className="font-bold text-xs text-dark-900 dark:text-white truncate group-hover:text-primary-600 transition-colors">
-                        {tc.name}
-                      </p>
-                      <p className="text-[11px] text-dark-500 truncate">
-                        {tc.assignedCustomers || 0} clients • {tc.assignedLeads || 0} leads
-                      </p>
-                    </div>
-                  </button>
-                ))}
+                {users
+                  .filter((u) => u.role === 'telecaller' || u.role === 'user')
+                  .map((tc) => (
+                    <button
+                      key={tc._id}
+                      type="button"
+                      onClick={() => openInspector(tc)}
+                      className="p-3.5 rounded-xl border border-dark-200 dark:border-dark-700 hover:border-primary-500 bg-dark-50 dark:bg-dark-900/50 hover:bg-white dark:hover:bg-dark-800 transition-colors text-left cursor-pointer group flex items-center gap-3"
+                    >
+                      <div className="w-10 h-10 rounded-xl bg-primary-100 dark:bg-primary-950/60 text-primary-600 font-bold flex items-center justify-center flex-shrink-0">
+                        {initials(tc.name)}
+                      </div>
+                      <div className="truncate">
+                        <p className="font-bold text-xs text-dark-900 dark:text-white truncate group-hover:text-primary-600 transition-colors">
+                          {tc.name}
+                        </p>
+                        <p className="text-[11px] text-dark-500 truncate">
+                          {(!tc.isApproved || tc.status === 'pending')
+                            ? 'Pending Approval'
+                            : `${tc.assignedCustomers || 0} clients • ${tc.assignedLeads || 0} leads`}
+                        </p>
+                      </div>
+                    </button>
+                  ))}
               </div>
             </div>
           )}
