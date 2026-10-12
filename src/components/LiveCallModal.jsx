@@ -39,9 +39,7 @@ export default function LiveCallModal({ isOpen, onClose, user }) {
   };
 
   const agents = [
-    { name: user?.name || 'Agent Line', phone: user?.phone || '-', status: 'In Call', duration: formatSecs(callDuration), client: 'Client (+91 98765 43210)' },
-    { name: 'Sarah Wilson', phone: '9876543212', status: 'Available', duration: '—', client: 'Idle' },
-    { name: 'John Smith', phone: '9876543211', status: 'Wrap Up', duration: '00:45', client: 'Priya Patel' },
+    { name: user?.name || 'Agent Line', phone: user?.phone || '-', status: 'In Call', duration: formatSecs(callDuration), client: 'Active Client' },
   ];
 
   return (
@@ -119,14 +117,14 @@ export default function LiveCallModal({ isOpen, onClose, user }) {
                     <div>
                       <div className="flex items-center gap-2">
                         <h4 className="font-bold text-dark-900 dark:text-white text-base">
-                          Rahul Sharma
+                          Connected Client
                         </h4>
                         <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
                           Connected
                         </span>
                       </div>
                       <p className="text-xs text-dark-500 dark:text-dark-400">
-                        +91 98765 43210 · Lead: CRM License Package
+                        Live Voice Call Session
                       </p>
                     </div>
                   </div>

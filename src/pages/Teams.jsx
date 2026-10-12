@@ -121,11 +121,7 @@ export default function Teams({ onNavigate, onOpenBuyNumber }) {
   }, []);
 
   // Detail View State: Plan History
-  const [planHistoryList] = useState([
-    { id: 1, title: 'Unlimited All-in-One Pro', status: 'Active', startedOn: '14 Nov 2025', validTill: '12 Feb 2027', invoiceUrl: '#' },
-    { id: 2, title: 'Unlimited Biz Phone', status: 'Renewed', startedOn: '13 Nov 2025', validTill: '14 Nov 2025', invoiceUrl: '#' },
-    { id: 3, title: 'Biz Phone', status: 'Renewed', startedOn: '07 May 2025', validTill: '05 Aug 2025', invoiceUrl: '#' },
-  ]);
+  const [planHistoryList] = useState([]);
 
   // Detail View State: Edit Team Modal
   const [isEditTeamModalOpen, setIsEditTeamModalOpen] = useState(false);
