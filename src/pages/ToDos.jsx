@@ -297,6 +297,9 @@ export default function ToDos({ onNavigate }) {
         window.open(`tel:${clean}`, '_self');
       } catch {}
     }
+    setTimeout(() => {
+      audioEngine.stopRingTone();
+    }, 6000);
   };
 
   return (

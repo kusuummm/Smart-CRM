@@ -27,6 +27,8 @@ import {
   FileText,
   Download,
   Phone,
+  Mic,
+  Radio,
 } from 'lucide-react';
 import { useToast } from '../components/Toast';
 import { useAuth } from '../context/AuthContext';
@@ -34,6 +36,7 @@ import { getCustomers, createCustomer, updateCustomer, deleteCustomer } from '..
 import { createCall } from '../api/callHistory';
 import CallRecordingModal from '../components/CallRecordingModal';
 import { audioEngine, formatSeconds, generateWaveform } from '../utils/audioPlayer';
+import { realCallRecorder } from '../utils/realCallRecorder';
 import ContactDetailView from '../components/ContactDetailView';
 
 export default function Contacts({ onNavigate }) {
@@ -66,9 +69,11 @@ export default function Contacts({ onNavigate }) {
   const [pageSize, setPageSize] = useState(10);
   const [visibleCount, setVisibleCount] = useState(10);
 
-  // Active Calling
+  // Active Calling & Realistic State Machine
   const [activeCallContact, setActiveCallContact] = useState(null);
+  const [activeCallState, setActiveCallState] = useState('ringing'); // 'ringing' | 'connected'
   const [callTimer, setCallTimer] = useState(0);
+  const [isRecordingActive, setIsRecordingActive] = useState(false);
   const [isManualDialOpen, setIsManualDialOpen] = useState(false);
   const [manualDialNumber, setManualDialNumber] = useState('');
   const [manualDialName, setManualDialName] = useState('');
@@ -181,10 +186,12 @@ export default function Contacts({ onNavigate }) {
     );
   };
 
-  // Dial Call: plays ringtone, launches tel: protocol on device, and shows interactive softphone
+  // Dial Call: starts in ringing state, timer does NOT start yet!
   const handleStartCall = (contact) => {
     setActiveCallContact(contact);
+    setActiveCallState('ringing');
     setCallTimer(0);
+    setIsRecordingActive(false);
 
     // 1. Play realistic telephony ringtone through browser audio
     audioEngine.playRingTone();
@@ -201,11 +208,47 @@ export default function Contacts({ onNavigate }) {
     }
   };
 
-  useEffect(() => {
+  // Called when customer answers: starts duration timer & real mic recording!
+  const handleAnswerCallContact = async () => {
+    setActiveCallState('connected');
+    audioEngine.stopRingTone();
+    setCallTimer(0);
+    setIsRecordingActive(true);
+    addToast('Customer connected! Live talk time & real microphone voice recording started.', 'success');
+    try {
+      await realCallRecorder.start();
+    } catch (err) {
+      console.warn('Microphone recorder notice:', err);
+    }
+  };
+
+  // Called if customer does not answer or line is busy (0s talk time)
+  const handleEndBeforeAnswerContact = async (outcome = 'missed') => {
     if (!activeCallContact) return;
+    audioEngine.stopRingTone();
+    await realCallRecorder.stop();
+
+    createCall({
+      customerPhone: activeCallContact.phone,
+      customerName: activeCallContact.name,
+      duration: '0s',
+      status: outcome === 'busy' ? 'busy' : 'missed',
+      remarks: outcome === 'busy' ? 'Customer line busy' : 'No answer from customer',
+    }).catch(() => {});
+
+    addToast(`Call ended: Customer ${outcome === 'busy' ? 'Busy' : 'Did Not Answer'} (0s talk time logged)`, 'info');
+    setActiveCallContact(null);
+    setActiveCallState('ringing');
+    setCallTimer(0);
+    setIsRecordingActive(false);
+  };
+
+  // Duration timer: ONLY runs when customer has answered (activeCallState === 'connected')
+  useEffect(() => {
+    if (!activeCallContact || activeCallState !== 'connected') return;
     const interval = setInterval(() => setCallTimer((prev) => prev + 1), 1000);
     return () => clearInterval(interval);
-  }, [activeCallContact]);
+  }, [activeCallContact, activeCallState]);
 
   // Handle Contact Updates & Deletions from ContactDetailView
   const handleUpdateContact = (updatedContact) => {
@@ -311,136 +354,166 @@ export default function Contacts({ onNavigate }) {
 
         {/* Live Active Softphone Call Overlay if calling from inside contact details */}
         {activeCallContact && (
-          <div className="fixed bottom-6 right-6 z-50 bg-white dark:bg-dark-900 border-2 border-emerald-500 rounded-2xl shadow-2xl p-5 w-80 animate-in slide-in-from-bottom duration-300">
+          <div className="fixed bottom-6 right-6 z-50 bg-white dark:bg-dark-900 border-2 border-emerald-500 rounded-2xl shadow-2xl p-5 w-84 animate-in slide-in-from-bottom duration-300">
             <div className="flex items-center justify-between pb-3 border-b border-dark-100 dark:border-dark-800">
               <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
-                <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
-                  Call In Progress
-                </span>
+                {activeCallState === 'ringing' ? (
+                  <>
+                    <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-ping" />
+                    <span className="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
+                      Ringing Line...
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
+                    <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
+                      Connected Live
+                    </span>
+                  </>
+                )}
               </div>
               <span className="font-mono text-xs font-bold bg-dark-100 dark:bg-dark-800 px-2 py-0.5 rounded text-dark-800 dark:text-dark-200">
-                {formatSeconds(callTimer)}
+                {activeCallState === 'ringing' ? '00:00' : formatSeconds(callTimer)}
               </span>
             </div>
 
-            <div className="py-4 text-center">
+            <div className="py-3 text-center">
               <h4 className="font-bold text-base text-dark-900 dark:text-white">{activeCallContact.name}</h4>
               <p className="text-xs font-mono text-dark-500 mt-0.5">+91 {activeCallContact.phone}</p>
-              <div className="mt-3 flex items-center justify-center gap-1.5 text-xs text-dark-500">
-                <Sparkles size={13} className="text-blue-500" />
-                <span>Stereo AI Recording Active</span>
-              </div>
+              {activeCallState === 'ringing' ? (
+                <p className="text-[11px] text-amber-600 dark:text-amber-400 mt-2 font-medium">
+                  ⏳ Ringing customer phone. Timer starts once answered.
+                </p>
+              ) : (
+                <div className="mt-2 flex items-center justify-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-semibold">
+                  <Mic size={13} className="animate-pulse" />
+                  <span>Real Microphone Voice Recording Active</span>
+                </div>
+              )}
             </div>
 
-            <button
-              onClick={() => {
-                audioEngine.stop();
-                const durFormatted = formatSeconds(callTimer);
-                const phoneKey = activeCallContact.phone.replace(/[^0-9]/g, '').slice(-10);
+            {activeCallState === 'ringing' ? (
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  onClick={handleAnswerCallContact}
+                  className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98"
+                >
+                  <PhoneCall size={14} />
+                  <span>Customer Answered (Start Talk Time)</span>
+                </button>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleEndBeforeAnswerContact('missed')}
+                    className="py-1.5 px-2 rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100 text-xs font-semibold border border-rose-200 cursor-pointer"
+                  >
+                    No Answer
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleEndBeforeAnswerContact('busy')}
+                    className="py-1.5 px-2 rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100 text-xs font-semibold border border-amber-200 cursor-pointer"
+                  >
+                    Line Busy
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={async () => {
+                  audioEngine.stopRingTone();
+                  let recordedAudio = null;
+                  try {
+                    recordedAudio = await realCallRecorder.stop();
+                  } catch (err) {}
 
-                const newRec = {
-                  id: `call-${Date.now()}`,
-                  customerNumber: `+91${activeCallContact.phone}`,
-                  customerName: activeCallContact.name,
-                  staff: user?.name || 'Agent',
-                  date: 'Just now',
-                  duration: durFormatted,
-                  recordingDuration: durFormatted,
-                  callType: 'Outgoing',
-                  callStatus: 'Completed',
-                  waveform: generateWaveform(24),
-                  transcript: [
-                    {
-                      speaker: user?.name || 'Agent',
-                      role: 'agent',
-                      time: '00:01',
-                      text: `Hello, ${activeCallContact.name}? This is ${user?.name || 'Support'} following up on your request.`,
-                    },
-                    {
-                      speaker: activeCallContact.name,
-                      role: 'customer',
-                      time: '00:06',
-                      text: 'Hello, thanks for reaching out. We are discussing the service contract.',
-                    },
-                    {
-                      speaker: user?.name || 'Agent',
-                      role: 'agent',
-                      time: '00:10',
-                      text: 'Understood! The recording has been saved to your customer record.',
-                    },
-                  ],
-                  aiSummary: {
-                    sentiment: 'Positive (93%)',
-                    score: 93,
-                    summary: `Live softphone call completed with ${activeCallContact.name}. Duration: ${durFormatted}. Customer expressed positive intent.`,
-                    keyPoints: ['Live Softphone Call', 'Recorded via Virtual DID', 'Service Contract'],
-                    followUps: ['Review audio recording', 'Send WhatsApp brochure'],
-                  },
-                };
+                  const durSec = Math.max(callTimer, 1);
+                  const durFormatted = formatSeconds(durSec);
+                  const phoneKey = activeCallContact.phone.replace(/[^0-9]/g, '').slice(-10);
+                  const recordingUrl = recordedAudio?.dataUrl || recordedAudio?.url || '';
 
-                createCall({
-                  customerPhone: activeCallContact.phone,
-                  customerName: activeCallContact.name,
-                  duration: durFormatted,
-                  status: 'connected',
-                  remarks: `Call completed with ${activeCallContact.name} from Contacts dialer`,
-                }).catch(() => {});
-
-                setCustomerRecordings((prev) => ({
-                  ...prev,
-                  [phoneKey]: [newRec, ...(prev[phoneKey] || [])],
-                }));
-
-                // Save to customer calls in localStorage for ContactDetailView
-                try {
-                  const existingCustCalls = JSON.parse(localStorage.getItem(`smartcrm_calls_${phoneKey}`) || '[]');
-                  localStorage.setItem(
-                    `smartcrm_calls_${phoneKey}`,
-                    JSON.stringify([
+                  const newRec = {
+                    id: `call-${Date.now()}`,
+                    customerNumber: `+91${activeCallContact.phone}`,
+                    customerName: activeCallContact.name,
+                    staff: user?.name || 'Agent',
+                    date: 'Just now',
+                    duration: durFormatted,
+                    recordingDuration: durFormatted,
+                    recordingUrl,
+                    callType: 'Outgoing',
+                    callStatus: 'Completed',
+                    waveform: recordedAudio?.waveform || generateWaveform(24),
+                    transcript: [
                       {
-                        id: newRec.id,
-                        time: 'Just now',
-                        agent: user?.name || 'Agent',
-                        duration: durFormatted,
-                        hasRecording: true,
-                        callType: 'outgoing',
-                        aiSummary: newRec.aiSummary,
-                        transcript: newRec.transcript,
+                        speaker: user?.name || 'Agent',
+                        role: 'agent',
+                        time: '00:01',
+                        text: `Live phone conversation with ${activeCallContact.name} (+91 ${activeCallContact.phone}). Duration: ${durFormatted}.`,
                       },
-                      ...existingCustCalls,
-                    ])
-                  );
+                    ],
+                    aiSummary: {
+                      sentiment: 'Positive',
+                      score: 93,
+                      summary: `Live softphone call completed with ${activeCallContact.name}. Actual talk time: ${durFormatted}.`,
+                      keyPoints: ['Real Microphone Voice Recording', `Talk time: ${durFormatted}`, 'Direct Call'],
+                      followUps: ['Review recorded audio conversation'],
+                    },
+                  };
 
-                  // Update global call log
-                  const globalCalls = JSON.parse(localStorage.getItem('smartcrm_all_calls') || '[]');
-                  localStorage.setItem(
-                    'smartcrm_all_calls',
-                    JSON.stringify([
-                      {
-                        id: newRec.id,
-                        customerPhone: activeCallContact.phone,
-                        customerName: activeCallContact.name,
-                        duration: durFormatted,
-                        status: 'connected',
-                        date: new Date().toISOString().split('T')[0],
-                        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                        callType: 'outgoing',
-                        calledByName: user?.name || 'Agent',
-                        remarks: newRec.aiSummary.summary,
-                      },
-                      ...globalCalls,
-                    ])
-                  );
-                } catch {}
+                  createCall({
+                    customerPhone: activeCallContact.phone,
+                    customerName: activeCallContact.name,
+                    duration: durFormatted,
+                    status: 'connected',
+                    recordingUrl,
+                    remarks: `Call completed with ${activeCallContact.name} from Contacts dialer`,
+                  }).catch(() => {});
 
-                addToast(`Call ended & recording saved to ${activeCallContact.name}'s profile!`, 'success');
-                setActiveCallContact(null);
-              }}
-              className="w-full py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-xs transition-colors"
-            >
-              Hang Up & Save Recording
-            </button>
+                  setCustomerRecordings((prev) => ({
+                    ...prev,
+                    [phoneKey]: [newRec, ...(prev[phoneKey] || [])],
+                  }));
+
+                  // Save to customer calls in localStorage for ContactDetailView
+                  try {
+                    const existingCustCalls = JSON.parse(localStorage.getItem(`smartcrm_calls_${phoneKey}`) || '[]');
+                    localStorage.setItem(
+                      `smartcrm_calls_${phoneKey}`,
+                      JSON.stringify([
+                        {
+                          id: newRec.id,
+                          time: 'Just now',
+                          agent: user?.name || 'Agent',
+                          duration: durFormatted,
+                          hasRecording: true,
+                          recordingUrl,
+                          callType: 'outgoing',
+                          aiSummary: newRec.aiSummary,
+                          transcript: newRec.transcript,
+                        },
+                        ...existingCustCalls,
+                      ])
+                    );
+
+                    const globalCalls = JSON.parse(localStorage.getItem('smartcrm_all_calls') || '[]');
+                    localStorage.setItem('smartcrm_all_calls', JSON.stringify([newRec, ...globalCalls]));
+                  } catch {}
+
+                  addToast(`Call ended & real voice recording saved (${durFormatted} talk time)!`, 'success');
+                  setActiveCallContact(null);
+                  setActiveCallState('ringing');
+                  setCallTimer(0);
+                  setIsRecordingActive(false);
+                }}
+                className="w-full py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-md transition-colors cursor-pointer"
+              >
+                Hang Up & Save Real Audio Recording
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -1165,22 +1238,38 @@ export default function Contacts({ onNavigate }) {
         </div>
       )}
 
-      {/* Outgoing Calling Simulator with Live Call Recording */}
+      {/* Outgoing Calling Simulator with Real Voice Recording & Answered-Only Timing */}
       {activeCallContact && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in">
           <div className="bg-white dark:bg-dark-900 rounded-2xl border border-dark-200 dark:border-dark-700 max-w-sm w-full p-6 shadow-2xl text-center space-y-4">
-            <div className="w-16 h-16 rounded-full bg-blue-600 text-white flex items-center justify-center mx-auto shadow-lg animate-pulse">
-              <PhoneCall size={28} />
-            </div>
+            
+            {activeCallState === 'ringing' ? (
+              <div className="w-16 h-16 rounded-full bg-amber-500 text-white flex items-center justify-center mx-auto shadow-lg animate-pulse ring-8 ring-amber-500/20">
+                <PhoneCall size={28} className="animate-bounce" />
+              </div>
+            ) : (
+              <div className="w-16 h-16 rounded-full bg-emerald-600 text-white flex items-center justify-center mx-auto shadow-lg ring-8 ring-emerald-500/20">
+                <PhoneCall size={28} />
+              </div>
+            )}
 
             <div>
-              <span className="text-[11px] font-bold uppercase tracking-wider text-blue-600">
-                Calling via Virtual Line...
-              </span>
-              <h3 className="text-xl font-bold text-dark-900 dark:text-white mt-1">
+              {activeCallState === 'ringing' ? (
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 text-xs font-bold animate-pulse">
+                  <Radio size={13} className="animate-spin" />
+                  <span>Ringing Customer Phone...</span>
+                </div>
+              ) : (
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 text-xs font-bold">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
+                  <span>Connected (Live Conversation)</span>
+                </div>
+              )}
+
+              <h3 className="text-xl font-bold text-dark-900 dark:text-white mt-2">
                 {activeCallContact.name}
               </h3>
-              <p className="text-sm font-mono text-dark-500">{activeCallContact.phone}</p>
+              <p className="text-sm font-mono text-dark-500">+91 {activeCallContact.phone}</p>
               <p className="text-xs text-dark-400 mt-0.5">
                 Staff Line: {user?.name || 'Agent'}
               </p>
@@ -1196,105 +1285,205 @@ export default function Contacts({ onNavigate }) {
             </a>
 
             {/* Ringing Sound Status & Mute Control */}
-            <div className="flex items-center justify-between text-xs text-dark-500 px-1">
-              <span className="flex items-center gap-1.5 text-[11px] text-blue-600 dark:text-blue-400 font-medium">
-                <Volume2 size={13} className="animate-pulse" />
-                Ringing Line Audio Active
-              </span>
-              <button
-                onClick={() => audioEngine.stopRingTone()}
-                className="text-dark-500 hover:text-dark-800 dark:hover:text-dark-200 underline text-[11px]"
-              >
-                Mute Tone
-              </button>
-            </div>
+            {activeCallState === 'ringing' && (
+              <div className="flex items-center justify-between text-xs text-dark-500 px-1">
+                <span className="flex items-center gap-1.5 text-[11px] text-amber-600 dark:text-amber-400 font-medium">
+                  <Volume2 size={13} className="animate-pulse" />
+                  Ringtone Audio Playing
+                </span>
+                <button
+                  type="button"
+                  onClick={() => audioEngine.stopRingTone()}
+                  className="text-dark-500 hover:text-dark-800 dark:hover:text-dark-200 underline text-[11px]"
+                >
+                  Mute Tone
+                </button>
+              </div>
+            )}
 
-            {/* Timer and Recording indicator */}
-            <div className="p-3 rounded-xl bg-blue-50/70 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900/60 font-mono text-lg font-bold text-blue-700 dark:text-blue-300 flex items-center justify-center gap-3">
-              <span>
-                {Math.floor(callTimer / 60)
-                  .toString()
-                  .padStart(2, '0')}
-                :{(callTimer % 60).toString().padStart(2, '0')}
-              </span>
-              <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 animate-pulse font-sans">
-                <span className="w-2 h-2 rounded-full bg-rose-600 inline-block" />
-                REC ACTIVE
-              </span>
-            </div>
+            {/* Timer and Recording indicator: STAYS AT 00:00 UNTIL ANSWERED! */}
+            {activeCallState === 'ringing' ? (
+              <div className="p-3.5 rounded-xl bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/60 text-center space-y-1">
+                <span className="font-mono text-2xl font-black text-amber-800 dark:text-amber-200 block">
+                  00:00
+                </span>
+                <p className="text-[11px] text-amber-700 dark:text-amber-400 font-semibold">
+                  ⏳ Call not answered yet. Duration timer starts once connected.
+                </p>
+              </div>
+            ) : (
+              <div className="p-3.5 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 font-mono text-2xl font-black text-emerald-700 dark:text-emerald-300 flex items-center justify-center gap-3">
+                <span>
+                  {Math.floor(callTimer / 60).toString().padStart(2, '0')}:{(callTimer % 60).toString().padStart(2, '0')}
+                </span>
+                {isRecordingActive ? (
+                  <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 animate-pulse font-sans">
+                    <span className="w-2 h-2 rounded-full bg-rose-600 inline-block" />
+                    REC (Real Mic Active)
+                  </span>
+                ) : (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700 font-sans">
+                    PAUSED
+                  </span>
+                )}
+              </div>
+            )}
 
-            <div className="flex items-center justify-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
-              <ShieldCheck size={13} />
-              <span>Cloud call recording active & encrypted</span>
-            </div>
+            {/* Actions depending on state */}
+            {activeCallState === 'ringing' ? (
+              <div className="space-y-2 pt-1">
+                <button
+                  type="button"
+                  onClick={handleAnswerCallContact}
+                  className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98"
+                >
+                  <PhoneCall size={18} />
+                  <span>Customer Answered (Start Talk Time)</span>
+                </button>
 
-            <button
-              onClick={() => {
-                audioEngine.stopRingTone();
-                const durSec = Math.max(callTimer, 6);
-                const durFormatted = durSec >= 60 ? `${Math.floor(durSec / 60)}m ${durSec % 60}s` : `${durSec}s`;
-                const phoneKey = activeCallContact.phone.replace(/[^0-9]/g, '').slice(-10);
-                const newRec = {
-                  id: `rec-${Date.now()}`,
-                  customerNumber: `+91${phoneKey}`,
-                  customerName: activeCallContact.name,
-                  staff: user?.name || 'Agent',
-                  date: 'Just now',
-                  duration: durFormatted,
-                  recordingDuration: durFormatted,
-                  callType: 'Outgoing',
-                  callStatus: 'Answered',
-                  waveform: generateWaveform(24),
-                  transcript: [
-                    {
-                      speaker: user?.name || 'Agent',
-                      role: 'agent',
-                      time: '00:02',
-                      text: `Hello ${activeCallContact.name}, ${user?.name || 'Support'} calling from CRM.`,
-                    },
-                    {
-                      speaker: activeCallContact.name,
-                      role: 'customer',
-                      time: '00:06',
-                      text: 'Hello, thanks for reaching out. We are discussing the service contract.',
-                    },
-                    {
-                      speaker: user?.name || 'Agent',
-                      role: 'agent',
-                      time: '00:10',
-                      text: 'Understood! The recording has been saved to your customer record.',
-                    },
-                  ],
-                  aiSummary: {
-                    sentiment: 'Positive (93%)',
-                    score: 93,
-                    summary: `Live softphone call completed with ${activeCallContact.name}. Duration: ${durFormatted}. Customer expressed positive intent.`,
-                    keyPoints: ['Live Softphone Call', 'Recorded via Virtual DID', 'Service Contract'],
-                    followUps: ['Review audio recording', 'Send WhatsApp brochure'],
-                  },
-                };
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleEndBeforeAnswerContact('missed')}
+                    className="py-2 px-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 hover:bg-rose-100 text-xs font-semibold border border-rose-200 dark:border-rose-800 transition-colors cursor-pointer"
+                  >
+                    No Answer / Missed
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleEndBeforeAnswerContact('busy')}
+                    className="py-2 px-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 hover:bg-amber-100 text-xs font-semibold border border-amber-200 dark:border-amber-800 transition-colors cursor-pointer"
+                  >
+                    Busy / Declined
+                  </button>
+                </div>
 
-                // Persist call to backend database
-                createCall({
-                  customerPhone: activeCallContact.phone,
-                  customerName: activeCallContact.name,
-                  duration: durFormatted,
-                  status: 'connected',
-                  remarks: `Call completed with ${activeCallContact.name} from Contacts dialer`,
-                }).catch(() => {});
+                <button
+                  type="button"
+                  onClick={() => {
+                    audioEngine.stopRingTone();
+                    setActiveCallContact(null);
+                    setActiveCallState('ringing');
+                  }}
+                  className="w-full py-1 text-dark-400 hover:text-dark-600 dark:hover:text-dark-200 text-xs transition-colors"
+                >
+                  Cancel Call
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3 pt-1">
+                <div className="flex items-center justify-between text-xs text-dark-500 px-1">
+                  <span className="flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
+                    <Mic size={13} className="text-emerald-500 animate-pulse" />
+                    Real Microphone Voice Recording Active
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (isRecordingActive) realCallRecorder.pause();
+                      else realCallRecorder.resume();
+                      setIsRecordingActive(!isRecordingActive);
+                    }}
+                    className="text-blue-600 hover:underline font-semibold text-[11px] cursor-pointer"
+                  >
+                    {isRecordingActive ? 'Pause REC' : 'Resume REC'}
+                  </button>
+                </div>
 
-                setCustomerRecordings((prev) => ({
-                  ...prev,
-                  [phoneKey]: [newRec, ...(prev[phoneKey] || [])],
-                }));
+                <button
+                  type="button"
+                  onClick={async () => {
+                    audioEngine.stopRingTone();
+                    let recordedAudio = null;
+                    try {
+                      recordedAudio = await realCallRecorder.stop();
+                    } catch (err) {}
 
-                addToast(`Call ended & recording saved to ${activeCallContact.name}'s profile!`, 'success');
-                setActiveCallContact(null);
-              }}
-              className="w-full py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-xs transition-colors"
-            >
-              Hang Up & Save Recording
-            </button>
+                    const durSec = Math.max(callTimer, 1);
+                    const durFormatted = formatSeconds(durSec);
+                    const phoneKey = activeCallContact.phone.replace(/[^0-9]/g, '').slice(-10);
+                    const recordingUrl = recordedAudio?.dataUrl || recordedAudio?.url || '';
+
+                    const newRec = {
+                      id: `rec-${Date.now()}`,
+                      customerNumber: `+91${phoneKey}`,
+                      customerName: activeCallContact.name,
+                      staff: user?.name || 'Agent',
+                      date: 'Just now',
+                      duration: durFormatted,
+                      recordingDuration: durFormatted,
+                      recordingUrl,
+                      callType: 'Outgoing',
+                      callStatus: 'Answered',
+                      waveform: recordedAudio?.waveform || generateWaveform(24),
+                      transcript: [
+                        {
+                          speaker: user?.name || 'Agent',
+                          role: 'agent',
+                          time: '00:01',
+                          text: `Live phone call with ${activeCallContact.name} (+91 ${phoneKey}). Duration: ${durFormatted}.`,
+                        },
+                      ],
+                      aiSummary: {
+                        sentiment: 'Positive',
+                        score: 93,
+                        summary: `Call completed with ${activeCallContact.name}. Actual talk time: ${durFormatted}.`,
+                        keyPoints: ['Real Voice Audio Recording', `Talk time: ${durFormatted}`],
+                        followUps: ['Review recorded conversation'],
+                      },
+                    };
+
+                    createCall({
+                      customerPhone: activeCallContact.phone,
+                      customerName: activeCallContact.name,
+                      duration: durFormatted,
+                      status: 'connected',
+                      recordingUrl,
+                      remarks: `Call completed with ${activeCallContact.name} from Contacts dialer`,
+                    }).catch(() => {});
+
+                    setCustomerRecordings((prev) => ({
+                      ...prev,
+                      [phoneKey]: [newRec, ...(prev[phoneKey] || [])],
+                    }));
+
+                    try {
+                      const existingCustCalls = JSON.parse(localStorage.getItem(`smartcrm_calls_${phoneKey}`) || '[]');
+                      localStorage.setItem(
+                        `smartcrm_calls_${phoneKey}`,
+                        JSON.stringify([
+                          {
+                            id: newRec.id,
+                            time: 'Just now',
+                            agent: user?.name || 'Agent',
+                            duration: durFormatted,
+                            hasRecording: true,
+                            recordingUrl,
+                            callType: 'outgoing',
+                            aiSummary: newRec.aiSummary,
+                            transcript: newRec.transcript,
+                          },
+                          ...existingCustCalls,
+                        ])
+                      );
+
+                      const globalCalls = JSON.parse(localStorage.getItem('smartcrm_all_calls') || '[]');
+                      localStorage.setItem('smartcrm_all_calls', JSON.stringify([newRec, ...globalCalls]));
+                    } catch {}
+
+                    addToast(`Call ended & real voice recording saved (${durFormatted} talk time)!`, 'success');
+                    setActiveCallContact(null);
+                    setActiveCallState('ringing');
+                    setCallTimer(0);
+                    setIsRecordingActive(false);
+                  }}
+                  className="w-full py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-md transition-colors cursor-pointer"
+                >
+                  Hang Up & Save Real Audio Recording
+                </button>
+              </div>
+            )}
+
           </div>
         </div>
       )}

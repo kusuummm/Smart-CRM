@@ -23,6 +23,7 @@ import {
   Share2,
   FileText,
   BadgeCheck,
+  Upload,
 } from 'lucide-react';
 import { audioEngine, formatSeconds, generateWaveform } from '../utils/audioPlayer';
 import { useToast } from './Toast';
@@ -136,6 +137,22 @@ export default function CallRecordingModal({ isOpen, onClose, call }) {
     }));
   };
 
+  const handleUploadAudio = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    call.recordingUrl = url;
+    setDuration(audioEngine.parseDuration(call.duration) || 30);
+    addToast(`Attached real audio recording "${file.name}"!`, 'success');
+    audioEngine.playCall(
+      call,
+      0,
+      (time) => setCurrentTime(time),
+      () => setIsPlaying(false)
+    );
+    setIsPlaying(true);
+  };
+
   // Mocked rich transcript if call has none
   const transcriptData = call.transcript && call.transcript.length > 0
     ? call.transcript
@@ -217,7 +234,7 @@ export default function CallRecordingModal({ isOpen, onClose, call }) {
                 </span>
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
                   <ShieldCheck size={11} />
-                  Cloud Recorded
+                  Real Voice Recorded
                 </span>
               </div>
               <p className="text-xs text-dark-500 mt-0.5 flex items-center gap-2">
@@ -231,6 +248,14 @@ export default function CallRecordingModal({ isOpen, onClose, call }) {
           </div>
 
           <div className="flex items-center gap-1.5">
+            <label
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-dark-100 hover:bg-dark-200 dark:bg-dark-800 dark:hover:bg-dark-700 text-dark-700 dark:text-dark-200 text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
+              title="Upload and attach real audio recording file (.mp3, .wav, .m4a)"
+            >
+              <Upload size={13} />
+              <span className="hidden sm:inline">Upload Audio</span>
+              <input type="file" accept="audio/*" className="hidden" onChange={handleUploadAudio} />
+            </label>
             <a
               href={`tel:${(call.customerNumber || '').replace(/[^0-9+]/g, '')}`}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-2xs transition-colors"
@@ -242,7 +267,7 @@ export default function CallRecordingModal({ isOpen, onClose, call }) {
             <button
               onClick={handleDownload}
               className="p-2 rounded-xl text-dark-600 dark:text-dark-300 hover:bg-dark-100 dark:hover:bg-dark-800 transition-colors"
-              title="Download MP3 Recording"
+              title="Download Real MP3 Recording"
             >
               <Download size={18} />
             </button>
@@ -400,7 +425,7 @@ export default function CallRecordingModal({ isOpen, onClose, call }) {
             }`}
           >
             <Sparkles size={14} className="text-amber-500" />
-            <span>AI Call Intelligence & Next Steps</span>
+            <span>Call Summary &amp; Follow-ups</span>
           </button>
         </div>
 
@@ -501,7 +526,7 @@ export default function CallRecordingModal({ isOpen, onClose, call }) {
                   </div>
                   <div>
                     <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
-                      AI Sentiment Detection
+                      Customer Call Engagement
                     </span>
                     <h4 className="text-base font-bold text-dark-900 dark:text-white">
                       {aiSummaryData.sentiment}

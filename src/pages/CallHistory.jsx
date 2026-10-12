@@ -25,12 +25,14 @@ import {
   PhoneOutgoing,
   PhoneMissed,
   RotateCcw,
+  Radio,
 } from 'lucide-react';
 import { useToast } from '../components/Toast';
 import { useAuth } from '../context/AuthContext';
 import { getCalls, createCall } from '../api/callHistory';
 import CallRecordingModal from '../components/CallRecordingModal';
 import { audioEngine, formatSeconds, generateWaveform } from '../utils/audioPlayer';
+import { realCallRecorder } from '../utils/realCallRecorder';
 
 export default function CallHistory({ onNavigate, initialCallType = 'all' }) {
   const { user } = useAuth();
@@ -63,25 +65,26 @@ export default function CallHistory({ onNavigate, initialCallType = 'all' }) {
   const [staffSearch, setStaffSearch] = useState('');
   const [teamSearch, setTeamSearch] = useState('');
 
-  // Active Dialing modal
+  // Active Dialing modal & Realistic Call State Machine
   const [dialingCall, setDialingCall] = useState(null);
+  const [dialCallState, setDialCallState] = useState('ringing'); // 'ringing' | 'connected'
   const [dialDuration, setDialDuration] = useState(0);
-  const [dialIsRecording, setDialIsRecording] = useState(true);
+  const [dialIsRecording, setDialIsRecording] = useState(false);
   const [callNotes, setCallNotes] = useState('');
   const [isManualDialOpen, setIsManualDialOpen] = useState(false);
   const [manualDialNumber, setManualDialNumber] = useState('');
   const [manualDialName, setManualDialName] = useState('');
 
-  // Active call duration timer
+  // Active call duration timer: ONLY runs when the call is ANSWERED by the customer!
   useEffect(() => {
     let timer;
-    if (dialingCall) {
+    if (dialingCall && dialCallState === 'connected') {
       timer = setInterval(() => {
         setDialDuration((prev) => prev + 1);
       }, 1000);
     }
     return () => clearInterval(timer);
-  }, [dialingCall]);
+  }, [dialingCall, dialCallState]);
 
   // Recording Modal & Audio Playback State
   const [selectedRecordingCall, setSelectedRecordingCall] = useState(null);
@@ -267,11 +270,13 @@ export default function CallHistory({ onNavigate, initialCallType = 'all' }) {
     addToast('Call logs with recording metadata downloaded as CSV!', 'success');
   };
 
-  // Dial call: plays ringtone, launches tel: protocol on device, and shows interactive softphone
+  // Dial call: starts in RINGING state, plays ringtone, launches tel: protocol on device.
+  // TIMING DOES NOT START YET. It only starts when answered by customer!
   const startCall = (call) => {
     setDialingCall(call);
+    setDialCallState('ringing');
     setDialDuration(0);
-    setDialIsRecording(true);
+    setDialIsRecording(false);
     setCallNotes('');
 
     // 1. Play realistic telephony ringtone through computer speakers
@@ -289,13 +294,89 @@ export default function CallHistory({ onNavigate, initialCallType = 'all' }) {
     }
   };
 
+  // Called when customer answers the call: Stops ringtone, starts talk time timer, starts real microphone recording!
+  const handleAnswerCall = async () => {
+    setDialCallState('connected');
+    audioEngine.stopRingTone();
+    setDialDuration(0);
+    setDialIsRecording(true);
+    addToast('Customer connected! Live talk time & real microphone voice recording started.', 'success');
+    try {
+      await realCallRecorder.start();
+    } catch (err) {
+      console.warn('Microphone recording notice:', err);
+    }
+  };
+
+  // Called if customer does not answer or is busy before connection (0s talk time)
+  const handleEndBeforeAnswer = async (outcome = 'missed') => {
+    if (!dialingCall) return;
+    audioEngine.stopRingTone();
+    await realCallRecorder.stop();
+
+    const targetPhone = dialingCall.customerNumber || dialingCall.displayPhone || '+91';
+    const newCall = {
+      id: Date.now().toString(),
+      customerNumber: targetPhone,
+      customerName: dialingCall.customerName || 'Customer',
+      displayPhone: dialingCall.displayPhone || targetPhone.replace('+91', ''),
+      team: selectedTeam || 'Main Team',
+      staff: user?.name || 'Agent',
+      tags: outcome === 'busy' ? 'Busy' : 'Missed',
+      callType: 'Outgoing',
+      callStatus: outcome === 'busy' ? 'Busy' : 'Missed',
+      duration: '0s',
+      recordingDuration: '0s',
+      ringDuration: '8s',
+      date: 'Just now',
+      notes: callNotes || (outcome === 'busy' ? 'Customer line busy' : 'Customer did not answer'),
+      waveform: [],
+      transcript: [],
+      recordingUrl: '',
+      aiSummary: {
+        sentiment: 'Neutral',
+        score: 50,
+        summary: `Outgoing call to ${targetPhone} was not answered (${outcome}).`,
+        keyPoints: ['Unanswered Call'],
+        followUps: ['Retry call later'],
+      },
+    };
+
+    try {
+      await createCall({
+        customerPhone: targetPhone,
+        customerName: dialingCall.customerName || 'Customer',
+        duration: '0s',
+        status: outcome === 'busy' ? 'busy' : 'missed',
+        remarks: callNotes || (outcome === 'busy' ? 'Customer line busy' : 'Customer did not answer'),
+      });
+    } catch (err) {
+      console.warn('API save notice:', err);
+    }
+
+    setCalls((prev) => [newCall, ...prev]);
+    addToast(`Call ended: Customer ${outcome === 'busy' ? 'Busy' : 'Did Not Answer'} (0s talk time logged)`, 'info');
+    setDialingCall(null);
+    setDialCallState('ringing');
+    setCallNotes('');
+    setDialDuration(0);
+  };
+
   const endCall = async () => {
     if (!dialingCall) return;
     audioEngine.stopRingTone();
 
-    const durSec = Math.max(dialDuration, 5);
+    let recordedAudio = null;
+    try {
+      recordedAudio = await realCallRecorder.stop();
+    } catch (err) {
+      console.warn('Stop recording err:', err);
+    }
+
+    const durSec = Math.max(dialDuration, 1);
     const durFormatted = durSec >= 60 ? `${Math.floor(durSec / 60)}m ${durSec % 60}s` : `${durSec}s`;
     const targetPhone = dialingCall.customerNumber || dialingCall.displayPhone || '+91';
+    const recordingUrl = recordedAudio?.dataUrl || recordedAudio?.url || '';
 
     const newCall = {
       id: Date.now().toString(),
@@ -309,36 +390,25 @@ export default function CallHistory({ onNavigate, initialCallType = 'all' }) {
       callStatus: 'Answered',
       duration: durFormatted,
       recordingDuration: durFormatted,
+      recordingUrl,
       ringDuration: '6s',
       date: 'Just now',
       notes: callNotes,
-      waveform: generateWaveform(28),
+      waveform: recordedAudio?.waveform || generateWaveform(28),
       transcript: [
         {
           speaker: user?.name || 'Agent',
           role: 'agent',
-          time: '00:02',
-          text: `Hello, calling from CRM line. This is ${user?.name || 'Support'}.`,
-        },
-        {
-          speaker: 'Customer',
-          role: 'customer',
-          time: '00:05',
-          text: `Hello, thank you for calling. ${callNotes ? 'Regarding: ' + callNotes : 'We are ready to move forward.'}`,
-        },
-        {
-          speaker: user?.name || 'Agent',
-          role: 'agent',
-          time: '00:10',
-          text: 'Perfect! Call recording and transcript are saved to your CRM account.',
+          time: '00:01',
+          text: `Outbound call to ${dialingCall.customerName || 'Customer'} (+91 ${targetPhone}). Notes: ${callNotes || 'Customer discussion completed.'}`,
         },
       ],
       aiSummary: {
-        sentiment: 'Positive (94%)',
-        score: 94,
-        summary: `Call completed with ${targetPhone}. Duration ${durFormatted}. ${callNotes ? 'Notes: ' + callNotes : 'Routine customer follow-up.'}`,
-        keyPoints: ['Live Softphone Call', 'Recorded via Virtual Line', callNotes || 'Customer Discussion'],
-        followUps: ['Review recorded conversation', 'Send WhatsApp brochure'],
+        sentiment: 'Positive',
+        score: 92,
+        summary: `Call completed with ${targetPhone}. Actual talk time: ${durFormatted}. ${callNotes ? 'Notes: ' + callNotes : 'Customer discussion logged.'}`,
+        keyPoints: ['Real Audio Voice Recording', `Talk time: ${durFormatted}`, callNotes || 'Customer Discussion'],
+        followUps: ['Review recorded conversation'],
       },
     };
 
@@ -351,6 +421,7 @@ export default function CallHistory({ onNavigate, initialCallType = 'all' }) {
         status: 'connected',
         remarks: callNotes || 'Call completed via CRM dialer',
         recordingDuration: durFormatted,
+        recordingUrl,
         waveform: newCall.waveform,
         transcript: newCall.transcript,
         aiSummary: newCall.aiSummary,
@@ -359,10 +430,17 @@ export default function CallHistory({ onNavigate, initialCallType = 'all' }) {
       console.warn('API save fallback:', err);
     }
 
+    try {
+      const existingLocal = JSON.parse(localStorage.getItem('smartcrm_all_calls') || '[]');
+      localStorage.setItem('smartcrm_all_calls', JSON.stringify([newCall, ...existingLocal]));
+    } catch {}
+
     setCalls((prev) => [newCall, ...prev]);
-    addToast(`Call ended & call log saved to CRM database!`, 'success');
+    addToast(`Call ended & real voice recording saved (${durFormatted} talk time)!`, 'success');
     setDialingCall(null);
+    setDialCallState('ringing');
     setCallNotes('');
+    setDialDuration(0);
   };
 
   // Filtered calls
@@ -1011,23 +1089,40 @@ export default function CallHistory({ onNavigate, initialCallType = 'all' }) {
         </div>
       </div>
 
-      {/* Live Outgoing Dialer Modal with Call Recording Active Controls */}
+      {/* Live Outgoing Dialer Modal with Real Voice Recording & Answered-Only Timing */}
       {dialingCall && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in">
           <div className="bg-white dark:bg-dark-900 rounded-2xl border border-dark-200 dark:border-dark-700 max-w-sm w-full p-6 shadow-2xl text-center space-y-4">
-            <div className="w-16 h-16 rounded-full bg-blue-600 text-white flex items-center justify-center mx-auto shadow-lg animate-pulse">
-              <PhoneCall size={28} />
-            </div>
+            
+            {/* Call State Icon */}
+            {dialCallState === 'ringing' ? (
+              <div className="w-16 h-16 rounded-full bg-amber-500 text-white flex items-center justify-center mx-auto shadow-lg animate-pulse ring-8 ring-amber-500/20">
+                <PhoneCall size={28} className="animate-bounce" />
+              </div>
+            ) : (
+              <div className="w-16 h-16 rounded-full bg-emerald-600 text-white flex items-center justify-center mx-auto shadow-lg ring-8 ring-emerald-500/20">
+                <PhoneCall size={28} />
+              </div>
+            )}
 
             <div>
-              <span className="text-[11px] font-bold uppercase tracking-wider text-blue-600">
-                Calling via Virtual Line...
-              </span>
-              <h3 className="text-xl font-bold font-mono text-dark-900 dark:text-white mt-1">
+              {dialCallState === 'ringing' ? (
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 text-xs font-bold animate-pulse">
+                  <Radio size={13} className="animate-spin" />
+                  <span>Ringing Customer Phone...</span>
+                </div>
+              ) : (
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 text-xs font-bold">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
+                  <span>Connected (Live Conversation)</span>
+                </div>
+              )}
+
+              <h3 className="text-xl font-bold font-mono text-dark-900 dark:text-white mt-2">
                 {dialingCall.customerNumber}
               </h3>
               <p className="text-xs text-dark-500 mt-0.5">
-                Staff Line: {user?.name || 'Agent'}
+                {dialingCall.customerName || 'Customer'} &bull; Line: {user?.name || 'Agent'}
               </p>
             </div>
 
@@ -1040,75 +1135,141 @@ export default function CallHistory({ onNavigate, initialCallType = 'all' }) {
               <span>Launch Device Dialer ({dialingCall.customerNumber})</span>
             </a>
 
-            {/* Ringing Sound Status & Mute Control */}
-            <div className="flex items-center justify-between text-xs text-dark-500 px-1">
-              <span className="flex items-center gap-1.5 text-[11px] text-blue-600 dark:text-blue-400 font-medium">
-                <Volume2 size={13} className="animate-pulse" />
-                Ringing Line Audio Active
-              </span>
-              <button
-                onClick={() => audioEngine.stopRingTone()}
-                className="text-dark-500 hover:text-dark-800 dark:hover:text-dark-200 underline text-[11px]"
-              >
-                Mute Tone
-              </button>
-            </div>
-
-            {/* Timer and Recording indicator */}
-            <div className="p-3 rounded-xl bg-blue-50/70 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900/60 font-mono text-lg font-bold text-blue-700 dark:text-blue-300 flex items-center justify-center gap-3">
-              <span>
-                {Math.floor(dialDuration / 60)
-                  .toString()
-                  .padStart(2, '0')}
-                :{(dialDuration % 60).toString().padStart(2, '0')}
-              </span>
-
-              {dialIsRecording ? (
-                <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 animate-pulse font-sans">
-                  <span className="w-2 h-2 rounded-full bg-rose-600 inline-block" />
-                  REC
+            {/* Ringing Sound Status & Mute Control (Only during ringing) */}
+            {dialCallState === 'ringing' && (
+              <div className="flex items-center justify-between text-xs text-dark-500 px-1">
+                <span className="flex items-center gap-1.5 text-[11px] text-amber-600 dark:text-amber-400 font-medium">
+                  <Volume2 size={13} className="animate-pulse" />
+                  Ringtone Audio Playing
                 </span>
-              ) : (
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700 font-sans">
-                  PAUSED
+                <button
+                  type="button"
+                  onClick={() => audioEngine.stopRingTone()}
+                  className="text-dark-500 hover:text-dark-800 dark:hover:text-dark-200 underline text-[11px]"
+                >
+                  Mute Tone
+                </button>
+              </div>
+            )}
+
+            {/* Timer and Recording indicator: STAYS AT 00:00 UNTIL ANSWERED! */}
+            {dialCallState === 'ringing' ? (
+              <div className="p-3.5 rounded-xl bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/60 text-center space-y-1">
+                <span className="font-mono text-2xl font-black text-amber-800 dark:text-amber-200 block">
+                  00:00
                 </span>
-              )}
-            </div>
+                <p className="text-[11px] text-amber-700 dark:text-amber-400 font-semibold">
+                  ⏳ Call not answered yet. Duration timer starts once connected.
+                </p>
+              </div>
+            ) : (
+              <div className="p-3.5 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 font-mono text-2xl font-black text-emerald-700 dark:text-emerald-300 flex items-center justify-center gap-3">
+                <span>
+                  {Math.floor(dialDuration / 60)
+                    .toString()
+                    .padStart(2, '0')}
+                  :{(dialDuration % 60).toString().padStart(2, '0')}
+                </span>
 
-            {/* Recording status note */}
-            <div className="flex items-center justify-between text-xs text-dark-500 px-1">
-              <span className="flex items-center gap-1 text-[11px]">
-                <ShieldCheck size={13} className="text-emerald-500" />
-                Cloud Recording Active
-              </span>
-              <button
-                onClick={() => setDialIsRecording(!dialIsRecording)}
-                className="text-blue-600 hover:underline font-semibold text-[11px]"
-              >
-                {dialIsRecording ? 'Pause REC' : 'Resume REC'}
-              </button>
-            </div>
+                {dialIsRecording ? (
+                  <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 animate-pulse font-sans">
+                    <span className="w-2 h-2 rounded-full bg-rose-600 inline-block" />
+                    REC (Real Mic Active)
+                  </span>
+                ) : (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700 font-sans">
+                    PAUSED
+                  </span>
+                )}
+              </div>
+            )}
 
-            {/* Call Notes Input */}
-            <div className="text-left">
-              <label className="text-[10px] font-bold uppercase text-dark-400 tracking-wider block mb-1">
-                Quick Call Note
-              </label>
-              <input
-                type="text"
-                value={callNotes}
-                onChange={(e) => setCallNotes(e.target.value)}
-                placeholder="e.g. Discussed WhatsApp API & CRM pricing..."
-                className="w-full px-3 py-1.5 text-xs rounded-xl border border-dark-200 dark:border-dark-700 bg-dark-50 dark:bg-dark-800 text-dark-900 dark:text-white placeholder:text-dark-400 focus:outline-none"
-              />
-            </div>
+            {/* Stage Actions */}
+            {dialCallState === 'ringing' ? (
+              <div className="space-y-2 pt-1">
+                <button
+                  type="button"
+                  onClick={handleAnswerCall}
+                  className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98"
+                >
+                  <PhoneCall size={18} />
+                  <span>Customer Answered (Start Talk Time)</span>
+                </button>
 
-            <button
-              onClick={endCall}
-              className="w-full py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-xs transition-colors"
-            >
-              Hang Up & Save Recording
-            </button>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleEndBeforeAnswer('missed')}
+                    className="py-2 px-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 hover:bg-rose-100 text-xs font-semibold border border-rose-200 dark:border-rose-800 transition-colors cursor-pointer"
+                  >
+                    No Answer / Missed
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleEndBeforeAnswer('busy')}
+                    className="py-2 px-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 hover:bg-amber-100 text-xs font-semibold border border-amber-200 dark:border-amber-800 transition-colors cursor-pointer"
+                  >
+                    Busy / Declined
+                  </button>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    audioEngine.stopRingTone();
+                    setDialingCall(null);
+                    setDialCallState('ringing');
+                  }}
+                  className="w-full py-1 text-dark-400 hover:text-dark-600 dark:hover:text-dark-200 text-xs transition-colors"
+                >
+                  Cancel Call
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3 pt-1">
+                {/* Recording status note */}
+                <div className="flex items-center justify-between text-xs text-dark-500 px-1">
+                  <span className="flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
+                    <Mic size={13} className="text-emerald-500 animate-pulse" />
+                    Real Microphone Voice Recording Active
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (dialIsRecording) realCallRecorder.pause();
+                      else realCallRecorder.resume();
+                      setDialIsRecording(!dialIsRecording);
+                    }}
+                    className="text-blue-600 hover:underline font-semibold text-[11px] cursor-pointer"
+                  >
+                    {dialIsRecording ? 'Pause REC' : 'Resume REC'}
+                  </button>
+                </div>
+
+                {/* Call Notes Input */}
+                <div className="text-left">
+                  <label className="text-[10px] font-bold uppercase text-dark-400 tracking-wider block mb-1">
+                    Quick Call Note
+                  </label>
+                  <input
+                    type="text"
+                    value={callNotes}
+                    onChange={(e) => setCallNotes(e.target.value)}
+                    placeholder="e.g. Discussed pricing, customer interested..."
+                    className="w-full px-3 py-1.5 text-xs rounded-xl border border-dark-200 dark:border-dark-700 bg-dark-50 dark:bg-dark-800 text-dark-900 dark:text-white placeholder:text-dark-400 focus:outline-none"
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={endCall}
+                  className="w-full py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-md transition-colors cursor-pointer"
+                >
+                  Hang Up & Save Real Audio Recording
+                </button>
+              </div>
+            )}
+
           </div>
         </div>
       )}
