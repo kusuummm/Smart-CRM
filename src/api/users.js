@@ -30,3 +30,9 @@ export const rejectUser = (id) => api.put(`/users/${id}/reject`).then((res) => r
 
 export const heartbeatRequest = () => api.post('/users/heartbeat').then((res) => res.data);
 
+export const getCallersProgressReport = (params = {}) =>
+  api.get('/users/callers-progress-report', { params }).then((res) => res.data);
+
+export const getCallersProgressDetail = (params = {}) =>
+  api.get('/users/callers-progress-detail', { params }).then((res) => res.data);
+

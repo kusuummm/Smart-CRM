@@ -75,6 +75,7 @@ const pathToPage = {
   '/admin/users': 'admin-users',
   '/admin/agents': 'admin-agents',
   '/admin/workload': 'admin-workload',
+  '/admin/reports': 'admin-reports',
   '/admin/portfolio': 'admin-portfolio',
   '/admin/audit': 'admin-audit',
   '/admin/system': 'admin-system',
@@ -127,6 +128,7 @@ const pageToPath = {
   'admin-users': '/admin/users',
   'admin-agents': '/admin/agents',
   'admin-workload': '/admin/workload',
+  'admin-reports': '/admin/reports',
   'admin-portfolio': '/admin/portfolio',
   'admin-audit': '/admin/audit',
   'admin-system': '/admin/system',
@@ -280,7 +282,11 @@ function AppLayout() {
 
       // 4. Reports
       case 'reports':
-        return <Reports initialReportId={selectedReportId} onNavigate={navigateToPage} />;
+        return isAdmin ? (
+          <AdminPanel targetSection="admin-reports" onNavigate={navigateToPage} />
+        ) : (
+          <Reports initialReportId={selectedReportId} onNavigate={navigateToPage} />
+        );
 
       // 5. Insights (Detailed Call & Customer Breakdowns)
       case 'insights':
@@ -333,6 +339,7 @@ function AppLayout() {
       case 'admin-users':
       case 'admin-agents':
       case 'admin-workload':
+      case 'admin-reports':
       case 'admin-portfolio':
       case 'admin-audit':
       case 'admin-system':

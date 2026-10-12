@@ -75,6 +75,7 @@ export default function Sidebar({
     { id: 'admin-users', label: 'Users & Approvals', icon: UserCheck },
     { id: 'admin-agents', label: 'Telecaller Presence', icon: Activity },
     { id: 'admin-workload', label: 'Workload Balancer', icon: ArrowRightLeft },
+    { id: 'admin-reports', label: 'Caller Progress Reports', icon: BarChart2 },
     { id: 'admin-audit', label: 'Audit Activity Log', icon: Clock },
     { id: 'admin-system', label: 'System Diagnostics', icon: Database },
 
@@ -143,6 +144,10 @@ export default function Sidebar({
               (currentPage === 'tc-events')) ||
             (item.id === 'team-members' &&
               (currentPage === 'team' || currentPage === 'teams-members')) ||
+            (item.id === 'admin-workload' && currentPage === 'admin-workload') ||
+            (item.id === 'admin-reports' &&
+              (currentPage === 'admin-reports' || (isAdmin && currentPage === 'reports'))) ||
+            (item.id === 'admin-audit' && currentPage === 'admin-audit') ||
             (item.id === 'plans-billing' &&
               (currentPage === 'plans' || currentPage === 'billing'));
 

@@ -66,6 +66,7 @@ import {
 } from '../api/users';
 import { getCustomers, updateCustomer, bulkAssignCustomers } from '../api/customers';
 import { testEmailDelivery } from '../api/emails';
+import CallerProgressReports from '../components/CallerProgressReports';
 
 const emptyForm = { name: '', email: '', password: '', role: 'telecaller', phone: '' };
 
@@ -150,6 +151,8 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
           'admin-users': '/admin/users',
           'admin-agents': '/admin/agents',
           'admin-workload': '/admin/workload',
+          'admin-reports': '/admin/reports',
+          reports: '/admin/reports',
           'admin-portfolio': '/admin/portfolio',
           'admin-audit': '/admin/audit',
           'admin-system': '/admin/system',
@@ -755,7 +758,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
       {(currentView === 'admin-panel' ||
         currentView === 'overview' ||
         currentView === 'admin' ||
-        !['admin-users', 'users', 'admin-agents', 'agents', 'admin-workload', 'workload', 'admin-portfolio', 'portfolio', 'admin-audit', 'audit', 'admin-system', 'system', 'admin-system-smtp', 'admin-system-whatsapp', 'admin-system-database'].includes(currentView)) && (
+        !['admin-users', 'users', 'admin-agents', 'agents', 'admin-workload', 'workload', 'admin-reports', 'reports', 'admin-portfolio', 'portfolio', 'admin-audit', 'audit', 'admin-system', 'system', 'admin-system-smtp', 'admin-system-whatsapp', 'admin-system-database'].includes(currentView)) && (
         <div className="space-y-6">
           <PageHeader
             title="Admin Control Center"
@@ -1016,6 +1019,26 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                 </div>
                 <div className="mt-4 pt-3 border-t border-dark-100 dark:border-dark-700/60 flex items-center justify-between text-xs font-semibold text-primary-600 dark:text-primary-400">
                   <span>Open Workload Page</span>
+                  <span>→</span>
+                </div>
+              </div>
+
+              <div
+                onClick={() => onNavigate?.('admin-reports')}
+                className="bg-white dark:bg-dark-800 p-5 rounded-2xl border border-dark-200 dark:border-dark-700 shadow-xs cursor-pointer hover:border-dark-300 dark:hover:border-dark-600 transition-colors flex flex-col justify-between"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+                    <BarChart3 size={20} />
+                  </div>
+                  <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">Team Analytics</span>
+                </div>
+                <div className="mt-4">
+                  <h4 className="font-bold text-base text-dark-900 dark:text-white">Caller Progress Reports</h4>
+                  <p className="text-xs text-dark-500 dark:text-dark-400 mt-1">Aggregate calling charts, time-window trends, talk time, and interactive drilldown logs.</p>
+                </div>
+                <div className="mt-4 pt-3 border-t border-dark-100 dark:border-dark-700/60 flex items-center justify-between text-xs font-semibold text-primary-600 dark:text-primary-400">
+                  <span>View Progress Reports</span>
                   <span>→</span>
                 </div>
               </div>
@@ -2067,6 +2090,11 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
           </div>
           </div>
         </div>
+      )}
+
+      {/* 4b. CALLER PROGRESS REPORTS PAGE */}
+      {(currentView === 'admin-reports' || currentView === 'reports') && (
+        <CallerProgressReports onNavigate={handleNavigate} />
       )}
 
       {/* 5. AUDIT TRAIL PAGE */}
