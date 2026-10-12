@@ -59,7 +59,14 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [expandedRow, setExpandedRow] = useState(null);
   const [statusFilter, setStatusFilter] = useState(selectedLeadStatus || '');
-  const [telecallerFilter, setTelecallerFilter] = useState('');
+  const [telecallerFilter, setTelecallerFilter] = useState(() => {
+    const saved = sessionStorage.getItem('smartcrm_filter_telecaller');
+    if (saved) {
+      sessionStorage.removeItem('smartcrm_filter_telecaller');
+      return saved;
+    }
+    return '';
+  });
   const [searchTerm, setSearchTerm] = useState(selectedCustomer || '');
   const [statusDropdownLeadId, setStatusDropdownLeadId] = useState(null);
   const { addToast } = useToast();

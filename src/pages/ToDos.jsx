@@ -31,7 +31,9 @@ export default function ToDos({ onNavigate }) {
   const { confirm } = useConfirm();
 
   // Active Main Tab: 'fresh' | 'followups' | 'reminders'
-  const [activeTab, setActiveTab] = useState('fresh');
+  const [activeTab, setActiveTab] = useState(() => {
+    return sessionStorage.getItem('smartcrm_filter_telecaller') ? 'followups' : 'fresh';
+  });
 
   // Follow-up Subcategory Pill Filter
   const [subCategory, setSubCategory] = useState('ALL');
@@ -40,7 +42,14 @@ export default function ToDos({ onNavigate }) {
   const [taskDueDate, setTaskDueDate] = useState('Sep 29, 2026 – Oct 06, 2026');
   const [teamName, setTeamName] = useState('Main Team');
   const [taskStatus, setTaskStatus] = useState('Pending');
-  const [assignedTo, setAssignedTo] = useState('Select assigned to');
+  const [assignedTo, setAssignedTo] = useState(() => {
+    const saved = sessionStorage.getItem('smartcrm_filter_telecaller');
+    if (saved) {
+      sessionStorage.removeItem('smartcrm_filter_telecaller');
+      return saved;
+    }
+    return 'Select assigned to';
+  });
   const [leadCreatedDate, setLeadCreatedDate] = useState('');
 
   // Dropdown toggles

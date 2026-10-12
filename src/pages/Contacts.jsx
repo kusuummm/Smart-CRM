@@ -41,7 +41,14 @@ export default function Contacts({ onNavigate }) {
   const { addToast } = useToast();
 
   // Search & Filter states
-  const [customerSearch, setCustomerSearch] = useState('');
+  const [customerSearch, setCustomerSearch] = useState(() => {
+    const saved = sessionStorage.getItem('smartcrm_filter_telecaller');
+    if (saved) {
+      sessionStorage.removeItem('smartcrm_filter_telecaller');
+      return saved;
+    }
+    return '';
+  });
   const [selectedLeadGroup, setSelectedLeadGroup] = useState('Select Lead groups');
   const [selectedCreatedBy, setSelectedCreatedBy] = useState('Select Created by');
   const [createdDate, setCreatedDate] = useState('');

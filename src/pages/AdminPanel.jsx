@@ -44,6 +44,7 @@ import {
   BarChart3,
   TrendingUp,
   FileSpreadsheet,
+  ArrowUpRight,
 } from 'lucide-react';
 import { PageHeader } from '../components/Common';
 import Modal from '../components/Modal';
@@ -2855,8 +2856,21 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                 <div className="space-y-6">
                   {/* KPI Summary Cards */}
                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 shadow-xs">
-                      <span className="text-xs text-dark-500 dark:text-dark-400 font-medium">Active Leads</span>
+                    {/* Card 1: Active Leads */}
+                    <div
+                      onClick={() => {
+                        sessionStorage.setItem('smartcrm_filter_telecaller', inspectorUser.name);
+                        handleNavigate('leads');
+                      }}
+                      className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 shadow-xs cursor-pointer hover:shadow-md hover:border-emerald-400 dark:hover:border-emerald-500 transition-all group"
+                      title={`Click to view all active leads assigned to ${inspectorUser.name} in Leads Pipeline`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-dark-500 dark:text-dark-400 font-medium">Active Leads</span>
+                        <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold opacity-0 group-hover:opacity-100 flex items-center gap-0.5 transition-opacity">
+                          View <ArrowUpRight size={12} />
+                        </span>
+                      </div>
                       <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1">
                         {inspectorReport?.metrics?.totalLeads ?? inspectorUser.assignedLeads ?? 0}
                       </p>
@@ -2865,8 +2879,21 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                       </span>
                     </div>
 
-                    <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 shadow-xs">
-                      <span className="text-xs text-dark-500 dark:text-dark-400 font-medium">Clients Managed</span>
+                    {/* Card 2: Clients Managed */}
+                    <div
+                      onClick={() => {
+                        sessionStorage.setItem('smartcrm_filter_telecaller', inspectorUser.name);
+                        handleNavigate('contacts');
+                      }}
+                      className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 shadow-xs cursor-pointer hover:shadow-md hover:border-blue-400 dark:hover:border-blue-500 transition-all group"
+                      title={`Click to view all client accounts managed by ${inspectorUser.name} in Contacts`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-dark-500 dark:text-dark-400 font-medium">Clients Managed</span>
+                        <span className="text-[10px] text-blue-600 dark:text-blue-400 font-semibold opacity-0 group-hover:opacity-100 flex items-center gap-0.5 transition-opacity">
+                          View <ArrowUpRight size={12} />
+                        </span>
+                      </div>
                       <p className="text-2xl font-black text-dark-900 dark:text-white mt-1">
                         {inspectorReport?.metrics?.customersHandled ?? inspectorUser.assignedCustomers ?? 0}
                       </p>
@@ -2875,8 +2902,21 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                       </span>
                     </div>
 
-                    <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 shadow-xs">
-                      <span className="text-xs text-dark-500 dark:text-dark-400 font-medium">Calls Logged</span>
+                    {/* Card 3: Calls Logged */}
+                    <div
+                      onClick={() => {
+                        sessionStorage.setItem('smartcrm_filter_telecaller', inspectorUser.name);
+                        handleNavigate('call-history');
+                      }}
+                      className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 shadow-xs cursor-pointer hover:shadow-md hover:border-indigo-400 dark:hover:border-indigo-500 transition-all group"
+                      title={`Click to view all calls logged by ${inspectorUser.name} in Call History`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-dark-500 dark:text-dark-400 font-medium">Calls Logged</span>
+                        <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-semibold opacity-0 group-hover:opacity-100 flex items-center gap-0.5 transition-opacity">
+                          View <ArrowUpRight size={12} />
+                        </span>
+                      </div>
                       <p className="text-2xl font-black text-indigo-600 dark:text-indigo-400 mt-1">
                         {inspectorReport?.metrics?.totalCalls ?? 0}
                       </p>
@@ -2885,8 +2925,21 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                       </span>
                     </div>
 
-                    <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 shadow-xs">
-                      <span className="text-xs text-dark-500 dark:text-dark-400 font-medium">Follow-ups Done</span>
+                    {/* Card 4: Follow-ups Done */}
+                    <div
+                      onClick={() => {
+                        sessionStorage.setItem('smartcrm_filter_telecaller', inspectorUser.name);
+                        handleNavigate('todos');
+                      }}
+                      className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 shadow-xs cursor-pointer hover:shadow-md hover:border-amber-400 dark:hover:border-amber-500 transition-all group"
+                      title={`Click to view all follow-ups and tasks for ${inspectorUser.name} in To-Dos`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-dark-500 dark:text-dark-400 font-medium">Follow-ups Done</span>
+                        <span className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold opacity-0 group-hover:opacity-100 flex items-center gap-0.5 transition-opacity">
+                          View <ArrowUpRight size={12} />
+                        </span>
+                      </div>
                       <p className="text-2xl font-black text-amber-600 dark:text-amber-400 mt-1">
                         {inspectorReport?.metrics?.completedFollowUps ?? 0}
                       </p>
@@ -2911,15 +2964,36 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
 
                       {/* Legend */}
                       <div className="flex items-center gap-4 text-xs">
-                        <div className="flex items-center gap-1.5">
+                        <div
+                          onClick={() => {
+                            sessionStorage.setItem('smartcrm_filter_telecaller', inspectorUser.name);
+                            handleNavigate('call-history');
+                          }}
+                          className="flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity"
+                          title={`Click to view all calls for ${inspectorUser.name} in Call History`}
+                        >
                           <span className="w-3 h-3 rounded-sm bg-indigo-500" />
                           <span className="text-dark-600 dark:text-dark-300 font-medium">Calls</span>
                         </div>
-                        <div className="flex items-center gap-1.5">
+                        <div
+                          onClick={() => {
+                            sessionStorage.setItem('smartcrm_filter_telecaller', inspectorUser.name);
+                            handleNavigate('todos');
+                          }}
+                          className="flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity"
+                          title={`Click to view all follow-ups for ${inspectorUser.name} in To-Dos`}
+                        >
                           <span className="w-3 h-3 rounded-sm bg-amber-500" />
                           <span className="text-dark-600 dark:text-dark-300 font-medium">Follow-ups</span>
                         </div>
-                        <div className="flex items-center gap-1.5">
+                        <div
+                          onClick={() => {
+                            sessionStorage.setItem('smartcrm_filter_telecaller', inspectorUser.name);
+                            handleNavigate('leads');
+                          }}
+                          className="flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity"
+                          title={`Click to view all active leads for ${inspectorUser.name} in Leads Pipeline`}
+                        >
                           <span className="w-3 h-3 rounded-sm bg-emerald-500" />
                           <span className="text-dark-600 dark:text-dark-300 font-medium">Leads</span>
                         </div>
@@ -3063,20 +3137,28 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                               {stages.map((st, idx) => (
                                 <div
                                   key={idx}
-                                  className="p-3 rounded-xl bg-dark-50 dark:bg-dark-900/40 border border-dark-100 dark:border-dark-700/50 flex items-center justify-between"
+                                  onClick={() => {
+                                    sessionStorage.setItem('smartcrm_filter_telecaller', inspectorUser.name);
+                                    handleNavigate('leads');
+                                  }}
+                                  className="p-3 rounded-xl bg-dark-50 dark:bg-dark-900/40 border border-dark-100 dark:border-dark-700/50 flex items-center justify-between cursor-pointer hover:border-primary-400 hover:shadow-2xs transition-all group"
+                                  title={`Click to view all ${st.name} leads for ${inspectorUser.name} in Leads Pipeline`}
                                 >
                                   <div className="flex items-center gap-2">
                                     <span
                                       className="w-2.5 h-2.5 rounded-full flex-shrink-0"
                                       style={{ backgroundColor: st.color }}
                                     />
-                                    <span className="text-xs font-medium text-dark-700 dark:text-dark-300">
+                                    <span className="text-xs font-medium text-dark-700 dark:text-dark-300 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
                                       {st.name}
                                     </span>
                                   </div>
-                                  <span className="text-sm font-bold text-dark-900 dark:text-white">
-                                    {st.value || 0}
-                                  </span>
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-sm font-bold text-dark-900 dark:text-white">
+                                      {st.value || 0}
+                                    </span>
+                                    <ArrowUpRight size={12} className="text-dark-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                  </div>
                                 </div>
                               ))}
                             </div>

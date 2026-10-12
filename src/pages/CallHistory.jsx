@@ -40,7 +40,14 @@ export default function CallHistory({ onNavigate, initialCallType = 'all' }) {
   const [callTypeFilter, setCallTypeFilter] = useState(initialCallType || 'all');
   const [customerSearch, setCustomerSearch] = useState('');
   const [selectedTeam, setSelectedTeam] = useState('Main Team');
-  const [selectedStaff, setSelectedStaff] = useState('All staff');
+  const [selectedStaff, setSelectedStaff] = useState(() => {
+    const saved = sessionStorage.getItem('smartcrm_filter_telecaller');
+    if (saved) {
+      sessionStorage.removeItem('smartcrm_filter_telecaller');
+      return saved;
+    }
+    return 'All staff';
+  });
   const [period, setPeriod] = useState('Sep 09, 2026 – Oct 09, 2026');
   const [copiedId, setCopiedId] = useState(null);
 
