@@ -33,8 +33,11 @@ class CallAudioEngine {
     }
   }
 
-  // Realistic phone ringtone for outgoing dialing state
+  // Realistic brief phone ringtone for outgoing dialing state (at most 2 short rings, auto-silenced)
   playRingTone() {
+    const isMuted = localStorage.getItem('smartcrm_ringtone_muted') === 'true';
+    if (isMuted) return;
+
     this.initAudioContext();
     this.stopRingTone();
     if (!this.audioCtx) return;
@@ -55,22 +58,36 @@ class CallAudioEngine {
       const now = this.audioCtx.currentTime;
       gain.gain.setValueAtTime(0, now);
 
-      // Standard telecom ringing cadences: 1.2s tone on, 2.0s silent interval
-      for (let i = 0; i < 12; i++) {
-        const ringStart = now + i * 3.2;
-        gain.gain.setValueAtTime(0.12, ringStart);
-        gain.gain.setValueAtTime(0, ringStart + 1.2);
-      }
+      // Ring 1: 0.0s to 1.0s (soft volume so it doesn't drown out conversation)
+      gain.gain.setValueAtTime(0.08, now);
+      gain.gain.setValueAtTime(0, now + 1.0);
+
+      // Ring 2: 2.0s to 3.0s (then completely stops)
+      gain.gain.setValueAtTime(0.08, now + 2.0);
+      gain.gain.setValueAtTime(0, now + 3.0);
 
       osc1.start(now);
       osc2.start(now);
+      osc1.stop(now + 3.2);
+      osc2.stop(now + 3.2);
+
       this.ringNodes = [osc1, osc2, gain];
+
+      // Automatic safety timeout: stops completely after 3.2 seconds
+      if (this.ringTimeout) clearTimeout(this.ringTimeout);
+      this.ringTimeout = setTimeout(() => {
+        this.stopRingTone();
+      }, 3300);
     } catch (e) {
       console.warn('Ring tone error:', e);
     }
   }
 
   stopRingTone() {
+    if (this.ringTimeout) {
+      clearTimeout(this.ringTimeout);
+      this.ringTimeout = null;
+    }
     if (this.ringNodes) {
       this.ringNodes.forEach((node) => {
         try {
@@ -80,6 +97,22 @@ class CallAudioEngine {
       });
       this.ringNodes = null;
     }
+  }
+
+  isRingToneMuted() {
+    return localStorage.getItem('smartcrm_ringtone_muted') === 'true';
+  }
+
+  toggleRingToneMute() {
+    const current = this.isRingToneMuted();
+    const next = !current;
+    try {
+      localStorage.setItem('smartcrm_ringtone_muted', next ? 'true' : 'false');
+    } catch {}
+    if (next) {
+      this.stopRingTone();
+    }
+    return next;
   }
 
   parseDuration(durationStr) {

@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import {
   Users,
   Search,
@@ -22,6 +22,7 @@ import {
   Play,
   Pause,
   Volume2,
+  VolumeX,
   Sparkles,
   ShieldCheck,
   FileText,
@@ -33,7 +34,7 @@ import {
 import { useToast } from '../components/Toast';
 import { useAuth } from '../context/AuthContext';
 import { getCustomers, createCustomer, updateCustomer, deleteCustomer } from '../api/customers';
-import { createCall } from '../api/callHistory';
+import { getCalls, createCall } from '../api/callHistory';
 import CallRecordingModal from '../components/CallRecordingModal';
 import { audioEngine, formatSeconds, generateWaveform } from '../utils/audioPlayer';
 import { realCallRecorder } from '../utils/realCallRecorder';
@@ -186,14 +187,23 @@ export default function Contacts({ onNavigate }) {
     );
   };
 
-  // Dial Call: starts in ringing state, timer does NOT start yet!
+  const autoConnectTimerRef = useRef(null);
+  const [ringCountdown, setRingCountdown] = useState(4);
+  const [liveVolume, setLiveVolume] = useState(0);
+  const [isRingMuted, setIsRingMuted] = useState(audioEngine.isRingToneMuted());
+
+  // Dial Call: starts in ringing state, timer starts once answered or auto-connected in 4s!
   const handleStartCall = (contact) => {
+    if (autoConnectTimerRef.current) {
+      clearTimeout(autoConnectTimerRef.current);
+    }
     setActiveCallContact(contact);
     setActiveCallState('ringing');
     setCallTimer(0);
     setIsRecordingActive(false);
+    setRingCountdown(4);
 
-    // 1. Play realistic telephony ringtone through browser audio
+    // 1. Play brief realistic telephony ringtone (if not muted)
     audioEngine.playRingTone();
 
     // 2. Trigger native telephony dialer (tel: protocol) on Windows Phone Link / mobile
@@ -206,15 +216,40 @@ export default function Contacts({ onNavigate }) {
         console.warn('tel: protocol redirect:', e);
       }
     }
+
+    // 3. Auto-connect after 4s ringing so telecallers on Phone Link / phone have live talk time & recording
+    autoConnectTimerRef.current = setTimeout(() => {
+      handleAnswerCallContact();
+    }, 4000);
+  };
+
+  // Called when clicking "Launch Device Dialer": answers immediately so Phone Link is in sync
+  const handleLaunchDeviceDialer = (phone) => {
+    if (autoConnectTimerRef.current) {
+      clearTimeout(autoConnectTimerRef.current);
+      autoConnectTimerRef.current = null;
+    }
+    audioEngine.stopRingTone();
+    handleAnswerCallContact();
+    const cleanNumber = (phone || '').replace(/[^0-9+]/g, '');
+    if (cleanNumber) {
+      try {
+        window.open(`tel:${cleanNumber}`, '_self');
+      } catch (e) {}
+    }
   };
 
   // Called when customer answers: starts duration timer & real mic recording!
   const handleAnswerCallContact = async () => {
+    if (autoConnectTimerRef.current) {
+      clearTimeout(autoConnectTimerRef.current);
+      autoConnectTimerRef.current = null;
+    }
     setActiveCallState('connected');
     audioEngine.stopRingTone();
     setCallTimer(0);
     setIsRecordingActive(true);
-    addToast('Customer connected! Live talk time & real microphone voice recording started.', 'success');
+    addToast('Call connected! Live talk time & real microphone voice recording active.', 'success');
     try {
       await realCallRecorder.start();
     } catch (err) {
@@ -224,6 +259,10 @@ export default function Contacts({ onNavigate }) {
 
   // Called if customer does not answer or line is busy (0s talk time)
   const handleEndBeforeAnswerContact = async (outcome = 'missed') => {
+    if (autoConnectTimerRef.current) {
+      clearTimeout(autoConnectTimerRef.current);
+      autoConnectTimerRef.current = null;
+    }
     if (!activeCallContact) return;
     audioEngine.stopRingTone();
     await realCallRecorder.stop();
@@ -242,6 +281,38 @@ export default function Contacts({ onNavigate }) {
     setCallTimer(0);
     setIsRecordingActive(false);
   };
+
+  // Ringing countdown effect
+  useEffect(() => {
+    if (!activeCallContact || activeCallState !== 'ringing') return;
+    const interval = setInterval(() => {
+      setRingCountdown((prev) => (prev > 1 ? prev - 1 : 1));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [activeCallContact, activeCallState]);
+
+  // Live microphone volume polling for real-time VU meter
+  useEffect(() => {
+    if (!activeCallContact || activeCallState !== 'connected') {
+      setLiveVolume(0);
+      return;
+    }
+    const interval = setInterval(() => {
+      const vol = realCallRecorder.getLiveVolume();
+      setLiveVolume(vol);
+    }, 150);
+    return () => clearInterval(interval);
+  }, [activeCallContact, activeCallState]);
+
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
+      if (autoConnectTimerRef.current) {
+        clearTimeout(autoConnectTimerRef.current);
+      }
+      audioEngine.stopRingTone();
+    };
+  }, []);
 
   // Duration timer: ONLY runs when customer has answered (activeCallState === 'connected')
   useEffect(() => {
@@ -1275,28 +1346,43 @@ export default function Contacts({ onNavigate }) {
               </p>
             </div>
 
-            {/* Direct Telephony App Link */}
-            <a
-              href={`tel:${(activeCallContact.phone || '').replace(/[^0-9+]/g, '')}`}
-              className="inline-flex items-center justify-center gap-2 w-full py-2 px-3 rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50/70 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 hover:bg-blue-100 font-semibold text-xs transition-colors"
+            {/* Direct Telephony App Link / Phone Link */}
+            <button
+              type="button"
+              onClick={() => handleLaunchDeviceDialer(activeCallContact.phone)}
+              className="inline-flex items-center justify-center gap-2 w-full py-2.5 px-3 rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50/70 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 hover:bg-blue-100 font-semibold text-xs transition-colors cursor-pointer"
             >
               <Phone size={13} />
               <span>Launch Device Dialer ({activeCallContact.phone})</span>
-            </a>
+            </button>
 
             {/* Ringing Sound Status & Mute Control */}
             {activeCallState === 'ringing' && (
               <div className="flex items-center justify-between text-xs text-dark-500 px-1">
                 <span className="flex items-center gap-1.5 text-[11px] text-amber-600 dark:text-amber-400 font-medium">
-                  <Volume2 size={13} className="animate-pulse" />
-                  Ringtone Audio Playing
+                  {isRingMuted ? (
+                    <>
+                      <VolumeX size={13} className="text-dark-400" />
+                      <span>Silent Dialing (Muted)</span>
+                    </>
+                  ) : (
+                    <>
+                      <Volume2 size={13} className="animate-pulse" />
+                      <span>Ringtone Playing (~3s)</span>
+                    </>
+                  )}
                 </span>
                 <button
                   type="button"
-                  onClick={() => audioEngine.stopRingTone()}
-                  className="text-dark-500 hover:text-dark-800 dark:hover:text-dark-200 underline text-[11px]"
+                  onClick={() => {
+                    const next = audioEngine.toggleRingToneMute();
+                    setIsRingMuted(next);
+                    addToast(next ? 'Ringtone muted (Silent Dialing)' : 'Ringtone enabled', 'info');
+                  }}
+                  className="flex items-center gap-1 text-dark-500 hover:text-dark-800 dark:hover:text-dark-200 underline text-[11px] cursor-pointer"
                 >
-                  Mute Tone
+                  {isRingMuted ? <Volume2 size={11} /> : <VolumeX size={11} />}
+                  <span>{isRingMuted ? 'Enable Sound' : 'Mute Tone'}</span>
                 </button>
               </div>
             )}
@@ -1304,28 +1390,47 @@ export default function Contacts({ onNavigate }) {
             {/* Timer and Recording indicator: STAYS AT 00:00 UNTIL ANSWERED! */}
             {activeCallState === 'ringing' ? (
               <div className="p-3.5 rounded-xl bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/60 text-center space-y-1">
-                <span className="font-mono text-2xl font-black text-amber-800 dark:text-amber-200 block">
-                  00:00
-                </span>
+                <div className="flex items-center justify-center gap-2">
+                  <span className="font-mono text-2xl font-black text-amber-800 dark:text-amber-200">
+                    00:00
+                  </span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-200 text-amber-900 dark:bg-amber-900 dark:text-amber-200 animate-pulse">
+                    Ringing ({ringCountdown}s)
+                  </span>
+                </div>
                 <p className="text-[11px] text-amber-700 dark:text-amber-400 font-semibold">
-                  ⏳ Call not answered yet. Duration timer starts once connected.
+                  Auto-connecting in {ringCountdown}s for Phone Link/device call, or connect now:
                 </p>
               </div>
             ) : (
-              <div className="p-3.5 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 font-mono text-2xl font-black text-emerald-700 dark:text-emerald-300 flex items-center justify-center gap-3">
-                <span>
-                  {Math.floor(callTimer / 60).toString().padStart(2, '0')}:{(callTimer % 60).toString().padStart(2, '0')}
-                </span>
-                {isRecordingActive ? (
-                  <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 animate-pulse font-sans">
-                    <span className="w-2 h-2 rounded-full bg-rose-600 inline-block" />
-                    REC (Real Mic Active)
+              <div className="space-y-2">
+                <div className="p-3.5 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 flex items-center justify-between">
+                  <span className="font-mono text-2xl font-black text-emerald-700 dark:text-emerald-300">
+                    {Math.floor(callTimer / 60).toString().padStart(2, '0')}:{(callTimer % 60).toString().padStart(2, '0')}
                   </span>
-                ) : (
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700 font-sans">
-                    PAUSED
-                  </span>
-                )}
+                  {isRecordingActive ? (
+                    <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 animate-pulse font-sans">
+                      <span className="w-2 h-2 rounded-full bg-rose-600 inline-block" />
+                      REC (Real Mic Active)
+                    </span>
+                  ) : (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700 font-sans">
+                      PAUSED
+                    </span>
+                  )}
+                </div>
+
+                {/* Live Real-time Audio Level VU Meter */}
+                <div className="flex items-center gap-2 px-1">
+                  <Mic size={13} className={liveVolume > 5 ? 'text-emerald-500 animate-pulse' : 'text-dark-400'} />
+                  <div className="flex-1 bg-dark-100 dark:bg-dark-800 rounded-full h-2 overflow-hidden">
+                    <div
+                      className="bg-emerald-500 h-full transition-all duration-150 rounded-full"
+                      style={{ width: `${Math.max(6, liveVolume)}%` }}
+                    />
+                  </div>
+                  <span className="text-[10px] font-mono text-dark-400 font-semibold">{liveVolume}%</span>
+                </div>
               </div>
             )}
 
@@ -1338,7 +1443,7 @@ export default function Contacts({ onNavigate }) {
                   className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98"
                 >
                   <PhoneCall size={18} />
-                  <span>Customer Answered (Start Talk Time)</span>
+                  <span>Customer Answered (Start Talk Time Now)</span>
                 </button>
 
                 <div className="grid grid-cols-2 gap-2">
@@ -1361,11 +1466,15 @@ export default function Contacts({ onNavigate }) {
                 <button
                   type="button"
                   onClick={() => {
+                    if (autoConnectTimerRef.current) {
+                      clearTimeout(autoConnectTimerRef.current);
+                      autoConnectTimerRef.current = null;
+                    }
                     audioEngine.stopRingTone();
                     setActiveCallContact(null);
                     setActiveCallState('ringing');
                   }}
-                  className="w-full py-1 text-dark-400 hover:text-dark-600 dark:hover:text-dark-200 text-xs transition-colors"
+                  className="w-full py-1 text-dark-400 hover:text-dark-600 dark:hover:text-dark-200 text-xs transition-colors cursor-pointer"
                 >
                   Cancel Call
                 </button>
@@ -1480,6 +1589,14 @@ export default function Contacts({ onNavigate }) {
                   className="w-full py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-md transition-colors cursor-pointer"
                 >
                   Hang Up & Save Real Audio Recording
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleEndBeforeAnswerContact('missed')}
+                  className="w-full py-1 text-xs text-dark-500 hover:text-rose-600 dark:hover:text-rose-400 transition-colors cursor-pointer"
+                >
+                  Did not speak to customer? Mark as Missed (0s)
                 </button>
               </div>
             )}

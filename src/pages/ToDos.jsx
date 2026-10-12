@@ -299,7 +299,7 @@ export default function ToDos({ onNavigate }) {
     }
     setTimeout(() => {
       audioEngine.stopRingTone();
-    }, 6000);
+    }, 3000);
   };
 
   return (

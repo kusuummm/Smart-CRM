@@ -109,6 +109,23 @@ class RealCallRecorder {
     }
   }
 
+  // Get live audio volume level (0 to 100) for real-time visualizer
+  getLiveVolume() {
+    if (!this.analyser || !this.isRecording) return 0;
+    try {
+      const dataArray = new Uint8Array(this.analyser.frequencyBinCount);
+      this.analyser.getByteFrequencyData(dataArray);
+      let sum = 0;
+      for (let i = 0; i < dataArray.length; i++) {
+        sum += dataArray[i];
+      }
+      const avg = sum / dataArray.length;
+      return Math.min(100, Math.round((avg / 128) * 100));
+    } catch {
+      return 0;
+    }
+  }
+
   // Stop recording and return real Audio Blob, playable Object URL, and Data URL
   async stop() {
     const elapsedSec = this.recordingStartTime
@@ -116,26 +133,35 @@ class RealCallRecorder {
       : this.recordingDurationSec;
     this.isRecording = false;
 
-    // Release microphone tracks immediately
-    if (this.stream) {
-      this.stream.getTracks().forEach((track) => {
-        try {
-          track.stop();
-        } catch {}
-      });
-      this.stream = null;
+    // Flush any pending recording chunk
+    if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
+      try {
+        this.mediaRecorder.requestData();
+      } catch {}
     }
 
-    if (this.audioContext) {
-      try {
-        this.audioContext.close();
-      } catch {}
-      this.audioContext = null;
-    }
+    const cleanupStreams = () => {
+      if (this.stream) {
+        this.stream.getTracks().forEach((track) => {
+          try {
+            track.stop();
+          } catch {}
+        });
+        this.stream = null;
+      }
+
+      if (this.audioContext) {
+        try {
+          this.audioContext.close();
+        } catch {}
+        this.audioContext = null;
+        this.analyser = null;
+      }
+    };
 
     return new Promise((resolve) => {
       if (!this.mediaRecorder || this.chunks.length === 0) {
-        // Fallback: generate authentic telephony voice recording WAV blob
+        cleanupStreams();
         const fallbackBlob = this.createAuthenticTelephonyBlob(elapsedSec);
         const url = URL.createObjectURL(fallbackBlob);
         this.blobToBase64(fallbackBlob).then((dataUrl) => {
@@ -152,7 +178,8 @@ class RealCallRecorder {
       }
 
       this.mediaRecorder.onstop = async () => {
-        const mimeType = this.mediaRecorder.mimeType || 'audio/webm';
+        cleanupStreams();
+        const mimeType = this.mediaRecorder?.mimeType || 'audio/webm';
         const blob = new Blob(this.chunks, { type: mimeType });
         const url = URL.createObjectURL(blob);
         const dataUrl = await this.blobToBase64(blob);
@@ -174,6 +201,7 @@ class RealCallRecorder {
           this.mediaRecorder.onstop();
         }
       } catch {
+        cleanupStreams();
         const fallbackBlob = this.createAuthenticTelephonyBlob(elapsedSec);
         resolve({
           blob: fallbackBlob,

@@ -186,7 +186,8 @@ export default function ContactDetailView({
             time: sc.time || (sc.date ? sc.date.slice(5) : '01:54 pm'),
             agent: sc.calledByName || user?.name || 'Agent',
             duration: sc.duration ? (sc.duration.includes('s') ? sc.duration : `${sc.duration}s`) : '12s',
-            hasRecording: true,
+            hasRecording: sc.status === 'connected' || !!sc.recordingUrl,
+            recordingUrl: sc.recordingUrl || '',
             callType: sc.callType || (sc.status === 'connected' ? 'outgoing' : 'missed'),
             aiSummary: {
               sentiment: 'Positive',
