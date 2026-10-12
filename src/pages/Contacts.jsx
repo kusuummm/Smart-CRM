@@ -30,10 +30,12 @@ import {
   Phone,
   Mic,
   Radio,
+  Trash2,
 } from 'lucide-react';
 import { useToast } from '../components/Toast';
+import { useConfirm } from '../context/ConfirmContext';
 import { useAuth } from '../context/AuthContext';
-import { getCustomers, createCustomer, updateCustomer, deleteCustomer } from '../api/customers';
+import { getCustomers, createCustomer, updateCustomer, deleteCustomer, bulkDeleteCustomers } from '../api/customers';
 import { getCalls, createCall } from '../api/callHistory';
 import CallRecordingModal from '../components/CallRecordingModal';
 import { audioEngine, formatSeconds, generateWaveform } from '../utils/audioPlayer';
@@ -43,6 +45,7 @@ import ContactDetailView from '../components/ContactDetailView';
 export default function Contacts({ onNavigate }) {
   const { user } = useAuth();
   const { addToast } = useToast();
+  const { confirm } = useConfirm();
 
   // Search & Filter states
   const [customerSearch, setCustomerSearch] = useState(() => {
@@ -185,6 +188,66 @@ export default function Contacts({ onNavigate }) {
     setSelectedContactIds((prev) =>
       prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
     );
+  };
+
+  // Bulk Delete Contacts with confirmation
+  const handleBulkDelete = async () => {
+    if (selectedContactIds.length === 0) return;
+    const count = selectedContactIds.length;
+    const ok = await confirm({
+      title: `Delete ${count} Contact${count > 1 ? 's' : ''}?`,
+      message: `Are you sure you want to delete ${count} selected contact${count > 1 ? 's' : ''}? This will permanently remove them from your CRM.`,
+      confirmText: `Yes, Delete (${count})`,
+      cancelText: 'Cancel',
+      isDestructive: true,
+    });
+    if (!ok) return;
+
+    try {
+      await bulkDeleteCustomers({ customerIds: selectedContactIds }).catch(async () => {
+        await Promise.all(selectedContactIds.map((id) => deleteCustomer(id).catch(() => null)));
+      });
+
+      const idsSet = new Set(selectedContactIds);
+      setContacts((prev) => {
+        const updated = prev.filter((c) => !idsSet.has(c.id));
+        try {
+          localStorage.setItem('smartcrm_contacts', JSON.stringify(updated));
+        } catch {}
+        return updated;
+      });
+      setSelectedContactIds([]);
+      addToast(`Successfully deleted ${count} contact${count > 1 ? 's' : ''}!`, 'success');
+    } catch (err) {
+      addToast('Failed to delete selected contacts', 'error');
+    }
+  };
+
+  // Single Contact Delete with confirmation
+  const handleDeleteSingleContact = async (contact) => {
+    const ok = await confirm({
+      title: `Delete Contact "${contact.name}"?`,
+      message: `Are you sure you want to delete ${contact.name} (+91 ${contact.phone})? This will permanently remove this contact.`,
+      confirmText: 'Yes, Delete Contact',
+      cancelText: 'Cancel',
+      isDestructive: true,
+    });
+    if (!ok) return;
+
+    try {
+      await deleteCustomer(contact.id).catch(() => null);
+      setContacts((prev) => {
+        const updated = prev.filter((c) => c.id !== contact.id);
+        try {
+          localStorage.setItem('smartcrm_contacts', JSON.stringify(updated));
+        } catch {}
+        return updated;
+      });
+      setSelectedContactIds((prev) => prev.filter((id) => id !== contact.id));
+      addToast(`Contact "${contact.name}" deleted successfully!`, 'success');
+    } catch (err) {
+      addToast('Failed to delete contact', 'error');
+    }
   };
 
   const autoConnectTimerRef = useRef(null);
@@ -794,21 +857,48 @@ export default function Contacts({ onNavigate }) {
         <div className="flex items-center gap-3 text-xs font-bold text-blue-600">
           <button
             onClick={() => setSelectedContactIds(displayedContacts.map((c) => c.id))}
-            className="hover:underline"
+            className="hover:underline cursor-pointer"
           >
             SELECT ALL
           </button>
-          <button onClick={() => setSelectedContactIds([])} className="hover:underline">
+          <button onClick={() => setSelectedContactIds([])} className="hover:underline cursor-pointer">
             UNCHECK ALL
           </button>
+          {selectedContactIds.length > 0 && (
+            <button
+              type="button"
+              onClick={handleBulkDelete}
+              className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 dark:bg-rose-950/40 dark:text-rose-400 border border-rose-200 dark:border-rose-900/60 font-semibold transition-all cursor-pointer shadow-2xs active:scale-95"
+            >
+              <Trash2 size={13} />
+              <span>Delete Selected ({selectedContactIds.length})</span>
+            </button>
+          )}
         </div>
       </div>
 
       {/* 5. Contacts Table */}
       <div className="bg-white dark:bg-dark-800 rounded-lg border border-[#e8e8e8] dark:border-dark-700 shadow-2xs overflow-hidden">
-        <div className="p-3.5 border-b border-[#f0f0f0] dark:border-dark-700/60 text-[13px] font-semibold text-[rgba(0,0,0,0.88)] dark:text-dark-200">
-          <span>All contacts</span>{' '}
-          <span className="font-normal text-[rgba(0,0,0,0.45)] dark:text-dark-400">({filteredContacts.length} results)</span>
+        <div className="p-3.5 border-b border-[#f0f0f0] dark:border-dark-700/60 text-[13px] font-semibold text-[rgba(0,0,0,0.88)] dark:text-dark-200 flex items-center justify-between">
+          <div>
+            <span>All contacts</span>{' '}
+            <span className="font-normal text-[rgba(0,0,0,0.45)] dark:text-dark-400">({filteredContacts.length} results)</span>
+          </div>
+          {selectedContactIds.length > 0 && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-dark-500">
+                {selectedContactIds.length} contact{selectedContactIds.length > 1 ? 's' : ''} selected
+              </span>
+              <button
+                type="button"
+                onClick={handleBulkDelete}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-xs transition-all cursor-pointer active:scale-95"
+              >
+                <Trash2 size={13} />
+                <span>Delete Selected ({selectedContactIds.length})</span>
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="overflow-x-auto">
@@ -864,6 +954,9 @@ export default function Contacts({ onNavigate }) {
                     <span>SOURCE</span>
                     <Search size={12} />
                   </div>
+                </th>
+                <th className="py-3.5 px-4 w-20 text-center">
+                  <span>ACTIONS</span>
                 </th>
               </tr>
             </thead>
@@ -948,6 +1041,18 @@ export default function Contacts({ onNavigate }) {
                     {/* SOURCE */}
                     <td className="py-3.5 px-4 text-[rgba(0,0,0,0.45)] dark:text-dark-400 lowercase text-[13px]">
                       {c.source}
+                    </td>
+
+                    {/* ACTIONS: Delete Single Contact */}
+                    <td className="py-3.5 px-4 text-center">
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteSingleContact(c)}
+                        className="p-1.5 rounded-lg text-dark-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                        title={`Delete ${c.name}`}
+                      >
+                        <Trash2 size={15} />
+                      </button>
                     </td>
                   </tr>
                 );
