@@ -387,6 +387,8 @@ export default function ExcelLeadImportModal({ isOpen, onClose, onImportSuccess 
   const percentComplete =
     progress.totalRows > 0 ? Math.round((progress.processedCount / progress.totalRows) * 100) : 0;
 
+  if (!isOpen) return null;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-3 sm:p-4 animate-in fade-in duration-200">
       <div className="bg-white dark:bg-dark-900 rounded-2xl border border-dark-200 dark:border-dark-700 shadow-2xl max-w-3xl w-full overflow-hidden flex flex-col max-h-[90vh]">
