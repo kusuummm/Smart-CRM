@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   BarChart3,
   Calendar,
@@ -17,10 +17,13 @@ import {
   TrendingUp,
   Download,
   Info,
+  ArrowUpRight,
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { useToast } from '../components/Toast';
 import { useAuth } from '../context/AuthContext';
+import { getCalls } from '../api/callHistory';
+import DetailedReportModal from '../components/DetailedReportModal';
 
 export default function Reports({ onNavigate }) {
   const { user } = useAuth();
@@ -43,6 +46,319 @@ export default function Reports({ onNavigate }) {
   const allStaffMembers = user?.name ? [user.name] : ['Current User'];
   const [selectedStaffList, setSelectedStaffList] = useState(allStaffMembers);
   const [showStaffDropdown, setShowStaffDropdown] = useState(false);
+
+  // Drill-down Modal State
+  const [drilldownModal, setDrilldownModal] = useState({
+    isOpen: false,
+    title: '',
+    subtitle: '',
+    category: 'all',
+    subStatus: 'all',
+    calls: [],
+  });
+
+  // Base Call Records Matching Screenshot Metrics
+  const baseCallRecords = useMemo(
+    () => [
+      // 1. Missed calls (2) - Not answered
+      {
+        _id: 'call-m1',
+        customerName: 'Ramesh Verma',
+        phone: '+91 98765 43210',
+        company: 'Verma Exports Pvt Ltd',
+        calledByName: selectedStaffList[0] || 'Kusum Rathore',
+        callType: 'missed',
+        subStatus: 'Not answered',
+        date: 'Oct 09, 2026',
+        time: '10:45 AM',
+        duration: '0s',
+        remarks: 'Ringing timeout, customer did not pick up after 6 rings',
+      },
+      {
+        _id: 'call-m2',
+        customerName: 'Anita Desai',
+        phone: '+91 98123 45678',
+        company: 'Desai Solutions & Tech',
+        calledByName: selectedStaffList[0] || 'Kusum Rathore',
+        callType: 'missed',
+        subStatus: 'Not answered',
+        date: 'Oct 09, 2026',
+        time: '03:15 PM',
+        duration: '0s',
+        remarks: 'Incoming customer call missed while agent was on call',
+      },
+
+      // 2. Incoming calls (4 total: 2 Answered, 2 Missed)
+      {
+        _id: 'call-i1',
+        customerName: 'Vikram Singh',
+        phone: '+91 99334 55667',
+        company: 'Apex Realty Group',
+        calledByName: selectedStaffList[0] || 'Kusum Rathore',
+        callType: 'incoming',
+        subStatus: 'Answered',
+        date: 'Oct 09, 2026',
+        time: '11:30 AM',
+        duration: '1m 50s',
+        remarks: 'Inbound inquiry regarding WhatsApp CRM API & pricing quotation',
+      },
+      {
+        _id: 'call-i2',
+        customerName: 'Swati Kulkarni',
+        phone: '+91 99445 66778',
+        company: 'Kulkarni Tech Solutions',
+        calledByName: selectedStaffList[0] || 'Kusum Rathore',
+        callType: 'incoming',
+        subStatus: 'Answered',
+        date: 'Oct 09, 2026',
+        time: '03:00 PM',
+        duration: '1m 24s',
+        remarks: 'Customer requested consultation with sales team regarding CRM migration',
+      },
+      {
+        _id: 'call-i3',
+        customerName: 'Ramesh Verma',
+        phone: '+91 98765 43210',
+        company: 'Verma Exports Pvt Ltd',
+        calledByName: selectedStaffList[0] || 'Kusum Rathore',
+        callType: 'incoming',
+        subStatus: 'Missed',
+        date: 'Oct 09, 2026',
+        time: '10:45 AM',
+        duration: '0s',
+        remarks: 'Inbound customer call missed',
+      },
+      {
+        _id: 'call-i4',
+        customerName: 'Anita Desai',
+        phone: '+91 98123 45678',
+        company: 'Desai Solutions & Tech',
+        calledByName: selectedStaffList[0] || 'Kusum Rathore',
+        callType: 'incoming',
+        subStatus: 'Missed',
+        date: 'Oct 09, 2026',
+        time: '03:15 PM',
+        duration: '0s',
+        remarks: 'Inbound customer call disconnected',
+      },
+
+      // 3. Outgoing calls (11 total: 5 Connected, 6 Not connected)
+      // Connected calls total talktime = 7m 55s
+      {
+        _id: 'call-o1',
+        customerName: 'Rajesh Gupta',
+        phone: '+91 98220 11223',
+        company: 'Gupta Traders',
+        calledByName: selectedStaffList[0] || 'Kusum Rathore',
+        callType: 'outgoing',
+        subStatus: 'Connected',
+        date: 'Oct 09, 2026',
+        time: '11:10 AM',
+        duration: '2m 15s',
+        remarks: 'Discussed Enterprise Pro subscription and user license requirements',
+      },
+      {
+        _id: 'call-o2',
+        customerName: 'Sunita Rao',
+        phone: '+91 98334 55667',
+        company: 'Rao Logistics Hub',
+        calledByName: selectedStaffList[0] || 'Kusum Rathore',
+        callType: 'outgoing',
+        subStatus: 'Connected',
+        date: 'Oct 09, 2026',
+        time: '12:05 PM',
+        duration: '1m 40s',
+        remarks: 'Follow-up on product demonstration, scheduled consultation meeting',
+      },
+      {
+        _id: 'call-o3',
+        customerName: 'Deepak Kumar',
+        phone: '+91 98445 66778',
+        company: 'Kumar Infotech',
+        calledByName: selectedStaffList[0] || 'Kusum Rathore',
+        callType: 'outgoing',
+        subStatus: 'Connected',
+        date: 'Oct 09, 2026',
+        time: '02:20 PM',
+        duration: '1m 20s',
+        remarks: 'Clarified payment terms and GST invoice requirements',
+      },
+      {
+        _id: 'call-o4',
+        customerName: 'Pooja Mehta',
+        phone: '+91 98556 77889',
+        company: 'Mehta Textiles',
+        calledByName: selectedStaffList[0] || 'Kusum Rathore',
+        callType: 'outgoing',
+        subStatus: 'Connected',
+        date: 'Oct 09, 2026',
+        time: '04:10 PM',
+        duration: '1m 35s',
+        remarks: 'Onboarding walkthrough for 5 telecaller accounts',
+      },
+      {
+        _id: 'call-o5',
+        customerName: 'Manish Joshi',
+        phone: '+91 98667 88990',
+        company: 'Joshi Automations',
+        calledByName: selectedStaffList[0] || 'Kusum Rathore',
+        callType: 'outgoing',
+        subStatus: 'Connected',
+        date: 'Oct 09, 2026',
+        time: '05:30 PM',
+        duration: '1m 05s',
+        remarks: 'Introductory follow-up completed, marked lead status as Contacted',
+      },
+
+      // Not connected calls (6 total)
+      {
+        _id: 'call-o6',
+        customerName: 'Amit Shah',
+        phone: '+91 98778 99001',
+        company: 'Shah Motors',
+        calledByName: selectedStaffList[0] || 'Kusum Rathore',
+        callType: 'outgoing',
+        subStatus: 'Line busy',
+        date: 'Oct 09, 2026',
+        time: '10:15 AM',
+        duration: '0s',
+        remarks: 'Customer was busy on another phone call',
+      },
+      {
+        _id: 'call-o7',
+        customerName: 'Neha Agarwal',
+        phone: '+91 98889 00112',
+        company: 'Agarwal Spices',
+        calledByName: selectedStaffList[0] || 'Kusum Rathore',
+        callType: 'outgoing',
+        subStatus: 'Not answered',
+        date: 'Oct 09, 2026',
+        time: '11:45 AM',
+        duration: '0s',
+        remarks: 'Dialed 30 seconds, no answer from customer',
+      },
+      {
+        _id: 'call-o8',
+        customerName: 'Rahul Nair',
+        phone: '+91 98990 11223',
+        company: 'Nair Logistics',
+        calledByName: selectedStaffList[0] || 'Kusum Rathore',
+        callType: 'outgoing',
+        subStatus: 'No network',
+        date: 'Oct 09, 2026',
+        time: '01:10 PM',
+        duration: '0s',
+        remarks: 'Out of coverage area / network issue',
+      },
+      {
+        _id: 'call-o9',
+        customerName: 'Kavita Roy',
+        phone: '+91 99001 22334',
+        company: 'Roy Creations',
+        calledByName: selectedStaffList[0] || 'Kusum Rathore',
+        callType: 'outgoing',
+        subStatus: 'Line busy',
+        date: 'Oct 09, 2026',
+        time: '02:45 PM',
+        duration: '0s',
+        remarks: 'Call rejected / disconnected by customer',
+      },
+      {
+        _id: 'call-o10',
+        customerName: 'Sanjay Patel',
+        phone: '+91 99112 33445',
+        company: 'Patel Electronics',
+        calledByName: selectedStaffList[0] || 'Kusum Rathore',
+        callType: 'outgoing',
+        subStatus: 'Not answered',
+        date: 'Oct 09, 2026',
+        time: '03:50 PM',
+        duration: '0s',
+        remarks: 'No pickup after ringing',
+      },
+      {
+        _id: 'call-o11',
+        customerName: 'Divya Jain',
+        phone: '+91 99223 44556',
+        company: 'Jain Chemicals',
+        calledByName: selectedStaffList[0] || 'Kusum Rathore',
+        callType: 'outgoing',
+        subStatus: 'No network',
+        date: 'Oct 09, 2026',
+        time: '04:40 PM',
+        duration: '0s',
+        remarks: 'Customer mobile switched off',
+      },
+    ],
+    [selectedStaffList]
+  );
+
+  // Drilldown Click Handler
+  const handleOpenDrilldown = ({ category, subStatus = 'all', title }) => {
+    let matched = baseCallRecords;
+
+    if (category === 'missed') {
+      matched = baseCallRecords.filter((c) => c.callType === 'missed');
+      if (subStatus && subStatus !== 'all') {
+        matched = matched.filter((c) => c.subStatus.toLowerCase() === subStatus.toLowerCase());
+      }
+    } else if (category === 'incoming') {
+      matched = baseCallRecords.filter((c) => c.callType === 'incoming');
+      if (subStatus && subStatus !== 'all') {
+        matched = matched.filter((c) => c.subStatus.toLowerCase() === subStatus.toLowerCase());
+      }
+    } else if (category === 'outgoing') {
+      matched = baseCallRecords.filter((c) => c.callType === 'outgoing');
+      if (subStatus === 'Connected') {
+        matched = matched.filter((c) => c.subStatus === 'Connected');
+      } else if (subStatus === 'Not connected') {
+        matched = matched.filter((c) => c.subStatus !== 'Connected');
+      } else if (subStatus && subStatus !== 'all') {
+        matched = matched.filter((c) => c.subStatus.toLowerCase() === subStatus.toLowerCase());
+      }
+    } else if (category === 'talktime') {
+      if (subStatus === 'Outgoing') {
+        matched = baseCallRecords.filter((c) => c.callType === 'outgoing' && c.subStatus === 'Connected');
+      } else if (subStatus === 'Incoming') {
+        matched = baseCallRecords.filter((c) => c.callType === 'incoming' && c.subStatus === 'Answered');
+      } else {
+        matched = baseCallRecords.filter((c) => c.duration && c.duration !== '0s');
+      }
+    }
+
+    setDrilldownModal({
+      isOpen: true,
+      title: title || `${category.toUpperCase()} Detailed Report`,
+      subtitle: `Breakdown for ${selectedStaffList.join(', ') || 'All Staff'} • ${period}`,
+      category,
+      subStatus: subStatus || 'all',
+      calls: matched,
+    });
+  };
+
+  // Custom Chart Tooltip displaying click hint
+  const ClickableChartTooltip = ({ active, payload }) => {
+    if (active && payload && payload.length) {
+      const item = payload[0];
+      return (
+        <div className="bg-dark-900/95 dark:bg-dark-800 text-white px-3 py-2 rounded-xl text-xs shadow-2xl border border-dark-700 pointer-events-none space-y-1">
+          <p className="font-semibold flex items-center gap-1.5">
+            <span
+              className="w-2.5 h-2.5 rounded-full inline-block"
+              style={{ backgroundColor: item.payload?.color || item.color }}
+            />
+            <span>
+              {item.name} : <strong className="text-amber-300">{item.payload?.label || item.value}</strong>
+            </span>
+          </p>
+          <p className="text-[10px] text-blue-300 font-semibold flex items-center gap-1">
+            <span>👆 Click slice to view detailed report</span>
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
 
   // KPI Metrics
   const metrics = {
@@ -322,13 +638,28 @@ export default function Reports({ onNavigate }) {
         <>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Card 1: Missed Calls */}
-            <div className="p-5 rounded-2xl bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 shadow-xs space-y-3">
-              <div className="flex items-center gap-2 text-rose-500">
-                <div className="w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-950/60 flex items-center justify-center">
-                  <PhoneMissed size={16} />
+            <div
+              onClick={() =>
+                handleOpenDrilldown({
+                  category: 'missed',
+                  subStatus: 'all',
+                  title: 'Detailed Report: All Missed Calls',
+                })
+              }
+              className="p-5 rounded-2xl bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 shadow-xs space-y-3 cursor-pointer hover:shadow-md hover:border-rose-400 dark:hover:border-rose-500 transition-all group"
+              title="Click to view detailed report of all missed calls"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-rose-500">
+                  <div className="w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-950/60 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <PhoneMissed size={16} />
+                  </div>
+                  <span className="text-xs font-semibold text-dark-600 dark:text-dark-300">
+                    Missed
+                  </span>
                 </div>
-                <span className="text-xs font-semibold text-dark-600 dark:text-dark-300">
-                  Missed
+                <span className="text-[10px] text-rose-500 font-semibold opacity-0 group-hover:opacity-100 flex items-center gap-0.5 transition-opacity">
+                  View <ArrowUpRight size={12} />
                 </span>
               </div>
               <p className="text-3xl font-extrabold text-dark-900 dark:text-white">
@@ -337,13 +668,28 @@ export default function Reports({ onNavigate }) {
             </div>
 
             {/* Card 2: Outgoing Calls */}
-            <div className="p-5 rounded-2xl bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 shadow-xs space-y-3">
-              <div className="flex items-center gap-2 text-emerald-600">
-                <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 flex items-center justify-center">
-                  <PhoneOutgoing size={16} />
+            <div
+              onClick={() =>
+                handleOpenDrilldown({
+                  category: 'outgoing',
+                  subStatus: 'all',
+                  title: 'Detailed Report: All Outgoing Calls',
+                })
+              }
+              className="p-5 rounded-2xl bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 shadow-xs space-y-3 cursor-pointer hover:shadow-md hover:border-emerald-400 dark:hover:border-emerald-500 transition-all group"
+              title="Click to view detailed report of all outgoing calls"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-emerald-600">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <PhoneOutgoing size={16} />
+                  </div>
+                  <span className="text-xs font-semibold text-dark-600 dark:text-dark-300">
+                    Outgoing
+                  </span>
                 </div>
-                <span className="text-xs font-semibold text-dark-600 dark:text-dark-300">
-                  Outgoing
+                <span className="text-[10px] text-emerald-600 font-semibold opacity-0 group-hover:opacity-100 flex items-center gap-0.5 transition-opacity">
+                  View <ArrowUpRight size={12} />
                 </span>
               </div>
               <p className="text-3xl font-extrabold text-dark-900 dark:text-white">
@@ -352,13 +698,28 @@ export default function Reports({ onNavigate }) {
             </div>
 
             {/* Card 3: Incoming Calls */}
-            <div className="p-5 rounded-2xl bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 shadow-xs space-y-3">
-              <div className="flex items-center gap-2 text-blue-600">
-                <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-950/60 flex items-center justify-center">
-                  <PhoneIncoming size={16} />
+            <div
+              onClick={() =>
+                handleOpenDrilldown({
+                  category: 'incoming',
+                  subStatus: 'all',
+                  title: 'Detailed Report: All Incoming Calls',
+                })
+              }
+              className="p-5 rounded-2xl bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 shadow-xs space-y-3 cursor-pointer hover:shadow-md hover:border-blue-400 dark:hover:border-blue-500 transition-all group"
+              title="Click to view detailed report of all incoming calls"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-blue-600">
+                  <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-950/60 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <PhoneIncoming size={16} />
+                  </div>
+                  <span className="text-xs font-semibold text-dark-600 dark:text-dark-300">
+                    Incoming
+                  </span>
                 </div>
-                <span className="text-xs font-semibold text-dark-600 dark:text-dark-300">
-                  Incoming
+                <span className="text-[10px] text-blue-600 font-semibold opacity-0 group-hover:opacity-100 flex items-center gap-0.5 transition-opacity">
+                  View <ArrowUpRight size={12} />
                 </span>
               </div>
               <p className="text-3xl font-extrabold text-dark-900 dark:text-white">
@@ -367,13 +728,28 @@ export default function Reports({ onNavigate }) {
             </div>
 
             {/* Card 4: Total talktime */}
-            <div className="p-5 rounded-2xl bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 shadow-xs space-y-3">
-              <div className="flex items-center gap-2 text-purple-600">
-                <div className="w-8 h-8 rounded-lg bg-purple-50 dark:bg-purple-950/60 flex items-center justify-center">
-                  <Clock size={16} />
+            <div
+              onClick={() =>
+                handleOpenDrilldown({
+                  category: 'talktime',
+                  subStatus: 'all',
+                  title: 'Detailed Report: Total Talktime Call Breakdown',
+                })
+              }
+              className="p-5 rounded-2xl bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 shadow-xs space-y-3 cursor-pointer hover:shadow-md hover:border-purple-400 dark:hover:border-purple-500 transition-all group"
+              title="Click to view detailed talktime breakdown"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-purple-600">
+                  <div className="w-8 h-8 rounded-lg bg-purple-50 dark:bg-purple-950/60 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Clock size={16} />
+                  </div>
+                  <span className="text-xs font-semibold text-dark-600 dark:text-dark-300">
+                    Total talktime
+                  </span>
                 </div>
-                <span className="text-xs font-semibold text-dark-600 dark:text-dark-300">
-                  Total talktime
+                <span className="text-[10px] text-purple-600 font-semibold opacity-0 group-hover:opacity-100 flex items-center gap-0.5 transition-opacity">
+                  View <ArrowUpRight size={12} />
                 </span>
               </div>
               <p className="text-3xl font-extrabold text-dark-900 dark:text-white">
@@ -388,14 +764,34 @@ export default function Reports({ onNavigate }) {
             <div className="p-6 rounded-2xl bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 shadow-xs space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="font-bold text-dark-900 dark:text-white text-sm">
-                    Missed calls
+                  <h3
+                    onClick={() =>
+                      handleOpenDrilldown({
+                        category: 'missed',
+                        subStatus: 'all',
+                        title: 'Detailed Report: All Missed Calls',
+                      })
+                    }
+                    className="font-bold text-dark-900 dark:text-white text-sm cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors flex items-center gap-1.5 group"
+                  >
+                    <span>Missed calls</span>
+                    <ArrowUpRight size={13} className="text-dark-400 group-hover:text-blue-600 transition-colors" />
                   </h3>
                   <p className="text-[11px] text-dark-400 mt-0.5">
-                    Breakdown for the selected range
+                    Breakdown for the selected range (Click any slice or legend for details)
                   </p>
                 </div>
-                <div className="text-right">
+                <div
+                  onClick={() =>
+                    handleOpenDrilldown({
+                      category: 'missed',
+                      subStatus: 'all',
+                      title: 'Detailed Report: All Missed Calls',
+                    })
+                  }
+                  className="text-right cursor-pointer hover:opacity-80 transition-opacity"
+                  title="Click to view all missed calls"
+                >
                   <span className="text-[10px] text-dark-400 font-bold uppercase">TOTAL</span>
                   <p className="font-extrabold text-dark-900 dark:text-white text-lg">2</p>
                 </div>
@@ -414,27 +810,66 @@ export default function Reports({ onNavigate }) {
                         paddingAngle={3}
                         dataKey="value"
                         stroke="none"
+                        cursor="pointer"
+                        onClick={(entry) =>
+                          handleOpenDrilldown({
+                            category: 'missed',
+                            subStatus: entry.name,
+                            title: `Detailed Report: Missed Calls — ${entry.name}`,
+                          })
+                        }
                       >
                         {missedData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={entry.color}
+                            cursor="pointer"
+                            className="hover:opacity-80 transition-opacity cursor-pointer"
+                            onClick={() =>
+                              handleOpenDrilldown({
+                                category: 'missed',
+                                subStatus: entry.name,
+                                title: `Detailed Report: Missed Calls — ${entry.name}`,
+                              })
+                            }
+                          />
                         ))}
                       </Pie>
-                      <Tooltip />
+                      <Tooltip content={<ClickableChartTooltip />} />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
 
-                <div className="flex-1 space-y-2 text-xs">
+                <div className="flex-1 space-y-1.5 text-xs">
                   {missedData.map((item) => (
-                    <div key={item.name} className="flex items-center justify-between">
+                    <div
+                      key={item.name}
+                      onClick={() =>
+                        handleOpenDrilldown({
+                          category: 'missed',
+                          subStatus: item.name,
+                          title: `Detailed Report: Missed Calls — ${item.name}`,
+                        })
+                      }
+                      className="flex items-center justify-between p-1.5 -mx-1.5 rounded-lg hover:bg-dark-100 dark:hover:bg-dark-700/60 cursor-pointer transition-colors group"
+                      title={`Click to view detailed report for ${item.name}`}
+                    >
                       <div className="flex items-center gap-2">
                         <span
-                          className="w-2.5 h-2.5 rounded-full"
+                          className="w-2.5 h-2.5 rounded-full group-hover:scale-125 transition-transform"
                           style={{ backgroundColor: item.color }}
                         />
-                        <span className="text-dark-600 dark:text-dark-300">{item.name}</span>
+                        <span className="text-dark-600 dark:text-dark-300 group-hover:text-blue-600 dark:group-hover:text-blue-400 font-medium">
+                          {item.name}
+                        </span>
                       </div>
-                      <span className="font-bold text-dark-900 dark:text-white">{item.value}</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-bold text-dark-900 dark:text-white">{item.value}</span>
+                        <ArrowUpRight
+                          size={12}
+                          className="text-dark-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                        />
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -445,14 +880,34 @@ export default function Reports({ onNavigate }) {
             <div className="p-6 rounded-2xl bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 shadow-xs space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="font-bold text-dark-900 dark:text-white text-sm">
-                    Incoming calls
+                  <h3
+                    onClick={() =>
+                      handleOpenDrilldown({
+                        category: 'incoming',
+                        subStatus: 'all',
+                        title: 'Detailed Report: All Incoming Calls',
+                      })
+                    }
+                    className="font-bold text-dark-900 dark:text-white text-sm cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors flex items-center gap-1.5 group"
+                  >
+                    <span>Incoming calls</span>
+                    <ArrowUpRight size={13} className="text-dark-400 group-hover:text-blue-600 transition-colors" />
                   </h3>
                   <p className="text-[11px] text-dark-400 mt-0.5">
-                    Breakdown for the selected range
+                    Breakdown for the selected range (Click any slice or legend for details)
                   </p>
                 </div>
-                <div className="text-right">
+                <div
+                  onClick={() =>
+                    handleOpenDrilldown({
+                      category: 'incoming',
+                      subStatus: 'all',
+                      title: 'Detailed Report: All Incoming Calls',
+                    })
+                  }
+                  className="text-right cursor-pointer hover:opacity-80 transition-opacity"
+                  title="Click to view all incoming calls"
+                >
                   <span className="text-[10px] text-dark-400 font-bold uppercase">TOTAL</span>
                   <p className="font-extrabold text-dark-900 dark:text-white text-lg">4</p>
                 </div>
@@ -471,27 +926,66 @@ export default function Reports({ onNavigate }) {
                         paddingAngle={3}
                         dataKey="value"
                         stroke="none"
+                        cursor="pointer"
+                        onClick={(entry) =>
+                          handleOpenDrilldown({
+                            category: 'incoming',
+                            subStatus: entry.name,
+                            title: `Detailed Report: Incoming Calls — ${entry.name}`,
+                          })
+                        }
                       >
                         {incomingData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={entry.color}
+                            cursor="pointer"
+                            className="hover:opacity-80 transition-opacity cursor-pointer"
+                            onClick={() =>
+                              handleOpenDrilldown({
+                                category: 'incoming',
+                                subStatus: entry.name,
+                                title: `Detailed Report: Incoming Calls — ${entry.name}`,
+                              })
+                            }
+                          />
                         ))}
                       </Pie>
-                      <Tooltip />
+                      <Tooltip content={<ClickableChartTooltip />} />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
 
-                <div className="flex-1 space-y-2 text-xs">
+                <div className="flex-1 space-y-1.5 text-xs">
                   {incomingData.map((item) => (
-                    <div key={item.name} className="flex items-center justify-between">
+                    <div
+                      key={item.name}
+                      onClick={() =>
+                        handleOpenDrilldown({
+                          category: 'incoming',
+                          subStatus: item.name,
+                          title: `Detailed Report: Incoming Calls — ${item.name}`,
+                        })
+                      }
+                      className="flex items-center justify-between p-1.5 -mx-1.5 rounded-lg hover:bg-dark-100 dark:hover:bg-dark-700/60 cursor-pointer transition-colors group"
+                      title={`Click to view detailed report for ${item.name}`}
+                    >
                       <div className="flex items-center gap-2">
                         <span
-                          className="w-2.5 h-2.5 rounded-full"
+                          className="w-2.5 h-2.5 rounded-full group-hover:scale-125 transition-transform"
                           style={{ backgroundColor: item.color }}
                         />
-                        <span className="text-dark-600 dark:text-dark-300">{item.name}</span>
+                        <span className="text-dark-600 dark:text-dark-300 group-hover:text-blue-600 dark:group-hover:text-blue-400 font-medium">
+                          {item.name}
+                        </span>
                       </div>
-                      <span className="font-bold text-dark-900 dark:text-white">{item.value}</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-bold text-dark-900 dark:text-white">{item.value}</span>
+                        <ArrowUpRight
+                          size={12}
+                          className="text-dark-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                        />
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -502,14 +996,34 @@ export default function Reports({ onNavigate }) {
             <div className="p-6 rounded-2xl bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 shadow-xs space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="font-bold text-dark-900 dark:text-white text-sm">
-                    Outgoing calls
+                  <h3
+                    onClick={() =>
+                      handleOpenDrilldown({
+                        category: 'outgoing',
+                        subStatus: 'all',
+                        title: 'Detailed Report: All Outgoing Calls',
+                      })
+                    }
+                    className="font-bold text-dark-900 dark:text-white text-sm cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors flex items-center gap-1.5 group"
+                  >
+                    <span>Outgoing calls</span>
+                    <ArrowUpRight size={13} className="text-dark-400 group-hover:text-blue-600 transition-colors" />
                   </h3>
                   <p className="text-[11px] text-dark-400 mt-0.5">
-                    Breakdown for the selected range
+                    Breakdown for the selected range (Click any slice or legend for details)
                   </p>
                 </div>
-                <div className="text-right">
+                <div
+                  onClick={() =>
+                    handleOpenDrilldown({
+                      category: 'outgoing',
+                      subStatus: 'all',
+                      title: 'Detailed Report: All Outgoing Calls',
+                    })
+                  }
+                  className="text-right cursor-pointer hover:opacity-80 transition-opacity"
+                  title="Click to view all outgoing calls"
+                >
                   <span className="text-[10px] text-dark-400 font-bold uppercase">TOTAL</span>
                   <p className="font-extrabold text-dark-900 dark:text-white text-lg">11</p>
                 </div>
@@ -528,27 +1042,66 @@ export default function Reports({ onNavigate }) {
                         paddingAngle={3}
                         dataKey="value"
                         stroke="none"
+                        cursor="pointer"
+                        onClick={(entry) =>
+                          handleOpenDrilldown({
+                            category: 'outgoing',
+                            subStatus: entry.name,
+                            title: `Detailed Report: Outgoing Calls — ${entry.name}`,
+                          })
+                        }
                       >
                         {outgoingData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={entry.color}
+                            cursor="pointer"
+                            className="hover:opacity-80 transition-opacity cursor-pointer"
+                            onClick={() =>
+                              handleOpenDrilldown({
+                                category: 'outgoing',
+                                subStatus: entry.name,
+                                title: `Detailed Report: Outgoing Calls — ${entry.name}`,
+                              })
+                            }
+                          />
                         ))}
                       </Pie>
-                      <Tooltip />
+                      <Tooltip content={<ClickableChartTooltip />} />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
 
-                <div className="flex-1 space-y-2 text-xs">
+                <div className="flex-1 space-y-1.5 text-xs">
                   {outgoingData.map((item) => (
-                    <div key={item.name} className="flex items-center justify-between">
+                    <div
+                      key={item.name}
+                      onClick={() =>
+                        handleOpenDrilldown({
+                          category: 'outgoing',
+                          subStatus: item.name,
+                          title: `Detailed Report: Outgoing Calls — ${item.name}`,
+                        })
+                      }
+                      className="flex items-center justify-between p-1.5 -mx-1.5 rounded-lg hover:bg-dark-100 dark:hover:bg-dark-700/60 cursor-pointer transition-colors group"
+                      title={`Click to view detailed report for ${item.name}`}
+                    >
                       <div className="flex items-center gap-2">
                         <span
-                          className="w-2.5 h-2.5 rounded-full"
+                          className="w-2.5 h-2.5 rounded-full group-hover:scale-125 transition-transform"
                           style={{ backgroundColor: item.color }}
                         />
-                        <span className="text-dark-600 dark:text-dark-300">{item.name}</span>
+                        <span className="text-dark-600 dark:text-dark-300 group-hover:text-blue-600 dark:group-hover:text-blue-400 font-medium">
+                          {item.name}
+                        </span>
                       </div>
-                      <span className="font-bold text-dark-900 dark:text-white">{item.value}</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-bold text-dark-900 dark:text-white">{item.value}</span>
+                        <ArrowUpRight
+                          size={12}
+                          className="text-dark-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                        />
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -560,14 +1113,34 @@ export default function Reports({ onNavigate }) {
               <div>
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="font-bold text-dark-900 dark:text-white text-sm">
-                      Total talktime
+                    <h3
+                      onClick={() =>
+                        handleOpenDrilldown({
+                          category: 'talktime',
+                          subStatus: 'all',
+                          title: 'Detailed Report: Total Talktime Call Breakdown',
+                        })
+                      }
+                      className="font-bold text-dark-900 dark:text-white text-sm cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors flex items-center gap-1.5 group"
+                    >
+                      <span>Total talktime</span>
+                      <ArrowUpRight size={13} className="text-dark-400 group-hover:text-blue-600 transition-colors" />
                     </h3>
                     <p className="text-[11px] text-dark-400 mt-0.5">
-                      Breakdown for the selected range
+                      Breakdown for the selected range (Click any slice or legend for details)
                     </p>
                   </div>
-                  <div className="text-right">
+                  <div
+                    onClick={() =>
+                      handleOpenDrilldown({
+                        category: 'talktime',
+                        subStatus: 'all',
+                        title: 'Detailed Report: Total Talktime Call Breakdown',
+                      })
+                    }
+                    className="text-right cursor-pointer hover:opacity-80 transition-opacity"
+                    title="Click to view all talktime calls"
+                  >
                     <span className="text-[10px] text-dark-400 font-bold uppercase">TOTAL</span>
                     <p className="font-extrabold text-dark-900 dark:text-white text-lg">11m 9s</p>
                   </div>
@@ -586,29 +1159,68 @@ export default function Reports({ onNavigate }) {
                           paddingAngle={3}
                           dataKey="value"
                           stroke="none"
+                          cursor="pointer"
+                          onClick={(entry) =>
+                            handleOpenDrilldown({
+                              category: 'talktime',
+                              subStatus: entry.name,
+                              title: `Detailed Report: Talktime — ${entry.name}`,
+                            })
+                          }
                         >
                           {talktimeData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
+                            <Cell
+                              key={`cell-${index}`}
+                              fill={entry.color}
+                              cursor="pointer"
+                              className="hover:opacity-80 transition-opacity cursor-pointer"
+                              onClick={() =>
+                                handleOpenDrilldown({
+                                  category: 'talktime',
+                                  subStatus: entry.name,
+                                  title: `Detailed Report: Talktime — ${entry.name}`,
+                                })
+                              }
+                            />
                           ))}
                         </Pie>
-                        <Tooltip />
+                        <Tooltip content={<ClickableChartTooltip />} />
                       </PieChart>
                     </ResponsiveContainer>
                   </div>
 
-                  <div className="flex-1 space-y-2 text-xs">
+                  <div className="flex-1 space-y-1.5 text-xs">
                     {talktimeData.map((item) => (
-                      <div key={item.name} className="flex items-center justify-between">
+                      <div
+                        key={item.name}
+                        onClick={() =>
+                          handleOpenDrilldown({
+                            category: 'talktime',
+                            subStatus: item.name,
+                            title: `Detailed Report: Talktime — ${item.name}`,
+                          })
+                        }
+                        className="flex items-center justify-between p-1.5 -mx-1.5 rounded-lg hover:bg-dark-100 dark:hover:bg-dark-700/60 cursor-pointer transition-colors group"
+                        title={`Click to view detailed report for ${item.name}`}
+                      >
                         <div className="flex items-center gap-2">
                           <span
-                            className="w-2.5 h-2.5 rounded-full"
+                            className="w-2.5 h-2.5 rounded-full group-hover:scale-125 transition-transform"
                             style={{ backgroundColor: item.color }}
                           />
-                          <span className="text-dark-600 dark:text-dark-300">{item.name}</span>
+                          <span className="text-dark-600 dark:text-dark-300 group-hover:text-blue-600 dark:group-hover:text-blue-400 font-medium">
+                            {item.name}
+                          </span>
                         </div>
-                        <span className="font-bold text-dark-900 dark:text-white font-mono">
-                          {item.label}
-                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-bold text-dark-900 dark:text-white font-mono">
+                            {item.label}
+                          </span>
+                          <ArrowUpRight
+                            size={12}
+                            className="text-dark-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                          />
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -722,6 +1334,20 @@ export default function Reports({ onNavigate }) {
           </div>
         </div>
       )}
+
+      {/* 6. Interactive Drill-down Detailed Call Report Modal */}
+      <DetailedReportModal
+        isOpen={drilldownModal.isOpen}
+        onClose={() => setDrilldownModal((prev) => ({ ...prev, isOpen: false }))}
+        title={drilldownModal.title}
+        subtitle={drilldownModal.subtitle}
+        category={drilldownModal.category}
+        subStatus={drilldownModal.subStatus}
+        staffName={selectedStaffList.join(', ') || 'Kusum Rathore'}
+        period={period}
+        calls={drilldownModal.calls}
+        onNavigate={onNavigate}
+      />
     </div>
   );
 }

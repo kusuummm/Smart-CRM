@@ -2958,33 +2958,36 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                                     <div className="w-full flex items-end justify-center gap-1 sm:gap-1.5 h-full">
                                       {/* Calls bar */}
                                       <div
+                                        onClick={() => handleNavigate('call-history')}
                                         style={{ height: `${d.calls ? callHeight : 4}px` }}
-                                        className={`w-3 sm:w-4 rounded-t-md transition-all ${
+                                        className={`w-3 sm:w-4 rounded-t-md transition-all cursor-pointer hover:brightness-125 hover:scale-y-105 origin-bottom ${
                                           d.calls
                                             ? 'bg-gradient-to-t from-indigo-600 to-indigo-400 shadow-xs'
                                             : 'bg-dark-100 dark:bg-dark-700/60'
                                         }`}
-                                        title={`Calls: ${d.calls || 0}`}
+                                        title={`Calls: ${d.calls || 0} on ${d.day} (${d.date}) — Click to view in Call History`}
                                       />
                                       {/* Follow-ups bar */}
                                       <div
+                                        onClick={() => handleNavigate('todos')}
                                         style={{ height: `${d.followUps ? fuHeight : 4}px` }}
-                                        className={`w-3 sm:w-4 rounded-t-md transition-all ${
+                                        className={`w-3 sm:w-4 rounded-t-md transition-all cursor-pointer hover:brightness-125 hover:scale-y-105 origin-bottom ${
                                           d.followUps
                                             ? 'bg-gradient-to-t from-amber-600 to-amber-400 shadow-xs'
                                             : 'bg-dark-100 dark:bg-dark-700/60'
                                         }`}
-                                        title={`Follow-ups: ${d.followUps || 0}`}
+                                        title={`Follow-ups: ${d.followUps || 0} on ${d.day} (${d.date}) — Click to view in Tasks & Follow-ups`}
                                       />
                                       {/* Leads bar */}
                                       <div
+                                        onClick={() => handleNavigate('leads')}
                                         style={{ height: `${d.leads ? leadHeight : 4}px` }}
-                                        className={`w-3 sm:w-4 rounded-t-md transition-all ${
+                                        className={`w-3 sm:w-4 rounded-t-md transition-all cursor-pointer hover:brightness-125 hover:scale-y-105 origin-bottom ${
                                           d.leads
                                             ? 'bg-gradient-to-t from-emerald-600 to-emerald-400 shadow-xs'
                                             : 'bg-dark-100 dark:bg-dark-700/60'
                                         }`}
-                                        title={`Leads: ${d.leads || 0}`}
+                                        title={`Leads: ${d.leads || 0} on ${d.day} (${d.date}) — Click to view in Leads Pipeline`}
                                       />
                                     </div>
 
