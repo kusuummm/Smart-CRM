@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -34,6 +35,7 @@ import {
   XCircle,
   HelpCircle,
   ExternalLink,
+  ArrowUpRight,
 } from 'lucide-react';
 import Modal from './Modal';
 import { useToast } from './Toast';
@@ -73,6 +75,25 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 export default function CallerProgressReports({ onNavigate }) {
+  const navigate = useNavigate();
+
+  const handleQuickNavigate = (page) => {
+    if (onNavigate) {
+      onNavigate(page);
+    } else {
+      const pathMap = {
+        'call-history': '/call-history',
+        calls: '/call-history',
+        todos: '/todos',
+        leads: '/leads',
+        'admin-agents': '/admin/agents',
+        contacts: '/contacts',
+      };
+      const target = pathMap[page] || (page.startsWith('/') ? page : `/${page}`);
+      navigate(target);
+    }
+  };
+
   const [period, setPeriod] = useState('7d');
   const [customRange, setCustomRange] = useState({
     startDate: new Date(Date.now() - 6 * 86400000).toISOString().split('T')[0],
@@ -287,11 +308,23 @@ export default function CallerProgressReports({ onNavigate }) {
       {/* TOP AGGREGATE KPI CARDS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         {/* Total Outbound Calls */}
-        <div className="bg-white dark:bg-dark-800 p-4 rounded-2xl border border-dark-200 dark:border-dark-700 shadow-sm">
+        <div
+          onClick={() => {
+            sessionStorage.removeItem('smartcrm_filter_telecaller');
+            handleQuickNavigate('call-history');
+          }}
+          className="bg-white dark:bg-dark-800 p-4 rounded-2xl border border-dark-200 dark:border-dark-700 shadow-xs cursor-pointer hover:shadow-md hover:border-blue-400 dark:hover:border-blue-500 transition-all group"
+          title="Click to view all call logs in Call History"
+        >
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-dark-500 uppercase tracking-wider">Total Calls</span>
-            <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950/50 text-blue-600">
-              <Phone size={18} />
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] text-blue-600 dark:text-blue-400 font-semibold opacity-0 group-hover:opacity-100 flex items-center gap-0.5 transition-opacity">
+                View <ArrowUpRight size={12} />
+              </span>
+              <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/60 transition-colors">
+                <Phone size={18} />
+              </div>
             </div>
           </div>
           <p className="text-2xl font-black text-dark-900 dark:text-white mt-2 font-mono">
@@ -305,11 +338,23 @@ export default function CallerProgressReports({ onNavigate }) {
         </div>
 
         {/* Total Talk Time */}
-        <div className="bg-white dark:bg-dark-800 p-4 rounded-2xl border border-dark-200 dark:border-dark-700 shadow-sm">
+        <div
+          onClick={() => {
+            sessionStorage.removeItem('smartcrm_filter_telecaller');
+            handleQuickNavigate('call-history');
+          }}
+          className="bg-white dark:bg-dark-800 p-4 rounded-2xl border border-dark-200 dark:border-dark-700 shadow-xs cursor-pointer hover:shadow-md hover:border-indigo-400 dark:hover:border-indigo-500 transition-all group"
+          title="Click to view call durations and logs in Call History"
+        >
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-dark-500 uppercase tracking-wider">Talk Time Logged</span>
-            <div className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600">
-              <Clock size={18} />
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-semibold opacity-0 group-hover:opacity-100 flex items-center gap-0.5 transition-opacity">
+                View <ArrowUpRight size={12} />
+              </span>
+              <div className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900/60 transition-colors">
+                <Clock size={18} />
+              </div>
             </div>
           </div>
           <p className="text-2xl font-black text-dark-900 dark:text-white mt-2 font-mono">
@@ -321,11 +366,23 @@ export default function CallerProgressReports({ onNavigate }) {
         </div>
 
         {/* Follow-up Progress */}
-        <div className="bg-white dark:bg-dark-800 p-4 rounded-2xl border border-dark-200 dark:border-dark-700 shadow-sm">
+        <div
+          onClick={() => {
+            sessionStorage.removeItem('smartcrm_filter_telecaller');
+            handleQuickNavigate('todos');
+          }}
+          className="bg-white dark:bg-dark-800 p-4 rounded-2xl border border-dark-200 dark:border-dark-700 shadow-xs cursor-pointer hover:shadow-md hover:border-amber-400 dark:hover:border-amber-500 transition-all group"
+          title="Click to view scheduled follow-ups and tasks in To-Dos"
+        >
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-dark-500 uppercase tracking-wider">Follow-up Updates</span>
-            <div className="p-2 rounded-xl bg-amber-50 dark:bg-amber-950/50 text-amber-600">
-              <TrendingUp size={18} />
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold opacity-0 group-hover:opacity-100 flex items-center gap-0.5 transition-opacity">
+                View <ArrowUpRight size={12} />
+              </span>
+              <div className="p-2 rounded-xl bg-amber-50 dark:bg-amber-950/50 text-amber-600 group-hover:bg-amber-100 dark:group-hover:bg-amber-900/60 transition-colors">
+                <TrendingUp size={18} />
+              </div>
             </div>
           </div>
           <p className="text-2xl font-black text-dark-900 dark:text-white mt-2 font-mono">
@@ -337,11 +394,23 @@ export default function CallerProgressReports({ onNavigate }) {
         </div>
 
         {/* Conversions Won */}
-        <div className="bg-white dark:bg-dark-800 p-4 rounded-2xl border border-dark-200 dark:border-dark-700 shadow-sm">
+        <div
+          onClick={() => {
+            sessionStorage.removeItem('smartcrm_filter_telecaller');
+            handleQuickNavigate('leads');
+          }}
+          className="bg-white dark:bg-dark-800 p-4 rounded-2xl border border-dark-200 dark:border-dark-700 shadow-xs cursor-pointer hover:shadow-md hover:border-emerald-400 dark:hover:border-emerald-500 transition-all group"
+          title="Click to view converted deals in Leads Pipeline"
+        >
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-dark-500 uppercase tracking-wider">Deals Converted</span>
-            <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600">
-              <Award size={18} />
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold opacity-0 group-hover:opacity-100 flex items-center gap-0.5 transition-opacity">
+                View <ArrowUpRight size={12} />
+              </span>
+              <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 group-hover:bg-emerald-100 dark:group-hover:bg-emerald-900/60 transition-colors">
+                <Award size={18} />
+              </div>
             </div>
           </div>
           <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-2 font-mono">
@@ -353,11 +422,22 @@ export default function CallerProgressReports({ onNavigate }) {
         </div>
 
         {/* Active Callers */}
-        <div className="bg-white dark:bg-dark-800 p-4 rounded-2xl border border-dark-200 dark:border-dark-700 shadow-sm">
+        <div
+          onClick={() => {
+            handleQuickNavigate('admin-agents');
+          }}
+          className="bg-white dark:bg-dark-800 p-4 rounded-2xl border border-dark-200 dark:border-dark-700 shadow-xs cursor-pointer hover:shadow-md hover:border-purple-400 dark:hover:border-purple-500 transition-all group"
+          title="Click to view active telecallers in Telecaller Presence"
+        >
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-dark-500 uppercase tracking-wider">Active Callers</span>
-            <div className="p-2 rounded-xl bg-purple-50 dark:bg-purple-950/50 text-purple-600">
-              <Users size={18} />
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] text-purple-600 dark:text-purple-400 font-semibold opacity-0 group-hover:opacity-100 flex items-center gap-0.5 transition-opacity">
+                View <ArrowUpRight size={12} />
+              </span>
+              <div className="p-2 rounded-xl bg-purple-50 dark:bg-purple-950/50 text-purple-600 group-hover:bg-purple-100 dark:group-hover:bg-purple-900/60 transition-colors">
+                <Users size={18} />
+              </div>
             </div>
           </div>
           <p className="text-2xl font-black text-dark-900 dark:text-white mt-2 font-mono">
@@ -628,52 +708,115 @@ export default function CallerProgressReports({ onNavigate }) {
                   </td>
                 </tr>
               ) : (
-                callersBreakdown.map((caller) => (
-                  <tr key={caller.callerId} className="hover:bg-dark-50 dark:hover:bg-dark-700/50 transition-colors">
-                    <td className="px-4 py-3 font-medium text-dark-900 dark:text-white">
-                      <div className="flex items-center gap-2.5">
-                        <div className="relative">
-                          <div className="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-950 text-primary-700 dark:text-primary-300 flex items-center justify-center font-bold text-xs">
-                            {caller.avatar || 'TC'}
+                  callersBreakdown.map((caller) => (
+                    <tr key={caller.callerId} className="hover:bg-dark-50 dark:hover:bg-dark-700/50 transition-colors">
+                      <td className="px-4 py-3 font-medium text-dark-900 dark:text-white">
+                        <div className="flex items-center gap-2.5">
+                          <div className="relative">
+                            <div className="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-950 text-primary-700 dark:text-primary-300 flex items-center justify-center font-bold text-xs">
+                              {caller.avatar || 'TC'}
+                            </div>
+                            {caller.isOnline && (
+                              <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white dark:border-dark-800" />
+                            )}
                           </div>
-                          {caller.isOnline && (
-                            <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white dark:border-dark-800" />
-                          )}
+                          <div
+                            className="cursor-pointer group/caller"
+                            onClick={() => {
+                              sessionStorage.setItem('smartcrm_filter_telecaller', caller.name);
+                              handleQuickNavigate('leads');
+                            }}
+                            title={`Click to view all leads assigned to ${caller.name}`}
+                          >
+                            <p className="font-bold group-hover/caller:text-primary-600 transition-colors flex items-center gap-1">
+                              {caller.name}
+                              <ArrowUpRight size={11} className="opacity-0 group-hover/caller:opacity-100 transition-opacity text-primary-600" />
+                            </p>
+                            <p className="text-[10px] text-dark-400">{caller.email}</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-bold">{caller.name}</p>
-                          <p className="text-[10px] text-dark-400">{caller.email}</p>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            sessionStorage.setItem('smartcrm_filter_telecaller', caller.name);
+                            handleQuickNavigate('call-history');
+                          }}
+                          className="font-bold font-mono text-dark-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 hover:underline transition-colors cursor-pointer"
+                          title={`Click to view call history logs for ${caller.name}`}
+                        >
+                          {caller.totalCalls}
+                        </button>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            sessionStorage.setItem('smartcrm_filter_telecaller', caller.name);
+                            handleQuickNavigate('call-history');
+                          }}
+                          className="font-mono text-emerald-600 font-semibold hover:underline cursor-pointer"
+                          title={`Click to view connected calls for ${caller.name}`}
+                        >
+                          {caller.connectedCalls}
+                        </button>
+                      </td>
+                      <td className="px-4 py-3 text-center font-mono text-indigo-600 font-medium">
+                        {caller.totalDurationMinutes} mins
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            sessionStorage.setItem('smartcrm_filter_telecaller', caller.name);
+                            handleQuickNavigate('todos');
+                          }}
+                          className="font-mono text-amber-600 font-semibold hover:underline cursor-pointer"
+                          title={`Click to view follow-up tasks for ${caller.name}`}
+                        >
+                          {caller.leadsFollowedUp}
+                        </button>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            sessionStorage.setItem('smartcrm_filter_telecaller', caller.name);
+                            handleQuickNavigate('leads');
+                          }}
+                          className="font-mono text-emerald-600 font-bold hover:underline cursor-pointer"
+                          title={`Click to view converted leads for ${caller.name}`}
+                        >
+                          {caller.conversions}
+                        </button>
+                      </td>
+                      <td className="px-4 py-3 text-center font-mono font-bold text-dark-800 dark:text-dark-200">
+                        {caller.conversionRate}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={() => {
+                              sessionStorage.setItem('smartcrm_filter_telecaller', caller.name);
+                              handleQuickNavigate('call-history');
+                            }}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-[11px] font-semibold transition-colors cursor-pointer"
+                            title={`View ${caller.name}'s calls in Call History`}
+                          >
+                            Calls <ArrowUpRight size={11} />
+                          </button>
+                          <button
+                            onClick={() => handleGraphClick(dailyTrend[dailyTrend.length - 1]?.date)}
+                            className="px-2.5 py-1 rounded-lg bg-dark-100 dark:bg-dark-700 hover:bg-primary-50 dark:hover:bg-primary-950/50 hover:text-primary-600 text-[11px] font-semibold transition-colors cursor-pointer"
+                            title="Inspect detailed logs for this date"
+                          >
+                            Inspect Logs
+                          </button>
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-center font-bold font-mono text-dark-900 dark:text-white">
-                      {caller.totalCalls}
-                    </td>
-                    <td className="px-4 py-3 text-center font-mono text-emerald-600 font-semibold">
-                      {caller.connectedCalls}
-                    </td>
-                    <td className="px-4 py-3 text-center font-mono text-indigo-600 font-medium">
-                      {caller.totalDurationMinutes} mins
-                    </td>
-                    <td className="px-4 py-3 text-center font-mono text-amber-600 font-semibold">
-                      {caller.leadsFollowedUp}
-                    </td>
-                    <td className="px-4 py-3 text-center font-mono text-emerald-600 font-bold">
-                      {caller.conversions}
-                    </td>
-                    <td className="px-4 py-3 text-center font-mono font-bold text-dark-800 dark:text-dark-200">
-                      {caller.conversionRate}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <button
-                        onClick={() => handleGraphClick(dailyTrend[dailyTrend.length - 1]?.date)}
-                        className="px-2.5 py-1 rounded-lg bg-dark-100 dark:bg-dark-700 hover:bg-primary-50 dark:hover:bg-primary-950/50 hover:text-primary-600 text-[11px] font-semibold transition-colors"
-                      >
-                        Inspect Logs
-                      </button>
-                    </td>
-                  </tr>
-                ))
+                      </td>
+                    </tr>
+                  ))
               )}
             </tbody>
           </table>
