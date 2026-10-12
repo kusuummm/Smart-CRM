@@ -35,8 +35,6 @@ export default function DetailedReportModal({
   const [searchTerm, setSearchTerm] = useState('');
   const [copiedPhone, setCopiedPhone] = useState(null);
 
-  if (!isOpen) return null;
-
   // Filter calls by search term
   const filteredCalls = useMemo(() => {
     if (!searchTerm.trim()) return calls;
@@ -120,6 +118,8 @@ export default function DetailedReportModal({
         return <PhoneMissed size={14} className="text-rose-500" />;
     }
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-3 sm:p-4 animate-in fade-in duration-200">
