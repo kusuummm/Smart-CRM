@@ -22,8 +22,6 @@ import {
 import { toast } from 'react-hot-toast';
 import {
   registerRequest,
-  registerSendOtpRequest,
-  registerVerifyOtpRequest,
   forgotPasswordSendOtpRequest,
   forgotPasswordVerifyResetRequest,
 } from '../api/auth';
@@ -38,8 +36,7 @@ export default function Login({ isAddingAccount = false, onCancelAdd }) {
   const [showPassword, setShowPassword] = useState(false);
   const [approvalNotice, setApprovalNotice] = useState('');
 
-  // Register form state
-  const [registerStep, setRegisterStep] = useState(1); // 1: Info, 2: OTP
+  // Register form state (Direct registration with Email & Password, awaiting Admin approval)
   const [regForm, setRegForm] = useState({
     name: '',
     email: '',
@@ -47,7 +44,6 @@ export default function Login({ isAddingAccount = false, onCancelAdd }) {
     password: '',
     confirmPassword: '',
   });
-  const [regOtp, setRegOtp] = useState('');
   const [showRegPassword, setShowRegPassword] = useState(false);
 
   // Forgot password state
@@ -66,7 +62,7 @@ export default function Login({ isAddingAccount = false, onCancelAdd }) {
   const { login, loginWithSession, user } = useAuth();
   const { language, toggleLanguage, t } = useApp();
 
-  // Cooldown countdown timer for OTP resend
+  // Cooldown countdown timer for OTP resend (Forgot Password)
   useEffect(() => {
     if (cooldown <= 0) return;
     const timer = setInterval(() => {
@@ -81,10 +77,22 @@ export default function Login({ isAddingAccount = false, onCancelAdd }) {
   // ================= 1. LOGIN HANDLERS =================
   const validateLogin = () => {
     const errs = {};
-    if (!email.trim()) errs.email = 'Email is required';
-    else if (!/\S+@\S+\.\S+/.test(email)) errs.email = 'Invalid email format';
-    if (!password) errs.password = 'Password is required';
-    else if (password.length < 4) errs.password = 'Password must be at least 4 characters';
+    const cleanEmail = email.trim();
+
+    if (!cleanEmail) {
+      errs.email = 'Email address is required';
+    } else if (/^\d{4,8}$/.test(cleanEmail)) {
+      errs.email = 'Please enter your registered email address, not the OTP verification code';
+    } else if (!/\S+@\S+\.\S+/.test(cleanEmail)) {
+      errs.email = 'Please enter a valid email address';
+    }
+
+    if (!password) {
+      errs.password = 'Password is required';
+    } else if (password.length < 4) {
+      errs.password = 'Password must be at least 4 characters';
+    }
+
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -93,7 +101,7 @@ export default function Login({ isAddingAccount = false, onCancelAdd }) {
     e.preventDefault();
     if (!validateLogin()) return;
     setLoading(true);
-    const result = await login(email.trim(), password);
+    const result = await login(email.trim().toLowerCase(), password);
     if (result.success) {
       toast.success(t('loginSuccess') || (language === 'hi' ? 'स्वागत है!' : 'Welcome back!'));
       setApprovalNotice('');
@@ -114,10 +122,10 @@ export default function Login({ isAddingAccount = false, onCancelAdd }) {
   };
 
   // ================= 2. REGISTRATION HANDLERS =================
-  const validateRegStep1 = () => {
+  const validateRegForm = () => {
     const errs = {};
     if (!regForm.name.trim()) errs.name = 'Full Name is required';
-    if (!regForm.email.trim()) errs.email = 'Email is required';
+    if (!regForm.email.trim()) errs.email = 'Email address is required';
     else if (!/\S+@\S+\.\S+/.test(regForm.email)) errs.email = 'Invalid email format';
     if (!regForm.password) errs.password = 'Password is required';
     else if (regForm.password.length < 4) errs.password = 'Password must be at least 4 characters';
@@ -128,80 +136,36 @@ export default function Login({ isAddingAccount = false, onCancelAdd }) {
     return Object.keys(errs).length === 0;
   };
 
-  const handleSendRegOtp = async (e) => {
-    if (e) e.preventDefault();
-    if (!validateRegStep1()) return;
-
-    setLoading(true);
-    try {
-      const data = await registerSendOtpRequest({
-        name: regForm.name.trim(),
-        email: regForm.email.trim(),
-        phone: regForm.phone.trim(),
-        password: regForm.password,
-      });
-      toast.success(data.message || 'Verification code sent to your email!');
-      setRegisterStep(2);
-      setCooldown(60);
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to send verification code');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDirectRegister = async (e) => {
-    if (e) e.preventDefault();
-    if (!validateRegStep1()) return;
+  const handleRegisterSubmit = async (e) => {
+    e.preventDefault();
+    if (!validateRegForm()) return;
 
     setLoading(true);
     try {
       const data = await registerRequest({
         name: regForm.name.trim(),
-        email: regForm.email.trim(),
+        email: regForm.email.trim().toLowerCase(),
         phone: regForm.phone.trim(),
         password: regForm.password,
       });
-      toast.success(data.message || 'Registration submitted for administrator approval!', { duration: 6000 });
-      setApprovalNotice(data.message);
-      setAuthMode('login');
-      setEmail(regForm.email.trim());
+
+      const successMsg = data.message || 'Registration submitted! Awaiting administrator approval before you can log in.';
+      toast.success(successMsg, { duration: 6000 });
+      setApprovalNotice(successMsg);
+
+      // Pre-fill email on the login form so the user can easily log in once approved
+      setEmail(regForm.email.trim().toLowerCase());
       setPassword('');
-      setRegisterStep(1);
+      setRegForm({
+        name: '',
+        email: '',
+        phone: '',
+        password: '',
+        confirmPassword: '',
+      });
+      setAuthMode('login');
     } catch (err) {
       toast.error(err.response?.data?.message || 'Registration failed');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleVerifyRegOtp = async (e) => {
-    e.preventDefault();
-    if (!regOtp || regOtp.trim().length !== 6) {
-      toast.error('Please enter the 6-digit verification code');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const data = await registerVerifyOtpRequest({
-        email: regForm.email.trim(),
-        otp: regOtp.trim(),
-      });
-      if (data.pendingApproval) {
-        toast.success(data.message || 'Registration verified! Awaiting administrator approval.', { duration: 6000 });
-        setApprovalNotice(data.message);
-        setAuthMode('login');
-        setEmail(regForm.email.trim());
-        setPassword('');
-        setRegisterStep(1);
-        setRegOtp('');
-      } else {
-        toast.success(data.message || 'Account verified and created successfully!');
-        loginWithSession(data);
-      }
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Invalid or expired code');
     } finally {
       setLoading(false);
     }
@@ -217,12 +181,12 @@ export default function Login({ isAddingAccount = false, onCancelAdd }) {
     setErrors({});
     setLoading(true);
     try {
-      const data = await forgotPasswordSendOtpRequest({ email: forgotEmail.trim() });
-      toast.success(data.message || 'Reset code sent to your email!');
+      const data = await forgotPasswordSendOtpRequest({ email: forgotEmail.trim().toLowerCase() });
+      toast.success(data.message || 'Recovery code sent to your email!');
       setForgotStep(2);
       setCooldown(60);
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to send reset code');
+      toast.error(err.response?.data?.message || 'Failed to dispatch recovery code');
     } finally {
       setLoading(false);
     }
@@ -248,7 +212,7 @@ export default function Login({ isAddingAccount = false, onCancelAdd }) {
     setLoading(true);
     try {
       const data = await forgotPasswordVerifyResetRequest({
-        email: forgotEmail.trim(),
+        email: forgotEmail.trim().toLowerCase(),
         otp: forgotOtp.trim(),
         newPassword,
       });
@@ -263,10 +227,8 @@ export default function Login({ isAddingAccount = false, onCancelAdd }) {
 
   const resetAllModes = (mode = 'login') => {
     setAuthMode(mode);
-    setRegisterStep(1);
     setForgotStep(1);
     setErrors({});
-    setRegOtp('');
     setForgotOtp('');
   };
 
@@ -292,7 +254,7 @@ export default function Login({ isAddingAccount = false, onCancelAdd }) {
                   {authMode === 'login'
                     ? 'Customer Relationship Management'
                     : authMode === 'register'
-                    ? 'Member Registration'
+                    ? 'Caller Registration'
                     : 'Account Recovery'}
                 </p>
               </div>
@@ -312,7 +274,7 @@ export default function Login({ isAddingAccount = false, onCancelAdd }) {
             <form onSubmit={handleLoginSubmit} className="space-y-4">
               <div className="mb-2">
                 <h2 className="text-lg font-bold text-dark-900 dark:text-white">Welcome back</h2>
-                <p className="text-xs text-dark-500 dark:text-dark-400">Sign in to your CRM workspace</p>
+                <p className="text-xs text-dark-500 dark:text-dark-400">Sign in to your CRM workspace with Email & Password</p>
               </div>
 
               {approvalNotice && (
@@ -324,7 +286,7 @@ export default function Login({ isAddingAccount = false, onCancelAdd }) {
                   </div>
                   <button
                     type="button"
-                    onClick={() => setApprovalNotice(null)}
+                    onClick={() => setApprovalNotice('')}
                     className="text-amber-600 hover:text-amber-800 dark:text-amber-400 dark:hover:text-amber-200 text-xs font-bold"
                   >
                     ✕
@@ -339,10 +301,16 @@ export default function Login({ isAddingAccount = false, onCancelAdd }) {
                 <div className="relative">
                   <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-dark-400" size={16} />
                   <input
+                    id="login-email"
+                    name="email"
                     type="email"
+                    autoComplete="username email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="caller@crm.com or admin@crm.com"
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      if (errors.email) setErrors((prev) => ({ ...prev, email: null }));
+                    }}
+                    placeholder="Enter your registered email address"
                     className={`w-full pl-10 pr-4 py-2.5 border rounded-xl text-sm bg-white dark:bg-dark-800 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 ${
                       errors.email ? 'border-red-300 bg-red-50/50' : 'border-dark-200 dark:border-dark-700'
                     }`}
@@ -367,9 +335,15 @@ export default function Login({ isAddingAccount = false, onCancelAdd }) {
                 <div className="relative">
                   <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-dark-400" size={16} />
                   <input
+                    id="login-password"
+                    name="password"
                     type={showPassword ? 'text' : 'password'}
+                    autoComplete="current-password"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      if (errors.password) setErrors((prev) => ({ ...prev, password: null }));
+                    }}
                     placeholder="••••••••"
                     className={`w-full pl-10 pr-10 py-2.5 border rounded-xl text-sm bg-white dark:bg-dark-800 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 ${
                       errors.password ? 'border-red-300 bg-red-50/50' : 'border-dark-200 dark:border-dark-700'
@@ -392,71 +366,38 @@ export default function Login({ isAddingAccount = false, onCancelAdd }) {
                 className="w-full mt-2 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl font-semibold text-sm shadow-sm hover:shadow transition-all disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
               >
                 {loading ? <Loader2 size={16} className="animate-spin" /> : null}
-                {loading ? 'Signing in...' : 'Sign In'}
+                {loading ? 'Signing in...' : 'Sign In with Email & Password'}
               </button>
 
-              {/* Quick One-Click Demo Credentials */}
-              <div className="pt-3 border-t border-dark-100 dark:border-dark-800 space-y-2">
-                <p className="text-[11px] font-semibold text-center uppercase tracking-wider text-dark-400 dark:text-dark-400">
-                  Quick One-Click Login
-                </p>
-                <div className="grid grid-cols-2 gap-2.5">
-                  {/* Caller ID Button */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEmail('caller@crm.com');
-                      setPassword('caller123');
-                      setErrors({});
-                    }}
-                    className="p-2.5 rounded-xl border border-blue-200 dark:border-blue-900 bg-blue-50/70 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/50 text-left transition-colors cursor-pointer group"
-                  >
-                    <div className="flex items-center gap-1.5 text-blue-700 dark:text-blue-300 font-bold text-xs">
-                      <Phone size={13} />
-                      <span>Caller ID</span>
-                    </div>
-                    <p className="text-[11px] text-dark-600 dark:text-dark-300 font-mono mt-0.5 truncate">
-                      caller@crm.com
-                    </p>
-                    <span className="text-[10px] text-blue-600 dark:text-blue-400 font-medium block mt-0.5">
-                      Caller Panel →
-                    </span>
-                  </button>
-
-                  {/* Admin ID Button */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEmail('admin@crm.com');
-                      setPassword('admin123');
-                      setErrors({});
-                    }}
-                    className="p-2.5 rounded-xl border border-purple-200 dark:border-purple-900 bg-purple-50/70 dark:bg-purple-950/40 hover:bg-purple-100 dark:hover:bg-purple-900/50 text-left transition-colors cursor-pointer group"
-                  >
-                    <div className="flex items-center gap-1.5 text-purple-700 dark:text-purple-300 font-bold text-xs">
-                      <ShieldCheck size={13} />
-                      <span>Admin ID</span>
-                    </div>
-                    <p className="text-[11px] text-dark-600 dark:text-dark-300 font-mono mt-0.5 truncate">
-                      admin@crm.com
-                    </p>
-                    <span className="text-[10px] text-purple-600 dark:text-purple-400 font-medium block mt-0.5">
-                      Admin Panel →
-                    </span>
-                  </button>
-                </div>
+              {/* Quick Fill Admin Button */}
+              <div className="pt-3 border-t border-dark-100 dark:border-dark-800">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEmail('admin@crm.com');
+                    setPassword('admin123');
+                    setErrors({});
+                  }}
+                  className="w-full p-2.5 rounded-xl border border-purple-200 dark:border-purple-900 bg-purple-50/70 dark:bg-purple-950/40 hover:bg-purple-100 dark:hover:bg-purple-900/50 text-left transition-colors cursor-pointer flex items-center justify-between"
+                >
+                  <div className="flex items-center gap-2 text-purple-700 dark:text-purple-300 font-semibold text-xs">
+                    <ShieldCheck size={14} />
+                    <span>Quick Fill: Master Admin</span>
+                  </div>
+                  <span className="text-[11px] font-mono text-dark-500 dark:text-dark-400">admin@crm.com</span>
+                </button>
               </div>
 
               {/* Toggle to Register */}
               <div className="pt-2 text-center border-t border-dark-100 dark:border-dark-800">
                 <p className="text-xs text-dark-600 dark:text-dark-400">
-                  New to SmartCRM?{' '}
+                  New Caller?{' '}
                   <button
                     type="button"
                     onClick={() => resetAllModes('register')}
                     className="font-bold text-primary-600 hover:text-primary-700 dark:text-primary-400 hover:underline cursor-pointer"
                   >
-                    Create an account
+                    Register Caller Account
                   </button>
                 </p>
               </div>
@@ -465,216 +406,150 @@ export default function Login({ isAddingAccount = false, onCancelAdd }) {
 
           {/* ================= MODE 2: REGISTER ================= */}
           {authMode === 'register' && (
-            <div>
-              {registerStep === 1 ? (
-                <form onSubmit={handleSendRegOtp} className="space-y-3.5">
-                  <div className="mb-2">
-                    <h2 className="text-lg font-bold text-dark-900 dark:text-white">Create an Account</h2>
-                    <p className="text-xs text-dark-500 dark:text-dark-400">
-                      Step 1 of 2: Enter your details to receive an email OTP
-                    </p>
-                  </div>
+            <form onSubmit={handleRegisterSubmit} className="space-y-3.5">
+              <div className="mb-2">
+                <h2 className="text-lg font-bold text-dark-900 dark:text-white">Caller Registration</h2>
+                <p className="text-xs text-dark-500 dark:text-dark-400">
+                  Create your caller account with email & password (requires admin approval)
+                </p>
+              </div>
 
-                  <div>
-                    <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1">
-                      Full Name <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <UserIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 text-dark-400" size={16} />
-                      <input
-                        type="text"
-                        value={regForm.name}
-                        onChange={(e) => setRegForm({ ...regForm, name: e.target.value })}
-                        placeholder="John Doe"
-                        className={`w-full pl-10 pr-4 py-2 border rounded-xl text-xs sm:text-sm bg-white dark:bg-dark-800 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                          errors.name ? 'border-red-300 bg-red-50/50' : 'border-dark-200 dark:border-dark-700'
-                        }`}
-                      />
-                    </div>
-                    {errors.name && <p className="mt-1 text-xs text-red-500">{errors.name}</p>}
-                  </div>
+              <div>
+                <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1">
+                  Full Name <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <UserIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 text-dark-400" size={16} />
+                  <input
+                    id="reg-name"
+                    name="name"
+                    type="text"
+                    autoComplete="name"
+                    value={regForm.name}
+                    onChange={(e) => setRegForm({ ...regForm, name: e.target.value })}
+                    placeholder="e.g. Kusum Rathore"
+                    className={`w-full pl-10 pr-4 py-2 border rounded-xl text-xs sm:text-sm bg-white dark:bg-dark-800 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                      errors.name ? 'border-red-300 bg-red-50/50' : 'border-dark-200 dark:border-dark-700'
+                    }`}
+                  />
+                </div>
+                {errors.name && <p className="mt-1 text-xs text-red-500">{errors.name}</p>}
+              </div>
 
-                  <div>
-                    <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1">
-                      Real Email Address <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-dark-400" size={16} />
-                      <input
-                        type="email"
-                        value={regForm.email}
-                        onChange={(e) => setRegForm({ ...regForm, email: e.target.value })}
-                        placeholder="you@gmail.com"
-                        className={`w-full pl-10 pr-4 py-2 border rounded-xl text-xs sm:text-sm bg-white dark:bg-dark-800 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                          errors.email ? 'border-red-300 bg-red-50/50' : 'border-dark-200 dark:border-dark-700'
-                        }`}
-                      />
-                    </div>
-                    {errors.email && <p className="mt-1 text-xs text-red-500">{errors.email}</p>}
-                  </div>
+              <div>
+                <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1">
+                  Email Address <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-dark-400" size={16} />
+                  <input
+                    id="reg-email"
+                    name="email"
+                    type="email"
+                    autoComplete="username email"
+                    value={regForm.email}
+                    onChange={(e) => setRegForm({ ...regForm, email: e.target.value })}
+                    placeholder="caller@example.com"
+                    className={`w-full pl-10 pr-4 py-2 border rounded-xl text-xs sm:text-sm bg-white dark:bg-dark-800 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                      errors.email ? 'border-red-300 bg-red-50/50' : 'border-dark-200 dark:border-dark-700'
+                    }`}
+                  />
+                </div>
+                {errors.email && <p className="mt-1 text-xs text-red-500">{errors.email}</p>}
+              </div>
 
-                  <div>
-                    <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1">
-                      Phone Number <span className="text-dark-400 font-normal">(optional)</span>
-                    </label>
-                    <div className="relative">
-                      <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 text-dark-400" size={16} />
-                      <input
-                        type="tel"
-                        value={regForm.phone}
-                        onChange={(e) => setRegForm({ ...regForm, phone: e.target.value })}
-                        placeholder="9876543210"
-                        className="w-full pl-10 pr-4 py-2 border rounded-xl text-xs sm:text-sm bg-white dark:bg-dark-800 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 border-dark-200 dark:border-dark-700"
-                      />
-                    </div>
-                  </div>
+              <div>
+                <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1">
+                  Phone Number <span className="text-dark-400 font-normal">(optional)</span>
+                </label>
+                <div className="relative">
+                  <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 text-dark-400" size={16} />
+                  <input
+                    id="reg-phone"
+                    name="phone"
+                    type="tel"
+                    autoComplete="tel"
+                    value={regForm.phone}
+                    onChange={(e) => setRegForm({ ...regForm, phone: e.target.value })}
+                    placeholder="9876543210"
+                    className="w-full pl-10 pr-4 py-2 border rounded-xl text-xs sm:text-sm bg-white dark:bg-dark-800 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 border-dark-200 dark:border-dark-700"
+                  />
+                </div>
+              </div>
 
-                  <div>
-                    <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1">
-                      Password <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-dark-400" size={16} />
-                      <input
-                        type={showRegPassword ? 'text' : 'password'}
-                        value={regForm.password}
-                        onChange={(e) => setRegForm({ ...regForm, password: e.target.value })}
-                        placeholder="At least 4 characters"
-                        className={`w-full pl-10 pr-10 py-2 border rounded-xl text-xs sm:text-sm bg-white dark:bg-dark-800 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                          errors.password ? 'border-red-300 bg-red-50/50' : 'border-dark-200 dark:border-dark-700'
-                        }`}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowRegPassword(!showRegPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-dark-400 hover:text-dark-600"
-                      >
-                        {showRegPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                      </button>
-                    </div>
-                    {errors.password && <p className="mt-1 text-xs text-red-500">{errors.password}</p>}
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1">
-                      Confirm Password <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-dark-400" size={16} />
-                      <input
-                        type={showRegPassword ? 'text' : 'password'}
-                        value={regForm.confirmPassword}
-                        onChange={(e) => setRegForm({ ...regForm, confirmPassword: e.target.value })}
-                        placeholder="Re-enter password"
-                        className={`w-full pl-10 pr-4 py-2 border rounded-xl text-xs sm:text-sm bg-white dark:bg-dark-800 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                          errors.confirmPassword ? 'border-red-300 bg-red-50/50' : 'border-dark-200 dark:border-dark-700'
-                        }`}
-                      />
-                    </div>
-                    {errors.confirmPassword && <p className="mt-1 text-xs text-red-500">{errors.confirmPassword}</p>}
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full mt-2 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl font-semibold text-sm shadow-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
-                  >
-                    {loading ? <Loader2 size={16} className="animate-spin" /> : <ShieldCheck size={16} />}
-                    {loading ? 'Sending Verification Code...' : 'Send Verification OTP'}
-                  </button>
-
-                  <div className="flex items-center gap-2 my-1">
-                    <div className="h-px bg-dark-200 dark:bg-dark-700 flex-1" />
-                    <span className="text-[11px] text-dark-400 font-medium">OR</span>
-                    <div className="h-px bg-dark-200 dark:bg-dark-700 flex-1" />
-                  </div>
-
+              <div>
+                <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1">
+                  Password <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-dark-400" size={16} />
+                  <input
+                    id="reg-password"
+                    name="password"
+                    type={showRegPassword ? 'text' : 'password'}
+                    autoComplete="new-password"
+                    value={regForm.password}
+                    onChange={(e) => setRegForm({ ...regForm, password: e.target.value })}
+                    placeholder="At least 4 characters"
+                    className={`w-full pl-10 pr-10 py-2 border rounded-xl text-xs sm:text-sm bg-white dark:bg-dark-800 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                      errors.password ? 'border-red-300 bg-red-50/50' : 'border-dark-200 dark:border-dark-700'
+                    }`}
+                  />
                   <button
                     type="button"
-                    onClick={handleDirectRegister}
-                    disabled={loading}
-                    className="w-full py-2.5 bg-dark-100 hover:bg-dark-200 dark:bg-dark-800 dark:hover:bg-dark-700 text-dark-800 dark:text-dark-200 rounded-xl font-semibold text-xs border border-dark-200 dark:border-dark-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
+                    onClick={() => setShowRegPassword(!showRegPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-dark-400 hover:text-dark-600"
                   >
-                    <UserPlus size={15} />
-                    <span>Register Directly (Awaiting Admin Approval)</span>
+                    {showRegPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
+                </div>
+                {errors.password && <p className="mt-1 text-xs text-red-500">{errors.password}</p>}
+              </div>
 
-                  <div className="pt-2 text-center">
-                    <p className="text-xs text-dark-600 dark:text-dark-400">
-                      Already registered?{' '}
-                      <button
-                        type="button"
-                        onClick={() => resetAllModes('login')}
-                        className="font-bold text-primary-600 hover:text-primary-700 dark:text-primary-400 hover:underline"
-                      >
-                        Sign In here
-                      </button>
-                    </p>
-                  </div>
-                </form>
-              ) : (
-                /* Step 2: Enter OTP */
-                <form onSubmit={handleVerifyRegOtp} className="space-y-4">
-                  <div className="text-center mb-4">
-                    <div className="w-12 h-12 bg-green-100 dark:bg-green-950/40 text-green-600 dark:text-green-400 rounded-2xl flex items-center justify-center mx-auto mb-2 shadow-xs">
-                      <ShieldCheck size={26} />
-                    </div>
-                    <h2 className="text-lg font-bold text-dark-900 dark:text-white">Verify Your Email</h2>
-                    <p className="text-xs text-dark-500 dark:text-dark-400 mt-0.5">
-                      We sent a 6-digit code to{' '}
-                      <strong className="text-dark-900 dark:text-white">{regForm.email}</strong>
-                    </p>
-                  </div>
+              <div>
+                <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1">
+                  Confirm Password <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-dark-400" size={16} />
+                  <input
+                    id="reg-confirm-password"
+                    name="confirmPassword"
+                    type={showRegPassword ? 'text' : 'password'}
+                    autoComplete="new-password"
+                    value={regForm.confirmPassword}
+                    onChange={(e) => setRegForm({ ...regForm, confirmPassword: e.target.value })}
+                    placeholder="Re-enter password"
+                    className={`w-full pl-10 pr-4 py-2 border rounded-xl text-xs sm:text-sm bg-white dark:bg-dark-800 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                      errors.confirmPassword ? 'border-red-300 bg-red-50/50' : 'border-dark-200 dark:border-dark-700'
+                    }`}
+                  />
+                </div>
+                {errors.confirmPassword && <p className="mt-1 text-xs text-red-500">{errors.confirmPassword}</p>}
+              </div>
 
-                  <div>
-                    <label className="block text-center text-xs font-semibold text-dark-700 dark:text-dark-300 mb-2">
-                      Enter 6-Digit OTP Code
-                    </label>
-                    <input
-                      type="text"
-                      maxLength={6}
-                      autoFocus
-                      value={regOtp}
-                      onChange={(e) => setRegOtp(e.target.value.replace(/\D/g, ''))}
-                      placeholder="123456"
-                      className="w-full text-center font-mono text-2xl tracking-[0.4em] py-3 px-4 border border-dark-200 dark:border-dark-700 rounded-xl bg-white dark:bg-dark-800 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    />
-                    <p className="text-[11px] text-center text-dark-400 dark:text-dark-500 mt-1">
-                      Check your inbox or Spam/Junk folder
-                    </p>
-                  </div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full mt-2 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl font-semibold text-sm shadow-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
+              >
+                {loading ? <Loader2 size={16} className="animate-spin" /> : <UserPlus size={16} />}
+                {loading ? 'Submitting Registration...' : 'Register Caller Account'}
+              </button>
 
+              <div className="pt-2 text-center">
+                <p className="text-xs text-dark-600 dark:text-dark-400">
+                  Already registered?{' '}
                   <button
-                    type="submit"
-                    disabled={loading || regOtp.length !== 6}
-                    className="w-full py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-xl font-semibold text-sm shadow-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                    type="button"
+                    onClick={() => resetAllModes('login')}
+                    className="font-bold text-primary-600 hover:text-primary-700 dark:text-primary-400 hover:underline cursor-pointer"
                   >
-                    {loading ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
-                    {loading ? 'Verifying & Creating Account...' : 'Verify & Sign In'}
+                    Sign In with Email & Password
                   </button>
-
-                  <div className="flex items-center justify-between text-xs pt-2">
-                    <button
-                      type="button"
-                      onClick={() => setRegisterStep(1)}
-                      className="text-dark-500 hover:text-dark-700 dark:hover:text-dark-300 flex items-center gap-1"
-                    >
-                      <ArrowLeft size={13} /> Edit Details
-                    </button>
-
-                    <button
-                      type="button"
-                      disabled={cooldown > 0 || loading}
-                      onClick={() => handleSendRegOtp()}
-                      className="text-primary-600 hover:text-primary-700 dark:text-primary-400 font-medium disabled:opacity-50 flex items-center gap-1"
-                    >
-                      <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
-                      {cooldown > 0 ? `Resend in ${cooldown}s` : 'Resend Code'}
-                    </button>
-                  </div>
-                </form>
-              )}
-            </div>
+                </p>
+              </div>
+            </form>
           )}
 
           {/* ================= MODE 3: FORGOT PASSWORD ================= */}
@@ -696,7 +571,10 @@ export default function Login({ isAddingAccount = false, onCancelAdd }) {
                     <div className="relative">
                       <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-dark-400" size={16} />
                       <input
+                        id="forgot-email"
+                        name="email"
                         type="email"
+                        autoComplete="username email"
                         value={forgotEmail}
                         onChange={(e) => setForgotEmail(e.target.value)}
                         placeholder="you@domain.com"
@@ -711,7 +589,7 @@ export default function Login({ isAddingAccount = false, onCancelAdd }) {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl font-semibold text-sm shadow-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                    className="w-full py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl font-semibold text-sm shadow-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
                   >
                     {loading ? <Loader2 size={16} className="animate-spin" /> : <KeyRound size={16} />}
                     {loading ? 'Sending Recovery Code...' : 'Send Recovery OTP'}
@@ -721,7 +599,7 @@ export default function Login({ isAddingAccount = false, onCancelAdd }) {
                     <button
                       type="button"
                       onClick={() => resetAllModes('login')}
-                      className="text-xs font-medium text-dark-500 hover:text-dark-700 dark:hover:text-dark-300 inline-flex items-center gap-1"
+                      className="text-xs font-medium text-dark-500 hover:text-dark-700 dark:hover:text-dark-300 inline-flex items-center gap-1 cursor-pointer"
                     >
                       <ArrowLeft size={13} /> Back to Sign In
                     </button>
@@ -730,6 +608,18 @@ export default function Login({ isAddingAccount = false, onCancelAdd }) {
               ) : (
                 /* Step 2: OTP + New Password */
                 <form onSubmit={handleVerifyResetPassword} className="space-y-3.5">
+                  {/* Explicit hidden username field prevents password manager from saving OTP as username */}
+                  <input
+                    type="email"
+                    name="username"
+                    value={forgotEmail}
+                    autoComplete="username"
+                    className="hidden"
+                    readOnly
+                    tabIndex={-1}
+                    aria-hidden="true"
+                  />
+
                   <div className="text-center mb-3">
                     <div className="w-10 h-10 bg-indigo-100 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded-xl flex items-center justify-center mx-auto mb-1.5 shadow-xs">
                       <KeyRound size={20} />
@@ -745,7 +635,11 @@ export default function Login({ isAddingAccount = false, onCancelAdd }) {
                       6-Digit Recovery Code
                     </label>
                     <input
+                      id="forgot-otp"
+                      name="otp"
                       type="text"
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
                       maxLength={6}
                       autoFocus
                       value={forgotOtp}
@@ -763,7 +657,10 @@ export default function Login({ isAddingAccount = false, onCancelAdd }) {
                     <div className="relative">
                       <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-dark-400" size={16} />
                       <input
+                        id="new-password"
+                        name="newPassword"
                         type={showNewPassword ? 'text' : 'password'}
+                        autoComplete="new-password"
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
                         placeholder="At least 4 characters"
@@ -787,7 +684,10 @@ export default function Login({ isAddingAccount = false, onCancelAdd }) {
                     <div className="relative">
                       <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-dark-400" size={16} />
                       <input
+                        id="confirm-new-password"
+                        name="confirmNewPassword"
                         type={showNewPassword ? 'text' : 'password'}
+                        autoComplete="new-password"
                         value={confirmNewPassword}
                         onChange={(e) => setConfirmNewPassword(e.target.value)}
                         placeholder="Re-enter new password"
@@ -802,7 +702,7 @@ export default function Login({ isAddingAccount = false, onCancelAdd }) {
                   <button
                     type="submit"
                     disabled={loading || forgotOtp.length !== 6}
-                    className="w-full py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl font-semibold text-sm shadow-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                    className="w-full py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl font-semibold text-sm shadow-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
                   >
                     {loading ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
                     {loading ? 'Updating & Signing In...' : 'Save Password & Sign In'}
@@ -812,7 +712,7 @@ export default function Login({ isAddingAccount = false, onCancelAdd }) {
                     <button
                       type="button"
                       onClick={() => setForgotStep(1)}
-                      className="text-dark-500 hover:text-dark-700 dark:hover:text-dark-300 flex items-center gap-1"
+                      className="text-dark-500 hover:text-dark-700 dark:hover:text-dark-300 flex items-center gap-1 cursor-pointer"
                     >
                       <ArrowLeft size={13} /> Change Email
                     </button>
@@ -821,7 +721,7 @@ export default function Login({ isAddingAccount = false, onCancelAdd }) {
                       type="button"
                       disabled={cooldown > 0 || loading}
                       onClick={() => handleSendForgotOtp()}
-                      className="text-primary-600 hover:text-primary-700 dark:text-primary-400 font-medium disabled:opacity-50 flex items-center gap-1"
+                      className="text-primary-600 hover:text-primary-700 dark:text-primary-400 font-medium disabled:opacity-50 flex items-center gap-1 cursor-pointer"
                     >
                       <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
                       {cooldown > 0 ? `Resend in ${cooldown}s` : 'Resend Code'}
