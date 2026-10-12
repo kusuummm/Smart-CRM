@@ -16,10 +16,12 @@ import {
   Phone,
   Video,
   UserPlus,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { PageHeader } from '../components/Common';
 import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
+import ExcelLeadImportModal from '../components/ExcelLeadImportModal';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../context/ConfirmContext';
@@ -64,6 +66,7 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
 
   // Admin-only: Assign Customer to Lead modal state
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+  const [isExcelModalOpen, setIsExcelModalOpen] = useState(false);
   const [customersList, setCustomersList] = useState([]);
   const [loadingCustomers, setLoadingCustomers] = useState(false);
   const [assignForm, setAssignForm] = useState({
@@ -326,12 +329,19 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
           }
         />
 
-        {/* ADMIN EXCLUSIVE: Assign Customer to Lead Button */}
+        {/* ADMIN EXCLUSIVE: Bulk Excel Import & Assign Customer to Lead Buttons */}
         {isAdmin && (
-          <div className="flex-shrink-0">
+          <div className="flex-shrink-0 flex items-center gap-2.5">
+            <button
+              onClick={() => setIsExcelModalOpen(true)}
+              className="inline-flex items-center gap-2 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors cursor-pointer"
+            >
+              <FileSpreadsheet size={16} />
+              <span>Import Leads (Excel/CSV)</span>
+            </button>
             <button
               onClick={openAssignCustomerModal}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors cursor-pointer"
             >
               <UserPlus size={16} />
               <span>Assign Customer to Lead</span>
@@ -1017,6 +1027,16 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
         message={`Are you sure you want to delete the pipeline lead for "${deleteConfirm?.customerName}"?`}
         confirmText="Delete"
         type="danger"
+      />
+
+      {/* EXCEL / CSV BULK LEAD IMPORTER MODAL */}
+      <ExcelLeadImportModal
+        isOpen={isExcelModalOpen}
+        onClose={() => setIsExcelModalOpen(false)}
+        onImportSuccess={() => {
+          fetchLeads();
+          addToast('Leads successfully imported & assigned!', 'success');
+        }}
       />
     </div>
   );

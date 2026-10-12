@@ -43,6 +43,7 @@ import {
   Power,
   BarChart3,
   TrendingUp,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { PageHeader } from '../components/Common';
 import Modal from '../components/Modal';
@@ -51,6 +52,7 @@ import { useToast } from '../components/Toast';
 import { useConfirm } from '../context/ConfirmContext';
 import { useAuth } from '../context/AuthContext';
 import { getTelecallerReportGraph } from '../api/reports';
+import ExcelLeadImportModal from '../components/ExcelLeadImportModal';
 import {
   getUsers,
   createUser,
@@ -95,6 +97,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
   const [refreshing, setRefreshing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [transferring, setTransferring] = useState(false);
+  const [isExcelModalOpen, setIsExcelModalOpen] = useState(false);
 
   // Search & Filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -779,6 +782,13 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                 >
                   <Users size={16} />
                   <span className="hidden sm:inline">Users Roster</span>
+                </button>
+                <button
+                  onClick={() => setIsExcelModalOpen(true)}
+                  className="inline-flex items-center gap-2 px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold transition-colors shadow-sm cursor-pointer"
+                >
+                  <FileSpreadsheet size={17} />
+                  <span>Import Leads</span>
                 </button>
                 <button
                   onClick={openAdd}
@@ -4165,6 +4175,16 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
         }
         confirmText="Confirm Delete"
         type="danger"
+      />
+
+      {/* EXCEL / CSV BULK LEAD IMPORTER MODAL */}
+      <ExcelLeadImportModal
+        isOpen={isExcelModalOpen}
+        onClose={() => setIsExcelModalOpen(false)}
+        onImportSuccess={() => {
+          loadData(true);
+          addToast('Leads successfully imported & assigned!', 'success');
+        }}
       />
     </div>
   );

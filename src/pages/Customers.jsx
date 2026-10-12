@@ -1,9 +1,10 @@
 import { useState, useCallback, useEffect } from 'react';
-import { Plus, Search, Edit2, Trash2, X, Loader2, ArrowRightLeft, Users, CheckSquare, Square, UserPlus } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, X, Loader2, ArrowRightLeft, Users, CheckSquare, Square, UserPlus, FileSpreadsheet } from 'lucide-react';
 import { PageHeader } from '../components/Common';
 import { DataTable } from '../components/DataTable';
 import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
+import ExcelLeadImportModal from '../components/ExcelLeadImportModal';
 import { useToast } from '../components/Toast';
 import { leadSources, indianStates, statusColors } from '../data/mockData';
 import { useApp } from '../context/AppContext';
@@ -79,6 +80,7 @@ export default function Customers({ onNavigate }) {
   // Quick Inline Reassign Modal
   const [quickReassignCustomer, setQuickReassignCustomer] = useState(null);
   const [quickTargetAgentId, setQuickTargetAgentId] = useState('');
+  const [isExcelModalOpen, setIsExcelModalOpen] = useState(false);
 
   const [form, setForm] = useState({});
 
@@ -455,12 +457,23 @@ export default function Customers({ onNavigate }) {
         title={isAdmin ? translate('customerManagement') : translate('myCustomers') || 'My Customers'}
         subtitle={isAdmin ? 'Full company customer roster with user assignment controls' : 'View and manage accounts assigned to your roster'}
         action={
-          <button
-            onClick={openAdd}
-            className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-sm font-semibold shadow-sm transition-colors"
-          >
-            <Plus size={18} /> {translate('addCustomer')}
-          </button>
+          <div className="flex items-center gap-2.5">
+            {isAdmin && (
+              <button
+                onClick={() => setIsExcelModalOpen(true)}
+                className="flex items-center gap-2 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold shadow-sm transition-colors"
+              >
+                <FileSpreadsheet size={18} />
+                <span>Import Leads (Excel/CSV)</span>
+              </button>
+            )}
+            <button
+              onClick={openAdd}
+              className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-sm font-semibold shadow-sm transition-colors"
+            >
+              <Plus size={18} /> {translate('addCustomer')}
+            </button>
+          </div>
         }
       />
 
@@ -739,6 +752,16 @@ export default function Customers({ onNavigate }) {
         message={`Are you sure you want to delete ${selectedIds.length} selected customer records and all their associated leads, calls, and follow-ups? This cannot be undone.`}
         confirmText="Yes, Delete All Selected"
         type="danger"
+      />
+
+      {/* EXCEL / CSV BULK IMPORT & ROUND-ROBIN ASSIGN MODAL */}
+      <ExcelLeadImportModal
+        isOpen={isExcelModalOpen}
+        onClose={() => setIsExcelModalOpen(false)}
+        onImportSuccess={() => {
+          loadCustomers();
+          addToast('Leads successfully imported & assigned!', 'success');
+        }}
       />
     </div>
   );
