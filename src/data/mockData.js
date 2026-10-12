@@ -103,7 +103,7 @@ export const mockEvents = [
   { id: '6', customerId: '4', customerName: 'Sneha Reddy', type: 'emi', date: '2026-07-08', description: 'EMI payment due for Sneha Reddy', reminder: '3 days before', status: 'upcoming' },
 ];
 
-export const leadStatuses = ['new', 'contacted', 'interested', 'follow-up', 'converted', 'not-interested', 'closed'];
+export const leadStatuses = ['new', 'contacted', 'interested', 'meeting', 'follow-up', 'converted', 'not-interested', 'closed'];
 export const eventTypes = ['birthday', 'anniversary', 'emi', 'renewal'];
 export const leadSources = ['Website', 'Referral', 'Social Media', 'Email Campaign', 'Cold Call', 'Trade Show', 'Other'];
 export const indianStates = ['Maharashtra', 'Gujarat', 'Karnataka', 'Telangana', 'Delhi', 'Tamil Nadu', 'Kerala', 'Rajasthan', 'Punjab', 'Haryana', 'UP', 'West Bengal', 'Other'];
@@ -112,6 +112,7 @@ export const statusColors = {
   'new': 'bg-blue-100 text-blue-700',
   'contacted': 'bg-yellow-100 text-yellow-700',
   'interested': 'bg-purple-100 text-purple-700',
+  'meeting': 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300',
   'follow-up': 'bg-orange-100 text-orange-700',
   'converted': 'bg-green-100 text-green-700',
   'not-interested': 'bg-red-100 text-red-700',
