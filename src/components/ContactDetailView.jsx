@@ -52,7 +52,7 @@ export default function ContactDetailView({
   const [tag, setTag] = useState(contact?.tag || contact?.tags || 'call');
   const [isEditingTag, setIsEditingTag] = useState(false);
   const [leadOwner, setLeadOwner] = useState(contact?.assignedTelecaller || user?.name || 'Admin');
-  const [leadStage, setLeadStage] = useState(contact?.leadStage || contact?.status || 'Select Lead Stage');
+  const [leadStage, setLeadStage] = useState(contact?.leadStage || contact?.status || 'Select Follow-up Status');
 
   // Audio Playback in Recent Calls
   const [playingCallId, setPlayingCallId] = useState(null);
@@ -737,17 +737,17 @@ export default function ContactDetailView({
 
               <div>
                 <label className="block text-[12px] font-normal text-[rgba(0,0,0,0.45)] dark:text-dark-400 uppercase tracking-wider mb-1.5">
-                  LEAD STAGE
+                  FOLLOW-UP STATUS
                 </label>
                 <div className="relative">
                   <select
                     value={leadStage}
                     onChange={async (e) => {
                       const newStage = e.target.value;
-                      if (newStage === leadStage || newStage === 'Select Lead Stage') return;
+                      if (newStage === leadStage || newStage === 'Select Follow-up Status') return;
                       const ok = await confirm({
-                        title: 'Update Lead Stage',
-                        message: `Are you sure you want to move ${contactName} to "${newStage}" stage?`,
+                        title: 'Update Follow-up Status',
+                        message: `Are you sure you want to update ${contactName} to "${newStage}"?`,
                         confirmText: `Change to ${newStage}`,
                         cancelText: 'Cancel',
                         type: 'primary',
@@ -758,17 +758,18 @@ export default function ContactDetailView({
                         updateCustomer(contact.id, { status: newStage }).catch(() => {});
                       }
                       onUpdateContact?.({ ...contact, leadStage: newStage, status: newStage });
-                      addToast(`Lead Stage set to ${newStage}`, 'success');
+                      addToast(`Follow-up Status set to ${newStage}`, 'success');
                     }}
                     className="w-full appearance-none px-3 py-2 text-[14px] font-normal rounded-md bg-white dark:bg-dark-900 border border-[#d9d9d9] dark:border-dark-700 text-[rgba(0,0,0,0.45)] dark:text-dark-400 focus:outline-none focus:border-[#1890ff] cursor-pointer"
                   >
-                    <option value="Select Lead Stage">Select Lead Stage</option>
-                    <option value="New Lead">New Lead</option>
-                    <option value="Contacted">Contacted</option>
-                    <option value="Interested">Interested</option>
-                    <option value="Follow-up">Follow-up</option>
-                    <option value="Won">Won</option>
-                    <option value="Lost">Lost</option>
+                    <option value="Select Follow-up Status">Select Follow-up Status</option>
+                    <option value="New Follow-up">New Follow-up</option>
+                    <option value="Follow-up: Contacted">Follow-up: Contacted</option>
+                    <option value="Follow-up: Interested">Follow-up: Interested</option>
+                    <option value="Follow-up: In Progress">Follow-up: In Progress</option>
+                    <option value="Follow-up: Meeting Scheduled">Follow-up: Meeting Scheduled</option>
+                    <option value="Follow-up: Won">Follow-up: Won</option>
+                    <option value="Follow-up: Lost">Follow-up: Lost</option>
                   </select>
                   <ChevronDown size={14} className="absolute right-3 top-3.5 text-[rgba(0,0,0,0.45)] pointer-events-none" />
                 </div>

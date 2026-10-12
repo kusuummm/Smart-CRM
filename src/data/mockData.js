@@ -104,6 +104,17 @@ export const mockEvents = [
 ];
 
 export const leadStatuses = ['new', 'contacted', 'interested', 'meeting', 'follow-up', 'converted', 'not-interested', 'closed'];
+
+export const leadStatusLabels = {
+  'new': 'New Follow-up',
+  'contacted': 'Follow-up: Contacted',
+  'interested': 'Follow-up: Interested',
+  'meeting': 'Follow-up: Meeting Scheduled',
+  'follow-up': 'Follow-up: In Progress',
+  'converted': 'Follow-up: Converted / Won',
+  'not-interested': 'Follow-up: Not Interested',
+  'closed': 'Follow-up: Closed',
+};
 export const eventTypes = ['birthday', 'anniversary', 'emi', 'renewal'];
 export const leadSources = ['Website', 'Referral', 'Social Media', 'Email Campaign', 'Cold Call', 'Trade Show', 'Other'];
 export const indianStates = ['Maharashtra', 'Gujarat', 'Karnataka', 'Telangana', 'Delhi', 'Tamil Nadu', 'Kerala', 'Rajasthan', 'Punjab', 'Haryana', 'UP', 'West Bengal', 'Other'];

@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { Plus, Search, Edit2, Trash2, X, Loader2, ArrowRightLeft, Users, CheckSquare, Square } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, X, Loader2, ArrowRightLeft, Users, CheckSquare, Square, UserPlus } from 'lucide-react';
 import { PageHeader } from '../components/Common';
 import { DataTable } from '../components/DataTable';
 import Modal from '../components/Modal';
@@ -18,6 +18,7 @@ import {
   bulkDeleteCustomers
 } from '../api/customers';
 import { getUsers } from '../api/users';
+import { createLead } from '../api/leads';
 
 function FormField({ label, name, type = 'text', required = false, options, form, setForm }) {
   return (
@@ -223,6 +224,30 @@ export default function Customers({ onNavigate }) {
     }
   };
 
+  // Admin-only: Assign Customer to Lead Pipeline
+  const handleAssignLead = async (customer) => {
+    const ok = await confirm({
+      title: 'Assign Customer to Lead Pipeline',
+      message: `Are you sure you want to assign "${customer.name}" to the lead pipeline? Follow-up tracking will be initialized and notification emails dispatched.`,
+      confirmText: 'Assign to Lead',
+      cancelText: 'Cancel',
+      type: 'primary',
+    });
+    if (!ok) return;
+
+    try {
+      await createLead({
+        customerId: customer._id,
+        telecallerId: customer.telecallerId || null,
+        status: 'new',
+        remark: 'Assigned to Lead Pipeline from Customers list by Admin',
+      });
+      addToast(`"${customer.name}" assigned to lead pipeline! Notification emails sent.`, 'success');
+    } catch (err) {
+      addToast(err.response?.data?.message || 'Failed to assign customer to lead', 'error');
+    }
+  };
+
   const baseColumns = [
     {
       key: 'name',
@@ -286,6 +311,15 @@ export default function Customers({ onNavigate }) {
       align: 'center',
       render: (_, row) => (
         <div className="flex items-center justify-center gap-1.5">
+          {isAdmin && (
+            <button
+              onClick={() => handleAssignLead(row)}
+              className="p-1.5 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-950/50 text-emerald-600 transition-colors"
+              title="Assign Customer to Lead Pipeline (Admin Only)"
+            >
+              <UserPlus size={16} />
+            </button>
+          )}
           <button
             onClick={() => openEdit(row)}
             className="p-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-dark-700 text-blue-600 transition-colors"

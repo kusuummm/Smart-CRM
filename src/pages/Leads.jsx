@@ -15,6 +15,7 @@ import {
   Sparkles,
   Phone,
   Video,
+  UserPlus,
 } from 'lucide-react';
 import { PageHeader } from '../components/Common';
 import Modal from '../components/Modal';
@@ -22,21 +23,22 @@ import ConfirmDialog from '../components/ConfirmDialog';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../context/ConfirmContext';
-import { leadStatuses, statusColors } from '../data/mockData';
-import { getLeads, updateLeadStatus, deleteLead as deleteLeadRequest } from '../api/leads';
+import { leadStatuses, leadStatusLabels, statusColors } from '../data/mockData';
+import { getLeads, createLead, updateLeadStatus, deleteLead as deleteLeadRequest } from '../api/leads';
 import { getUsers } from '../api/users';
+import { getCustomers } from '../api/customers';
 import { createMeeting } from '../api/meetings';
 
-// Descriptive lead status options
+// Descriptive follow-up status options with icons and follow-up wording
 const statusOptionsConfig = [
-  { id: 'new', label: 'New Lead', icon: '🌱' },
-  { id: 'contacted', label: 'Contacted', icon: '📞' },
-  { id: 'interested', label: 'Interested', icon: '⭐' },
-  { id: 'meeting', label: 'Meeting Scheduled', icon: '📅' },
-  { id: 'follow-up', label: 'Follow-up', icon: '⏰' },
-  { id: 'converted', label: 'Converted / Won', icon: '🏆' },
-  { id: 'not-interested', label: 'Not Interested', icon: '❌' },
-  { id: 'closed', label: 'Closed', icon: '🔒' },
+  { id: 'new', label: 'New Follow-up', icon: '🌱' },
+  { id: 'contacted', label: 'Follow-up: Contacted', icon: '📞' },
+  { id: 'interested', label: 'Follow-up: Interested', icon: '⭐' },
+  { id: 'meeting', label: 'Follow-up: Meeting Scheduled', icon: '📅' },
+  { id: 'follow-up', label: 'Follow-up: In Progress', icon: '⏰' },
+  { id: 'converted', label: 'Follow-up: Converted / Won', icon: '🏆' },
+  { id: 'not-interested', label: 'Follow-up: Not Interested', icon: '❌' },
+  { id: 'closed', label: 'Follow-up: Closed', icon: '🔒' },
 ];
 
 export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus }) {
@@ -60,6 +62,18 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
   const [statusDropdownLeadId, setStatusDropdownLeadId] = useState(null);
   const { addToast } = useToast();
 
+  // Admin-only: Assign Customer to Lead modal state
+  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+  const [customersList, setCustomersList] = useState([]);
+  const [loadingCustomers, setLoadingCustomers] = useState(false);
+  const [assignForm, setAssignForm] = useState({
+    customerId: '',
+    telecallerId: '',
+    status: 'new',
+    remark: '',
+  });
+  const [isAssigning, setIsAssigning] = useState(false);
+
   // Meeting scheduling modal state
   const [meetingModalLead, setMeetingModalLead] = useState(null);
   const [meetingForm, setMeetingForm] = useState({
@@ -80,7 +94,7 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
       const data = await getLeads({ limit: 1000 });
       setLeads(data.leads || []);
     } catch (error) {
-      addToast(error.response?.data?.message || 'Failed to load leads', 'error');
+      addToast(error.response?.data?.message || 'Failed to load follow-up leads', 'error');
     } finally {
       setLoading(false);
     }
@@ -96,6 +110,20 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
       .then((data) => setTelecallers(data.users || []))
       .catch(() => {});
   }, [isAdmin]);
+
+  // Load available customers when Admin opens the assign modal
+  const openAssignCustomerModal = async () => {
+    setIsAssignModalOpen(true);
+    setLoadingCustomers(true);
+    try {
+      const res = await getCustomers({ limit: 500 });
+      setCustomersList(res.customers || []);
+    } catch (err) {
+      addToast('Failed to load customer list for assignment', 'error');
+    } finally {
+      setLoadingCustomers(false);
+    }
+  };
 
   // Close status dropdown on click outside
   useEffect(() => {
@@ -131,16 +159,18 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
 
   const [form, setForm] = useState({ status: 'new', remark: '', telecallerId: '' });
 
+  // Save updated follow-up status (triggers automated notification emails to both customer and lead)
   const handleSaveStatus = async () => {
     if (!form.remark?.trim()) {
-      addToast('Remark is required', 'error');
+      addToast('Follow-up remark / note is required', 'error');
       return;
     }
 
+    const targetLabel = leadStatusLabels[form.status] || form.status;
     const ok = await confirm({
-      title: 'Update Lead Status',
-      message: `Are you sure you want to update status to "${form.status}" for lead "${editingLead?.customerName}"?`,
-      confirmText: 'Update Status',
+      title: 'Update Follow-up Status',
+      message: `Are you sure you want to update follow-up status to "${targetLabel}" for "${editingLead?.customerName}"? Notification emails will be dispatched to both lead and customer.`,
+      confirmText: 'Update & Send Emails',
       cancelText: 'Cancel',
       type: 'primary',
     });
@@ -154,30 +184,53 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
       }
       const data = await updateLeadStatus(editingLead._id, payload);
       setLeads((prev) => prev.map((l) => (l._id === editingLead._id ? data.lead : l)));
-      addToast('Lead status updated!', 'success');
+      addToast(`Follow-up status updated to "${targetLabel}" & notification emails sent!`, 'success');
       setIsModalOpen(false);
     } catch (error) {
-      addToast(error.response?.data?.message || 'Failed to update lead status', 'error');
+      addToast(error.response?.data?.message || 'Failed to update follow-up status', 'error');
     } finally {
       setSaving(false);
     }
   };
 
-  // Quick 1-click status update
+  // Quick 1-click status update (triggers automated notification emails to both customer and lead)
   const handleQuickStatusChange = async (lead, newStatus) => {
     if (newStatus === 'meeting') {
       openScheduleMeeting(lead);
       return;
     }
+    const targetLabel = leadStatusLabels[newStatus] || newStatus;
     try {
       const data = await updateLeadStatus(lead._id, {
         status: newStatus,
-        remark: `Stage changed to ${newStatus.replace('-', ' ')}`,
+        remark: `Follow-up stage updated to ${targetLabel}`,
       });
       setLeads((prev) => prev.map((l) => (l._id === lead._id ? data.lead : l)));
-      addToast(`Lead status updated to ${newStatus.replace('-', ' ')}`, 'success');
+      addToast(`Follow-up status changed to "${targetLabel}" & notification emails sent!`, 'success');
     } catch (error) {
-      addToast(error.response?.data?.message || 'Failed to update lead stage', 'error');
+      addToast(error.response?.data?.message || 'Failed to update follow-up status', 'error');
+    }
+  };
+
+  // Admin submit handler: Assign Customer to Lead
+  const handleAssignCustomerSubmit = async (e) => {
+    e.preventDefault();
+    if (!assignForm.customerId) {
+      addToast('Please select a customer to assign', 'error');
+      return;
+    }
+
+    setIsAssigning(true);
+    try {
+      const res = await createLead(assignForm);
+      addToast('Customer assigned to lead pipeline & notification emails dispatched!', 'success');
+      setIsAssignModalOpen(false);
+      setAssignForm({ customerId: '', telecallerId: '', status: 'new', remark: '' });
+      loadLeads();
+    } catch (err) {
+      addToast(err.response?.data?.message || 'Failed to assign customer to lead', 'error');
+    } finally {
+      setIsAssigning(false);
     }
   };
 
@@ -263,20 +316,35 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title={isAdmin ? 'Company Lead Pipeline' : 'My Lead Pipeline'}
-        subtitle={
-          isAdmin
-            ? 'Track and oversee all leads across your sales organization'
-            : 'Manage and progress your customer leads through the pipeline with quick status controls'
-        }
-      />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <PageHeader
+          title={isAdmin ? 'Company Follow-up & Lead Pipeline' : 'My Follow-up & Lead Pipeline'}
+          subtitle={
+            isAdmin
+              ? 'Oversee all customer follow-up statuses, caller assignments, and automated email notifications'
+              : 'Manage customer follow-up statuses through the pipeline with automated email notifications'
+          }
+        />
+
+        {/* ADMIN EXCLUSIVE: Assign Customer to Lead Button */}
+        {isAdmin && (
+          <div className="flex-shrink-0">
+            <button
+              onClick={openAssignCustomerModal}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors"
+            >
+              <UserPlus size={16} />
+              <span>Assign Customer to Lead</span>
+            </button>
+          </div>
+        )}
+      </div>
 
       <div className="bg-white rounded-xl p-4 border border-dark-200 shadow-sm dark:bg-dark-800 dark:border-dark-700">
         <div className="flex flex-wrap gap-4 items-center justify-between">
           <div className="flex flex-wrap gap-3 items-center">
             <span className="text-xs font-semibold text-dark-500 uppercase tracking-wider dark:text-dark-400">
-              Pipeline Stage:
+              Follow-up Status:
             </span>
             <div className="flex flex-wrap gap-1.5">
               <button
@@ -287,19 +355,19 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
                     : 'bg-dark-100 text-dark-600 hover:bg-dark-200 dark:bg-dark-700 dark:text-dark-300'
                 }`}
               >
-                All Stages
+                All Follow-ups
               </button>
               {leadStatuses.map((s) => (
                 <button
                   key={s}
                   onClick={() => handleStatusFilter(s)}
-                  className={`px-3 py-1 text-xs font-medium rounded-full capitalize transition-colors ${
+                  className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
                     statusFilter === s
                       ? 'bg-primary-600 text-white'
                       : 'bg-dark-100 text-dark-600 hover:bg-dark-200 dark:bg-dark-700 dark:text-dark-300'
                   }`}
                 >
-                  {s.replace('-', ' ')}
+                  {leadStatusLabels[s] || s.replace('-', ' ')}
                 </button>
               ))}
             </div>
@@ -338,7 +406,7 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
 
       {loading ? (
         <div className="flex items-center justify-center py-16 text-dark-400 dark:text-dark-500">
-          <Loader2 className="animate-spin mr-2" size={20} /> Loading leads...
+          <Loader2 className="animate-spin mr-2" size={20} /> Loading follow-ups...
         </div>
       ) : (
         <div className="bg-white rounded-xl border border-dark-200 shadow-sm overflow-hidden dark:bg-dark-800 dark:border-dark-700">
@@ -350,7 +418,7 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
                   Customer
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-dark-500 uppercase tracking-wider dark:text-dark-400">
-                  Stage Options
+                  Follow-up Status
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-dark-500 uppercase tracking-wider dark:text-dark-400">
                   Assigned User
@@ -359,7 +427,7 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
                   Created
                 </th>
                 <th className="px-4 py-3 text-center text-xs font-semibold text-dark-500 uppercase tracking-wider dark:text-dark-400">
-                  History
+                  Follow-up History
                 </th>
                 <th className="px-4 py-3 text-center text-xs font-semibold text-dark-500 uppercase tracking-wider dark:text-dark-400">
                   Actions
@@ -377,6 +445,7 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
                 paginated.map((lead) => {
                   const isExpanded = expandedRow === lead._id;
                   const tc = telecallers.find((t) => String(t._id) === String(lead.telecallerId));
+                  const currentStatusLabel = leadStatusLabels[lead.status] || lead.status.replace('-', ' ');
 
                   return (
                     <tr key={lead._id} className="group hover:bg-dark-50 dark:hover:bg-dark-700/60 transition-colors">
@@ -400,7 +469,7 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
                         </div>
                       </td>
 
-                      {/* Interactive Stage Badge with Options Selector */}
+                      {/* Interactive Follow-up Status Badge with Dropdown */}
                       <td className="px-4 py-3 relative">
                         <div className="relative inline-block">
                           <button
@@ -408,22 +477,22 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
                               e.stopPropagation();
                               setStatusDropdownLeadId(statusDropdownLeadId === lead._id ? null : lead._id);
                             }}
-                            className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full capitalize border shadow-2xs hover:opacity-90 transition-all ${
+                            className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full border shadow-2xs hover:opacity-90 transition-all ${
                               statusColors[lead.status] || 'bg-gray-100 text-gray-700'
                             }`}
-                            title="Click to view stage options & change"
+                            title="Click to view follow-up status options & notify both lead & customer"
                           >
-                            <span>{lead.status.replace('-', ' ')}</span>
+                            <span>{currentStatusLabel}</span>
                             <ChevronDown size={12} className="opacity-70" />
                           </button>
 
                           {statusDropdownLeadId === lead._id && (
                             <div
                               onClick={(e) => e.stopPropagation()}
-                              className="absolute left-0 mt-1.5 w-52 rounded-2xl bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 shadow-2xl z-50 p-1.5 space-y-1 animate-in fade-in-50 zoom-in-95"
+                              className="absolute left-0 mt-1.5 w-60 rounded-2xl bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 shadow-2xl z-50 p-1.5 space-y-1 animate-in fade-in-50 zoom-in-95"
                             >
                               <div className="px-2.5 py-1 text-[10px] font-bold text-dark-400 uppercase tracking-wider border-b border-dark-100 dark:border-dark-700/60">
-                                Lead Status Options
+                                Follow-up Status Options
                               </div>
                               {statusOptionsConfig.map((opt) => (
                                 <button
@@ -460,7 +529,7 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
                         <button
                           onClick={() => setHistoryModal(lead)}
                           className="p-1 rounded-lg hover:bg-dark-100 dark:hover:bg-dark-700 text-primary-600"
-                          title="View History"
+                          title="View Follow-up History"
                         >
                           <History size={16} />
                         </button>
@@ -479,7 +548,7 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
                           <button
                             onClick={() => openStatusModal(lead)}
                             className="p-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-dark-700 text-blue-600"
-                            title="Update Status"
+                            title="Update Follow-up Status"
                           >
                             <Edit2 size={16} />
                           </button>
@@ -511,10 +580,10 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
                   <div>
                     <h5 className="font-bold text-xs uppercase tracking-wider text-dark-700 dark:text-dark-300 flex items-center gap-1.5">
                       <Sparkles size={14} className="text-primary-600" />
-                      <span>Advance Lead Pipeline Stage:</span>
+                      <span>Advance Follow-up Status:</span>
                     </h5>
                     <p className="text-[11px] text-dark-500 mt-0.5">
-                      Click any status option below to instantly advance this lead in your workflow:
+                      Click any follow-up status option below to instantly update and dispatch email alerts to both customer &amp; lead:
                     </p>
                   </div>
                   <button
@@ -585,6 +654,116 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
             </div>
           )}
         </div>
+      )}
+
+      {/* ADMIN EXCLUSIVE: ASSIGN CUSTOMER TO LEAD MODAL */}
+      {isAdmin && (
+        <Modal
+          isOpen={isAssignModalOpen}
+          onClose={() => setIsAssignModalOpen(false)}
+          title="Assign Customer to Lead Pipeline"
+          size="md"
+        >
+          <form onSubmit={handleAssignCustomerSubmit} className="space-y-4">
+            <div className="p-3.5 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/60 text-xs text-blue-900 dark:text-blue-200">
+              <p className="font-bold text-sm">Admin Control: Customer Lead Assignment</p>
+              <p className="mt-0.5 text-blue-800 dark:text-blue-300 leading-relaxed">
+                Only administrators are authorized to assign customer accounts to the lead pipeline. An automated email notification will be sent to both the customer and the assigned caller.
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-dark-700 dark:text-dark-300 mb-1">
+                Select Customer *
+              </label>
+              {loadingCustomers ? (
+                <div className="py-2 text-xs text-dark-400 flex items-center gap-1.5">
+                  <Loader2 size={14} className="animate-spin" /> Loading customer directory...
+                </div>
+              ) : (
+                <select
+                  required
+                  value={assignForm.customerId}
+                  onChange={(e) => setAssignForm({ ...assignForm, customerId: e.target.value })}
+                  className="w-full px-3 py-2 border border-dark-200 dark:border-dark-700 rounded-lg text-sm bg-white dark:bg-dark-800 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 font-medium"
+                >
+                  <option value="">-- Choose Customer --</option>
+                  {customersList.map((c) => (
+                    <option key={c._id} value={c._id}>
+                      {c.name} {c.mobile ? `(${c.mobile})` : ''} {c.company ? `— ${c.company}` : ''}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-dark-700 dark:text-dark-300 mb-1">
+                Assign Telecaller (Lead Owner)
+              </label>
+              <select
+                value={assignForm.telecallerId}
+                onChange={(e) => setAssignForm({ ...assignForm, telecallerId: e.target.value })}
+                className="w-full px-3 py-2 border border-dark-200 dark:border-dark-700 rounded-lg text-sm bg-white dark:bg-dark-800 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+              >
+                <option value="">Unassigned (Admin Pool)</option>
+                {telecallers.map((tc) => (
+                  <option key={tc._id} value={tc._id}>
+                    {tc.name} {tc.email ? `(${tc.email})` : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-dark-700 dark:text-dark-300 mb-1">
+                Initial Follow-up Status
+              </label>
+              <select
+                value={assignForm.status}
+                onChange={(e) => setAssignForm({ ...assignForm, status: e.target.value })}
+                className="w-full px-3 py-2 border border-dark-200 dark:border-dark-700 rounded-lg text-sm bg-white dark:bg-dark-800 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+              >
+                {leadStatuses.map((s) => (
+                  <option key={s} value={s}>
+                    {leadStatusLabels[s] || s.replace('-', ' ')}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-dark-700 dark:text-dark-300 mb-1">
+                Follow-up Remark / Instructions
+              </label>
+              <textarea
+                rows={3}
+                value={assignForm.remark}
+                onChange={(e) => setAssignForm({ ...assignForm, remark: e.target.value })}
+                placeholder="Initial follow-up instructions, customer background, or preferences..."
+                className="w-full px-3 py-2 border border-dark-200 dark:border-dark-700 rounded-lg text-sm bg-white dark:bg-dark-800 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none text-xs"
+              />
+            </div>
+
+            <div className="flex justify-end gap-3 pt-3 border-t border-dark-200 dark:border-dark-700">
+              <button
+                type="button"
+                onClick={() => setIsAssignModalOpen(false)}
+                className="px-4 py-2 text-sm font-medium text-dark-700 bg-dark-100 rounded-lg hover:bg-dark-200 dark:text-gray-300 dark:bg-dark-700 dark:hover:bg-dark-600 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isAssigning}
+                className="inline-flex items-center gap-2 px-5 py-2 text-sm font-bold text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 transition-colors shadow-xs"
+              >
+                {isAssigning ? <Loader2 size={16} className="animate-spin" /> : <UserPlus size={16} />}
+                <span>{isAssigning ? 'Assigning...' : 'Assign Customer to Lead'}</span>
+              </button>
+            </div>
+          </form>
+        </Modal>
       )}
 
       {/* SCHEDULE MEETING MODAL WITH 1-HOUR EMAIL REMINDER */}
@@ -723,19 +902,19 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
         </form>
       </Modal>
 
-      {/* UPDATE LEAD STATUS & REASSIGN MODAL */}
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Update Lead Pipeline Status">
+      {/* UPDATE FOLLOW-UP STATUS MODAL */}
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Update Follow-up Status">
         <div className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-dark-700 mb-1.5 dark:text-gray-300">New Stage</label>
+            <label className="block text-xs font-semibold text-dark-700 mb-1.5 dark:text-gray-300">New Follow-up Status</label>
             <select
               value={form.status}
               onChange={(e) => setForm({ ...form, status: e.target.value })}
-              className="w-full px-3 py-2 border border-dark-200 dark:border-dark-700 rounded-lg text-sm bg-white dark:bg-dark-800 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 capitalize"
+              className="w-full px-3 py-2 border border-dark-200 dark:border-dark-700 rounded-lg text-sm bg-white dark:bg-dark-800 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
             >
               {leadStatuses.map((s) => (
                 <option key={s} value={s}>
-                  {s.replace('-', ' ')}
+                  {leadStatusLabels[s] || s.replace('-', ' ')}
                 </option>
               ))}
             </select>
@@ -744,7 +923,7 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
           {isAdmin && (
             <div>
               <label className="block text-xs font-semibold text-dark-700 mb-1.5 dark:text-gray-300">
-                Assigned User (Admin Control)
+                Assigned Telecaller (Admin Control)
               </label>
               <select
                 value={form.telecallerId || ''}
@@ -762,13 +941,13 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
           )}
 
           <div>
-            <label className="block text-xs font-semibold text-dark-700 mb-1.5 dark:text-gray-300">Remark / Notes *</label>
+            <label className="block text-xs font-semibold text-dark-700 mb-1.5 dark:text-gray-300">Follow-up Remarks / Notes *</label>
             <textarea
               value={form.remark || ''}
               onChange={(e) => setForm({ ...form, remark: e.target.value })}
               rows={3}
               className="w-full px-3 py-2 border border-dark-200 dark:border-dark-700 rounded-lg text-sm bg-white dark:bg-dark-800 text-dark-900 dark:text-white placeholder:text-dark-400 dark:placeholder:text-dark-500 focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
-              placeholder="Reason for stage change or lead conversation update..."
+              placeholder="Reason for follow-up status change or conversation update..."
             />
           </div>
 
@@ -784,24 +963,24 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
               disabled={saving}
               className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 transition-colors"
             >
-              {saving ? 'Saving...' : 'Update Lead'}
+              {saving ? 'Saving & Sending Emails...' : 'Update Follow-up Status'}
             </button>
           </div>
         </div>
       </Modal>
 
-      {/* HISTORY MODAL */}
+      {/* FOLLOW-UP HISTORY MODAL */}
       <Modal
         isOpen={Boolean(historyModal)}
         onClose={() => setHistoryModal(null)}
-        title={`Lead History — ${historyModal?.customerName}`}
+        title={`Follow-up History — ${historyModal?.customerName}`}
         size="lg"
       >
         {historyModal && (
           <div className="space-y-4">
             <div className="flex items-center gap-3 pb-3 border-b border-dark-200 dark:border-dark-700">
-              <span className={`px-3 py-1 text-xs font-semibold rounded-full capitalize ${statusColors[historyModal.status]}`}>
-                {historyModal.status.replace('-', ' ')}
+              <span className={`px-3 py-1 text-xs font-semibold rounded-full ${statusColors[historyModal.status]}`}>
+                {leadStatusLabels[historyModal.status] || historyModal.status.replace('-', ' ')}
               </span>
               <span className="text-xs text-dark-500 dark:text-dark-400">
                 Created: {new Date(historyModal.createdAt).toLocaleDateString()}
@@ -813,8 +992,8 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
                   <div className="w-2.5 h-2.5 rounded-full bg-primary-500 mt-1.5 flex-shrink-0" />
                   <div className="flex-1 p-3 rounded-lg bg-dark-50 dark:bg-dark-900/50 border border-dark-100 dark:border-dark-700">
                     <div className="flex items-center justify-between mb-1">
-                      <span className={`px-2 py-0.5 text-[11px] font-semibold rounded capitalize ${statusColors[h.status]}`}>
-                        {h.status.replace('-', ' ')}
+                      <span className={`px-2 py-0.5 text-[11px] font-semibold rounded ${statusColors[h.status]}`}>
+                        {leadStatusLabels[h.status] || h.status.replace('-', ' ')}
                       </span>
                       <span className="text-[11px] text-dark-400 dark:text-dark-500">
                         {new Date(h.date).toLocaleString()}
