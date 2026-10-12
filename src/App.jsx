@@ -30,6 +30,7 @@ import QuickMessage from './pages/QuickMessage';
 import Emails from './pages/Emails';
 import Events from './pages/Events';
 import Reports from './pages/Reports';
+import ReportDetails from './pages/ReportDetails';
 import AdminPanel from './pages/AdminPanel';
 import UserPanel from './pages/UserPanel';
 import SearchPage from './pages/SearchPage';
@@ -47,6 +48,8 @@ const pathToPage = {
   '/call-history': 'call-history',
   '/calls': 'call-history',
   '/reports': 'reports',
+  '/reports/detail': 'report-detail',
+  '/reports/details': 'report-detail',
   '/insights': 'insights',
   '/dashboard': 'dashboard',
   '/todos': 'todos',
@@ -92,6 +95,8 @@ const pageToPath = {
   calls: '/call-history',
   'tc-calls': '/call-history',
   reports: '/reports',
+  'report-detail': '/reports/detail',
+  'report-details': '/reports/detail',
   insights: '/insights',
   dashboard: '/dashboard',
   todos: '/todos',
@@ -189,6 +194,11 @@ function AppLayout() {
   const [selectedLeadStatus, setSelectedLeadStatus] = useState('');
   const [selectedReportId, setSelectedReportId] = useState('');
   const [selectedCallType, setSelectedCallType] = useState('all');
+  const [reportDetailFilter, setReportDetailFilter] = useState({
+    category: 'all',
+    subStatus: 'all',
+    title: '',
+  });
 
   // Modals visibility
   const [isBuyNumberOpen, setIsBuyNumberOpen] = useState(false);
@@ -241,7 +251,9 @@ function AppLayout() {
     setSelectedCustomer('');
     setSelectedLeadStatus('');
     setSelectedReportId('');
-    if (filter) {
+    if (page === 'report-detail' && typeof filter === 'object' && filter !== null) {
+      setReportDetailFilter(filter);
+    } else if (filter && typeof filter === 'string') {
       setSelectedCallType(filter);
     } else {
       setSelectedCallType('all');
@@ -286,6 +298,19 @@ function AppLayout() {
           <AdminPanel targetSection="admin-reports" onNavigate={navigateToPage} />
         ) : (
           <Reports initialReportId={selectedReportId} onNavigate={navigateToPage} />
+        );
+
+      // 4.1 Dedicated Report Elements Details Page (No Popups)
+      case 'report-detail':
+      case 'report-details':
+        return (
+          <ReportDetails
+            filter={reportDetailFilter}
+            onBack={() => navigateToPage('reports')}
+            onNavigate={navigateToPage}
+            staffName={user?.name || 'Kusum Rathore'}
+            period="Oct 09, 2026 – Oct 09, 2026"
+          />
         );
 
       // 5. Insights (Detailed Call & Customer Breakdowns)

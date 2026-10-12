@@ -23,7 +23,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { useToast } from '../components/Toast';
 import { useAuth } from '../context/AuthContext';
 import { getCalls } from '../api/callHistory';
-import DetailedReportModal from '../components/DetailedReportModal';
+import ReportDetails from './ReportDetails';
 
 export default function Reports({ onNavigate }) {
   const { user } = useAuth();
@@ -47,14 +47,12 @@ export default function Reports({ onNavigate }) {
   const [selectedStaffList, setSelectedStaffList] = useState(allStaffMembers);
   const [showStaffDropdown, setShowStaffDropdown] = useState(false);
 
-  // Drill-down Modal State
-  const [drilldownModal, setDrilldownModal] = useState({
-    isOpen: false,
-    title: '',
-    subtitle: '',
+  // Dedicated Page View Mode: 'overview' (Graphs Dashboard) | 'detail' (Dedicated Detail Page)
+  const [viewMode, setViewMode] = useState('overview');
+  const [currentDetailFilter, setCurrentDetailFilter] = useState({
     category: 'all',
     subStatus: 'all',
-    calls: [],
+    title: '',
   });
 
   // Base Call Records Matching Screenshot Metrics
@@ -293,47 +291,19 @@ export default function Reports({ onNavigate }) {
     [selectedStaffList]
   );
 
-  // Drilldown Click Handler
-  const handleOpenDrilldown = ({ category, subStatus = 'all', title }) => {
-    let matched = baseCallRecords;
-
-    if (category === 'missed') {
-      matched = baseCallRecords.filter((c) => c.callType === 'missed');
-      if (subStatus && subStatus !== 'all') {
-        matched = matched.filter((c) => c.subStatus.toLowerCase() === subStatus.toLowerCase());
-      }
-    } else if (category === 'incoming') {
-      matched = baseCallRecords.filter((c) => c.callType === 'incoming');
-      if (subStatus && subStatus !== 'all') {
-        matched = matched.filter((c) => c.subStatus.toLowerCase() === subStatus.toLowerCase());
-      }
-    } else if (category === 'outgoing') {
-      matched = baseCallRecords.filter((c) => c.callType === 'outgoing');
-      if (subStatus === 'Connected') {
-        matched = matched.filter((c) => c.subStatus === 'Connected');
-      } else if (subStatus === 'Not connected') {
-        matched = matched.filter((c) => c.subStatus !== 'Connected');
-      } else if (subStatus && subStatus !== 'all') {
-        matched = matched.filter((c) => c.subStatus.toLowerCase() === subStatus.toLowerCase());
-      }
-    } else if (category === 'talktime') {
-      if (subStatus === 'Outgoing') {
-        matched = baseCallRecords.filter((c) => c.callType === 'outgoing' && c.subStatus === 'Connected');
-      } else if (subStatus === 'Incoming') {
-        matched = baseCallRecords.filter((c) => c.callType === 'incoming' && c.subStatus === 'Answered');
-      } else {
-        matched = baseCallRecords.filter((c) => c.duration && c.duration !== '0s');
-      }
-    }
-
-    setDrilldownModal({
-      isOpen: true,
-      title: title || `${category.toUpperCase()} Detailed Report`,
-      subtitle: `Breakdown for ${selectedStaffList.join(', ') || 'All Staff'} • ${period}`,
+  // Open Dedicated Report Element Details Page (No Popups)
+  const handleOpenDetailPage = ({ category, subStatus = 'all', title }) => {
+    const filterObj = {
       category,
       subStatus: subStatus || 'all',
-      calls: matched,
-    });
+      title: title || '',
+    };
+    setCurrentDetailFilter(filterObj);
+    setViewMode('detail');
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    if (onNavigate) {
+      onNavigate('report-detail', filterObj);
+    }
   };
 
   // Custom Chart Tooltip displaying click hint
@@ -404,6 +374,19 @@ export default function Reports({ onNavigate }) {
     setPeriod('Oct 09, 2026 – Oct 09, 2026');
     addToast('Filters reset to default', 'info');
   };
+
+  // Dedicated Report Elements Details Page (No Popups)
+  if (viewMode === 'detail') {
+    return (
+      <ReportDetails
+        filter={currentDetailFilter}
+        onBack={() => setViewMode('overview')}
+        onNavigate={onNavigate}
+        staffName={selectedStaffList[0] || user?.name || 'Kusum Rathore'}
+        period={period}
+      />
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12 animate-in fade-in duration-200">
@@ -640,7 +623,7 @@ export default function Reports({ onNavigate }) {
             {/* Card 1: Missed Calls */}
             <div
               onClick={() =>
-                handleOpenDrilldown({
+                handleOpenDetailPage({
                   category: 'missed',
                   subStatus: 'all',
                   title: 'Detailed Report: All Missed Calls',
@@ -670,7 +653,7 @@ export default function Reports({ onNavigate }) {
             {/* Card 2: Outgoing Calls */}
             <div
               onClick={() =>
-                handleOpenDrilldown({
+                handleOpenDetailPage({
                   category: 'outgoing',
                   subStatus: 'all',
                   title: 'Detailed Report: All Outgoing Calls',
@@ -700,7 +683,7 @@ export default function Reports({ onNavigate }) {
             {/* Card 3: Incoming Calls */}
             <div
               onClick={() =>
-                handleOpenDrilldown({
+                handleOpenDetailPage({
                   category: 'incoming',
                   subStatus: 'all',
                   title: 'Detailed Report: All Incoming Calls',
@@ -730,7 +713,7 @@ export default function Reports({ onNavigate }) {
             {/* Card 4: Total talktime */}
             <div
               onClick={() =>
-                handleOpenDrilldown({
+                handleOpenDetailPage({
                   category: 'talktime',
                   subStatus: 'all',
                   title: 'Detailed Report: Total Talktime Call Breakdown',
@@ -766,7 +749,7 @@ export default function Reports({ onNavigate }) {
                 <div>
                   <h3
                     onClick={() =>
-                      handleOpenDrilldown({
+                      handleOpenDetailPage({
                         category: 'missed',
                         subStatus: 'all',
                         title: 'Detailed Report: All Missed Calls',
@@ -783,7 +766,7 @@ export default function Reports({ onNavigate }) {
                 </div>
                 <div
                   onClick={() =>
-                    handleOpenDrilldown({
+                    handleOpenDetailPage({
                       category: 'missed',
                       subStatus: 'all',
                       title: 'Detailed Report: All Missed Calls',
@@ -812,7 +795,7 @@ export default function Reports({ onNavigate }) {
                         stroke="none"
                         cursor="pointer"
                         onClick={(entry) =>
-                          handleOpenDrilldown({
+                          handleOpenDetailPage({
                             category: 'missed',
                             subStatus: entry.name,
                             title: `Detailed Report: Missed Calls — ${entry.name}`,
@@ -826,7 +809,7 @@ export default function Reports({ onNavigate }) {
                             cursor="pointer"
                             className="hover:opacity-80 transition-opacity cursor-pointer"
                             onClick={() =>
-                              handleOpenDrilldown({
+                              handleOpenDetailPage({
                                 category: 'missed',
                                 subStatus: entry.name,
                                 title: `Detailed Report: Missed Calls — ${entry.name}`,
@@ -845,7 +828,7 @@ export default function Reports({ onNavigate }) {
                     <div
                       key={item.name}
                       onClick={() =>
-                        handleOpenDrilldown({
+                        handleOpenDetailPage({
                           category: 'missed',
                           subStatus: item.name,
                           title: `Detailed Report: Missed Calls — ${item.name}`,
@@ -882,7 +865,7 @@ export default function Reports({ onNavigate }) {
                 <div>
                   <h3
                     onClick={() =>
-                      handleOpenDrilldown({
+                      handleOpenDetailPage({
                         category: 'incoming',
                         subStatus: 'all',
                         title: 'Detailed Report: All Incoming Calls',
@@ -899,7 +882,7 @@ export default function Reports({ onNavigate }) {
                 </div>
                 <div
                   onClick={() =>
-                    handleOpenDrilldown({
+                    handleOpenDetailPage({
                       category: 'incoming',
                       subStatus: 'all',
                       title: 'Detailed Report: All Incoming Calls',
@@ -928,7 +911,7 @@ export default function Reports({ onNavigate }) {
                         stroke="none"
                         cursor="pointer"
                         onClick={(entry) =>
-                          handleOpenDrilldown({
+                          handleOpenDetailPage({
                             category: 'incoming',
                             subStatus: entry.name,
                             title: `Detailed Report: Incoming Calls — ${entry.name}`,
@@ -942,7 +925,7 @@ export default function Reports({ onNavigate }) {
                             cursor="pointer"
                             className="hover:opacity-80 transition-opacity cursor-pointer"
                             onClick={() =>
-                              handleOpenDrilldown({
+                              handleOpenDetailPage({
                                 category: 'incoming',
                                 subStatus: entry.name,
                                 title: `Detailed Report: Incoming Calls — ${entry.name}`,
@@ -961,7 +944,7 @@ export default function Reports({ onNavigate }) {
                     <div
                       key={item.name}
                       onClick={() =>
-                        handleOpenDrilldown({
+                        handleOpenDetailPage({
                           category: 'incoming',
                           subStatus: item.name,
                           title: `Detailed Report: Incoming Calls — ${item.name}`,
@@ -998,7 +981,7 @@ export default function Reports({ onNavigate }) {
                 <div>
                   <h3
                     onClick={() =>
-                      handleOpenDrilldown({
+                      handleOpenDetailPage({
                         category: 'outgoing',
                         subStatus: 'all',
                         title: 'Detailed Report: All Outgoing Calls',
@@ -1015,7 +998,7 @@ export default function Reports({ onNavigate }) {
                 </div>
                 <div
                   onClick={() =>
-                    handleOpenDrilldown({
+                    handleOpenDetailPage({
                       category: 'outgoing',
                       subStatus: 'all',
                       title: 'Detailed Report: All Outgoing Calls',
@@ -1044,7 +1027,7 @@ export default function Reports({ onNavigate }) {
                         stroke="none"
                         cursor="pointer"
                         onClick={(entry) =>
-                          handleOpenDrilldown({
+                          handleOpenDetailPage({
                             category: 'outgoing',
                             subStatus: entry.name,
                             title: `Detailed Report: Outgoing Calls — ${entry.name}`,
@@ -1058,7 +1041,7 @@ export default function Reports({ onNavigate }) {
                             cursor="pointer"
                             className="hover:opacity-80 transition-opacity cursor-pointer"
                             onClick={() =>
-                              handleOpenDrilldown({
+                              handleOpenDetailPage({
                                 category: 'outgoing',
                                 subStatus: entry.name,
                                 title: `Detailed Report: Outgoing Calls — ${entry.name}`,
@@ -1077,7 +1060,7 @@ export default function Reports({ onNavigate }) {
                     <div
                       key={item.name}
                       onClick={() =>
-                        handleOpenDrilldown({
+                        handleOpenDetailPage({
                           category: 'outgoing',
                           subStatus: item.name,
                           title: `Detailed Report: Outgoing Calls — ${item.name}`,
@@ -1115,7 +1098,7 @@ export default function Reports({ onNavigate }) {
                   <div>
                     <h3
                       onClick={() =>
-                        handleOpenDrilldown({
+                        handleOpenDetailPage({
                           category: 'talktime',
                           subStatus: 'all',
                           title: 'Detailed Report: Total Talktime Call Breakdown',
@@ -1132,7 +1115,7 @@ export default function Reports({ onNavigate }) {
                   </div>
                   <div
                     onClick={() =>
-                      handleOpenDrilldown({
+                      handleOpenDetailPage({
                         category: 'talktime',
                         subStatus: 'all',
                         title: 'Detailed Report: Total Talktime Call Breakdown',
@@ -1161,7 +1144,7 @@ export default function Reports({ onNavigate }) {
                           stroke="none"
                           cursor="pointer"
                           onClick={(entry) =>
-                            handleOpenDrilldown({
+                            handleOpenDetailPage({
                               category: 'talktime',
                               subStatus: entry.name,
                               title: `Detailed Report: Talktime — ${entry.name}`,
@@ -1175,7 +1158,7 @@ export default function Reports({ onNavigate }) {
                               cursor="pointer"
                               className="hover:opacity-80 transition-opacity cursor-pointer"
                               onClick={() =>
-                                handleOpenDrilldown({
+                                handleOpenDetailPage({
                                   category: 'talktime',
                                   subStatus: entry.name,
                                   title: `Detailed Report: Talktime — ${entry.name}`,
@@ -1194,7 +1177,7 @@ export default function Reports({ onNavigate }) {
                       <div
                         key={item.name}
                         onClick={() =>
-                          handleOpenDrilldown({
+                          handleOpenDetailPage({
                             category: 'talktime',
                             subStatus: item.name,
                             title: `Detailed Report: Talktime — ${item.name}`,
@@ -1334,20 +1317,6 @@ export default function Reports({ onNavigate }) {
           </div>
         </div>
       )}
-
-      {/* 6. Interactive Drill-down Detailed Call Report Modal */}
-      <DetailedReportModal
-        isOpen={drilldownModal.isOpen}
-        onClose={() => setDrilldownModal((prev) => ({ ...prev, isOpen: false }))}
-        title={drilldownModal.title}
-        subtitle={drilldownModal.subtitle}
-        category={drilldownModal.category}
-        subStatus={drilldownModal.subStatus}
-        staffName={selectedStaffList.join(', ') || 'Kusum Rathore'}
-        period={period}
-        calls={drilldownModal.calls}
-        onNavigate={onNavigate}
-      />
     </div>
   );
 }
