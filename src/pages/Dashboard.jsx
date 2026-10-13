@@ -421,15 +421,21 @@ export default function Dashboard({ onNavigate }) {
                     paddingAngle={4}
                     dataKey="value"
                     stroke="none"
+                    onClick={(entry) => onNavigate?.('leads', entry.name.replace(' ', '-'), 'status')}
+                    className="cursor-pointer"
                   >
                     {leadChartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
+                      <Cell key={`cell-${index}`} fill={entry.color} className="cursor-pointer hover:opacity-80 transition-opacity" />
                     ))}
                   </Pie>
                   <Tooltip content={<CustomTooltip />} />
                 </PieChart>
               </ResponsiveContainer>
-              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+              <div 
+                onClick={() => onNavigate?.('leads')}
+                className="absolute inset-0 flex flex-col items-center justify-center cursor-pointer hover:scale-105 transition-transform"
+                title="Click to view all leads"
+              >
                 <span className="text-3xl font-bold text-dark-900 dark:text-white">{leads.length}</span>
                 <span className="text-xs text-dark-500 dark:text-dark-400">{t('totalLeads')}</span>
               </div>

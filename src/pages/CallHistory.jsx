@@ -1271,26 +1271,52 @@ export default function CallHistory({ onNavigate, initialCallType = 'all' }) {
 
                       {/* CALL TYPE */}
                       <td className="py-4 px-4">
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-dark-100 dark:bg-dark-800 text-dark-800 dark:text-dark-200">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const target = c.callType?.toLowerCase();
+                            const next = callTypeFilter === target ? 'all' : target;
+                            setCallTypeFilter(next);
+                            addToast(next === 'all' ? 'Showing all calls' : `Filtered by ${c.callType} calls`, 'info');
+                          }}
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all hover:scale-105 cursor-pointer shadow-2xs ${
+                            callTypeFilter === c.callType?.toLowerCase()
+                              ? 'bg-blue-600 text-white font-bold'
+                              : 'bg-dark-100 dark:bg-dark-800 text-dark-800 dark:text-dark-200 hover:bg-blue-50 dark:hover:bg-blue-950/40'
+                          }`}
+                          title={`Click to filter by ${c.callType} calls`}
+                        >
                           {c.callType?.toLowerCase() === 'outgoing' ? (
-                            <PhoneOutgoing size={12} className="text-blue-500" />
+                            <PhoneOutgoing size={12} className={callTypeFilter === 'outgoing' ? 'text-white' : 'text-blue-500'} />
                           ) : c.callType?.toLowerCase() === 'incoming' ? (
-                            <PhoneIncoming size={12} className="text-emerald-500" />
+                            <PhoneIncoming size={12} className={callTypeFilter === 'incoming' ? 'text-white' : 'text-emerald-500'} />
                           ) : (
-                            <PhoneMissed size={12} className="text-rose-500" />
+                            <PhoneMissed size={12} className={callTypeFilter === 'missed' ? 'text-white' : 'text-rose-500'} />
                           )}
                           <span>{c.callType}</span>
-                        </span>
+                        </button>
                       </td>
 
                       {/* CALL STATUS */}
                       <td className="py-4 px-4">
-                        <span
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const target = c.callStatus === 'Answered' ? 'connected' : 'missed';
+                            const next = callTypeFilter === target ? 'all' : target;
+                            setCallTypeFilter(next);
+                            addToast(next === 'all' ? 'Showing all calls' : `Filtered by ${c.callStatus} calls`, 'info');
+                          }}
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold transition-all hover:scale-105 cursor-pointer shadow-2xs ${
+                            callTypeFilter === (c.callStatus === 'Answered' ? 'connected' : 'missed')
+                              ? 'ring-2 ring-blue-500 font-bold'
+                              : ''
+                          } ${
                             c.callStatus === 'Answered'
-                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800'
-                              : 'bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-950/50 dark:text-rose-300 dark:border-rose-800'
+                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800 hover:bg-emerald-100'
+                              : 'bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-950/50 dark:text-rose-300 dark:border-rose-800 hover:bg-rose-100'
                           }`}
+                          title={`Click to filter by ${c.callStatus} calls`}
                         >
                           <span
                             className={`w-1.5 h-1.5 rounded-full ${
@@ -1298,7 +1324,7 @@ export default function CallHistory({ onNavigate, initialCallType = 'all' }) {
                             }`}
                           />
                           <span>{c.callStatus}</span>
-                        </span>
+                        </button>
                       </td>
 
                       {/* DURATION */}

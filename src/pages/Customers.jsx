@@ -1,5 +1,23 @@
-import { useState, useCallback, useEffect } from 'react';
-import { Plus, Search, Edit2, Trash2, X, Loader2, ArrowRightLeft, Users, CheckSquare, Square, UserPlus, FileSpreadsheet } from 'lucide-react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
+import {
+  Plus,
+  Search,
+  Edit2,
+  Trash2,
+  X,
+  Loader2,
+  ArrowRightLeft,
+  Users,
+  CheckSquare,
+  Square,
+  UserPlus,
+  FileSpreadsheet,
+  PhoneCall,
+  Mail,
+  ChevronDown,
+  Check,
+  Copy,
+} from 'lucide-react';
 import { PageHeader } from '../components/Common';
 import { DataTable } from '../components/DataTable';
 import Modal from '../components/Modal';
@@ -63,9 +81,10 @@ export default function Customers({ onNavigate }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
-  const [filters, setFilters] = useState({ city: '', source: '', telecaller: '' });
+  const [filters, setFilters] = useState({ city: '', source: '', telecaller: '', status: '' });
   const [searchTerm, setSearchTerm] = useState('');
   const [telecallers, setTelecallers] = useState([]);
+  const [statusDropdownCustomerId, setStatusDropdownCustomerId] = useState(null);
   const { addToast } = useToast();
   const { confirm } = useConfirm();
   const { t: translate } = useApp();
@@ -88,6 +107,39 @@ export default function Customers({ onNavigate }) {
   const [isExcelModalOpen, setIsExcelModalOpen] = useState(false);
 
   const [form, setForm] = useState({});
+
+  useEffect(() => {
+    const handleClickOutside = () => setStatusDropdownCustomerId(null);
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
+
+  const handleQuickCustomerStatusChange = async (customer, newStatus) => {
+    setStatusDropdownCustomerId(null);
+    if (customer.status === newStatus) return;
+
+    try {
+      await updateCustomer(customer._id, { status: newStatus });
+      setCustomers((prev) =>
+        prev.map((c) => (c._id === customer._id ? { ...c, status: newStatus } : c))
+      );
+      addToast(`Status updated to "${newStatus}" for ${customer.name}`, 'success');
+    } catch (err) {
+      addToast(err.response?.data?.message || 'Failed to update status', 'error');
+    }
+  };
+
+  const customerStatusCounts = useMemo(() => {
+    const counts = { all: customers.length };
+    Object.keys(statusColors).forEach((st) => {
+      counts[st] = 0;
+    });
+    customers.forEach((c) => {
+      if (counts[c.status] !== undefined) counts[c.status]++;
+      else counts[c.status] = 1;
+    });
+    return counts;
+  }, [customers]);
 
   const loadCustomers = useCallback(async () => {
     setLoading(true);
@@ -125,6 +177,7 @@ export default function Customers({ onNavigate }) {
 
     if (!searchMatch) return false;
 
+    if (filters.status && c.status !== filters.status) return false;
     if (filters.city && !(c.city || '').toLowerCase().includes(filters.city.toLowerCase())) return false;
     if (filters.source && c.leadSource !== filters.source) return false;
 
@@ -273,18 +326,138 @@ export default function Customers({ onNavigate }) {
         </button>
       ),
     },
-    { key: 'mobile', label: translate('mobile') },
-    { key: 'email', label: translate('email') },
+    {
+      key: 'mobile',
+      label: translate('mobile'),
+      render: (val, row) => (
+        <div className="flex items-center gap-1.5 font-mono text-xs">
+          <span>{val}</span>
+          <button
+            type="button"
+            onClick={() => {
+              setCustomer360Customer(row);
+              setIsCustomer360Open(true);
+            }}
+            className="p-1 rounded text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors cursor-pointer"
+            title={`Call ${row.name || 'Customer'}`}
+          >
+            <PhoneCall size={13} />
+          </button>
+        </div>
+      ),
+    },
+    {
+      key: 'email',
+      label: translate('email'),
+      render: (val) =>
+        val ? (
+          <a
+            href={`mailto:${val}`}
+            className="text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 truncate max-w-[170px]"
+            title={`Send email to ${val}`}
+          >
+            <Mail size={12} className="flex-shrink-0" />
+            <span className="truncate">{val}</span>
+          </a>
+        ) : (
+          <span className="text-dark-400 text-xs">-</span>
+        ),
+    },
     { key: 'company', label: translate('company') },
-    { key: 'city', label: translate('city') },
-    { key: 'leadSource', label: translate('leadSource') },
+    {
+      key: 'city',
+      label: translate('city'),
+      render: (val) =>
+        val ? (
+          <button
+            type="button"
+            onClick={() => setFilters((prev) => ({ ...prev, city: prev.city === val ? '' : val }))}
+            className="text-xs text-dark-700 dark:text-dark-300 hover:text-primary-600 hover:underline cursor-pointer"
+            title={`Filter by city: ${val}`}
+          >
+            {val}
+          </button>
+        ) : (
+          <span className="text-dark-400 text-xs">-</span>
+        ),
+    },
+    {
+      key: 'leadSource',
+      label: translate('leadSource'),
+      render: (val) =>
+        val ? (
+          <button
+            type="button"
+            onClick={() => setFilters((prev) => ({ ...prev, source: prev.source === val ? '' : val }))}
+            className="text-xs font-medium px-2 py-0.5 rounded-md bg-dark-100 dark:bg-dark-700 text-dark-700 dark:text-dark-300 hover:bg-primary-50 hover:text-primary-600 transition-colors cursor-pointer"
+            title={`Filter by source: ${val}`}
+          >
+            {val}
+          </button>
+        ) : (
+          <span className="text-dark-400 text-xs">-</span>
+        ),
+    },
     {
       key: 'status',
       label: translate('status'),
-      render: (val) => (
-        <span className={`px-2.5 py-0.5 text-xs font-semibold rounded-full ${statusColors[val]}`}>
-          {val}
-        </span>
+      render: (val, row) => (
+        <div className="relative inline-block text-left">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setStatusDropdownCustomerId(statusDropdownCustomerId === row._id ? null : row._id);
+            }}
+            className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 text-xs font-semibold rounded-full border shadow-2xs hover:scale-105 transition-all cursor-pointer ${
+              statusColors[val] || 'bg-gray-100 text-gray-700 border-gray-200'
+            }`}
+            title="Click to update status or filter"
+          >
+            <span>{val}</span>
+            <ChevronDown size={11} className="opacity-70" />
+          </button>
+
+          {statusDropdownCustomerId === row._id && (
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="absolute left-0 mt-1 w-48 rounded-xl bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 shadow-2xl z-50 p-1.5 space-y-1 animate-in fade-in-50 zoom-in-95"
+            >
+              <div className="px-2 py-1 text-[10px] font-bold text-dark-400 uppercase tracking-wider border-b border-dark-100 dark:border-dark-700/60">
+                Change Status
+              </div>
+              {Object.keys(statusColors).map((st) => (
+                <button
+                  key={st}
+                  type="button"
+                  onClick={() => handleQuickCustomerStatusChange(row, st)}
+                  className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium text-left hover:bg-dark-50 dark:hover:bg-dark-700 transition-colors ${
+                    val === st
+                      ? 'bg-primary-50 dark:bg-primary-950/40 text-primary-600 font-bold'
+                      : 'text-dark-700 dark:text-dark-200'
+                  }`}
+                >
+                  <span className="capitalize">{st}</span>
+                  {val === st && <Check size={12} className="text-primary-600" />}
+                </button>
+              ))}
+
+              <div className="border-t border-dark-100 dark:border-dark-700/60 pt-1 mt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStatusDropdownCustomerId(null);
+                    setFilters((prev) => ({ ...prev, status: prev.status === val ? '' : val }));
+                    addToast(`Filtered by ${val} status`, 'info');
+                  }}
+                  className="w-full text-left px-2.5 py-1 text-[11px] text-primary-600 hover:underline font-semibold cursor-pointer"
+                >
+                  Filter only {val}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       ),
     },
     {
@@ -292,22 +465,33 @@ export default function Customers({ onNavigate }) {
       label: translate('assignedTelecaller'),
       render: (val, row) => (
         <div className="flex items-center gap-1.5">
-          <span
-            className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+          <button
+            type="button"
+            onClick={() => {
+              if (val && val !== 'Unassigned') {
+                setFilters((prev) => ({ ...prev, telecaller: prev.telecaller === val ? '' : val }));
+                addToast(`Filtered by ${val}`, 'info');
+              } else {
+                setFilters((prev) => ({ ...prev, telecaller: prev.telecaller === 'unassigned' ? '' : 'unassigned' }));
+                addToast('Filtered by Unassigned clients', 'info');
+              }
+            }}
+            className={`text-xs font-medium px-2 py-0.5 rounded-full hover:underline cursor-pointer ${
               val && val !== 'Unassigned'
                 ? 'bg-primary-50 dark:bg-primary-950/60 text-primary-700 dark:text-primary-300'
                 : 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300'
             }`}
+            title={`Click to filter by ${val || 'Unassigned'}`}
           >
             {val || 'Unassigned'}
-          </span>
+          </button>
           {isAdmin && (
             <button
               onClick={() => {
                 setQuickReassignCustomer(row);
                 setQuickTargetAgentId(row.telecallerId || '');
               }}
-              className="p-1 rounded hover:bg-dark-100 dark:hover:bg-dark-700 text-dark-400 hover:text-primary-600 transition-colors"
+              className="p-1 rounded hover:bg-dark-100 dark:hover:bg-dark-700 text-dark-400 hover:text-primary-600 transition-colors cursor-pointer"
               title="Quick Reassign Lead"
             >
               <ArrowRightLeft size={13} />
@@ -536,6 +720,47 @@ export default function Customers({ onNavigate }) {
         </div>
       )}
 
+      {/* Clickable Customer Status Summary Pills */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+        <button
+          type="button"
+          onClick={() => setFilters((prev) => ({ ...prev, status: '' }))}
+          className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap shadow-2xs ${
+            !filters.status
+              ? 'bg-dark-900 text-white dark:bg-white dark:text-dark-900 font-bold'
+              : 'bg-white dark:bg-dark-800 text-dark-600 dark:text-dark-300 border border-dark-200 dark:border-dark-700 hover:bg-dark-50'
+          }`}
+        >
+          All Customers ({customers.length})
+        </button>
+        {Object.keys(statusColors).map((st) => {
+          const isSelected = filters.status === st;
+          return (
+            <button
+              key={st}
+              type="button"
+              onClick={() =>
+                setFilters((prev) => ({
+                  ...prev,
+                  status: isSelected ? '' : st,
+                }))
+              }
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap shadow-2xs border ${
+                isSelected
+                  ? 'border-primary-500 bg-primary-50 dark:bg-primary-950/50 text-primary-700 dark:text-primary-300 ring-2 ring-primary-500/20 font-bold'
+                  : 'border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 text-dark-700 dark:text-dark-300 hover:bg-dark-50'
+              }`}
+              title={`Click to filter by ${st} status`}
+            >
+              <span className="capitalize">{st}</span>
+              <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-dark-100 dark:bg-dark-700 text-dark-700 dark:text-dark-300">
+                {customerStatusCounts[st] || 0}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
       {/* Search & Filter Bar */}
       <div className="bg-white dark:bg-dark-800 rounded-xl p-4 border border-dark-200 dark:border-dark-700 shadow-sm">
         <div className="flex flex-wrap gap-3">
@@ -566,6 +791,19 @@ export default function Customers({ onNavigate }) {
               ))}
             </select>
           )}
+
+          <select
+            value={filters.status || ''}
+            onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+            className="px-3 py-2 border border-dark-200 dark:border-dark-700 rounded-lg text-sm bg-white dark:bg-dark-800 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+          >
+            <option value="">All Statuses</option>
+            {Object.keys(statusColors).map((st) => (
+              <option key={st} value={st}>
+                {st}
+              </option>
+            ))}
+          </select>
 
           <select
             value={filters.city}

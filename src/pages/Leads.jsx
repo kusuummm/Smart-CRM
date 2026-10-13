@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import {
   Edit2,
   Trash2,
@@ -14,6 +14,7 @@ import {
   Bell,
   Sparkles,
   Phone,
+  PhoneCall,
   Video,
   UserPlus,
   FileSpreadsheet,
@@ -160,6 +161,33 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
 
   const totalPages = Math.ceil(filtered.length / pageSize);
   const paginated = filtered.slice((page - 1) * pageSize, page * pageSize);
+
+  // Stage counts for clickable pipeline cards
+  const pipelineStats = useMemo(() => {
+    const counts = { all: leads.length };
+    leadStatuses.forEach((st) => {
+      counts[st] = 0;
+    });
+    leads.forEach((l) => {
+      if (counts[l.status] !== undefined) counts[l.status]++;
+      else counts.new = (counts.new || 0) + 1;
+    });
+    return counts;
+  }, [leads]);
+
+  const pipelineCards = useMemo(
+    () => [
+      { id: '', label: 'All Leads', icon: '📋', count: pipelineStats.all, color: 'text-dark-700 dark:text-dark-200' },
+      { id: 'new', label: 'New Follow-up', icon: '🌱', count: pipelineStats.new || 0, color: 'text-emerald-600' },
+      { id: 'contacted', label: 'Contacted', icon: '📞', count: pipelineStats.contacted || 0, color: 'text-blue-600' },
+      { id: 'interested', label: 'Interested', icon: '⭐', count: pipelineStats.interested || 0, color: 'text-amber-600' },
+      { id: 'meeting', label: 'Meeting', icon: '📅', count: pipelineStats.meeting || 0, color: 'text-purple-600' },
+      { id: 'follow-up', label: 'In Progress', icon: '⏰', count: pipelineStats['follow-up'] || 0, color: 'text-indigo-600' },
+      { id: 'converted', label: 'Won / Converted', icon: '🏆', count: pipelineStats.converted || 0, color: 'text-teal-600' },
+      { id: 'not-interested', label: 'Not Interested', icon: '❌', count: pipelineStats['not-interested'] || 0, color: 'text-rose-600' },
+    ],
+    [pipelineStats]
+  );
 
   const handleStatusFilter = (status) => {
     setStatusFilter(status);
@@ -362,6 +390,45 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
         )}
       </div>
 
+      {/* 1. Clickable Pipeline Stage Metric Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2.5">
+        {pipelineCards.map((card) => {
+          const isSelected = statusFilter === card.id;
+          return (
+            <button
+              key={card.id || 'all'}
+              type="button"
+              onClick={() => {
+                const nextStatus = isSelected && card.id !== '' ? '' : card.id;
+                handleStatusFilter(nextStatus);
+                addToast(nextStatus ? `Filtered by ${card.label}` : 'Showing all leads', 'info');
+              }}
+              className={`p-3 rounded-2xl border text-left transition-all cursor-pointer shadow-2xs hover:scale-[1.02] flex flex-col justify-between ${
+                isSelected
+                  ? 'border-primary-500 bg-primary-50/70 dark:bg-primary-950/40 ring-2 ring-primary-500/30'
+                  : 'border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 hover:border-primary-300 dark:hover:border-dark-600'
+              }`}
+              title={`Click to filter leads by ${card.label}`}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-base">{card.icon}</span>
+                <span className={`text-base font-extrabold ${card.color}`}>
+                  {card.count}
+                </span>
+              </div>
+              <div className="mt-2">
+                <p className="text-[11px] font-bold text-dark-800 dark:text-dark-200 truncate">
+                  {card.label}
+                </p>
+                <p className="text-[10px] text-dark-400 font-medium">
+                  {leads.length > 0 ? `${Math.round((card.count / leads.length) * 100)}%` : '0%'}
+                </p>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
       <div className="bg-white rounded-xl p-4 border border-dark-200 shadow-sm dark:bg-dark-800 dark:border-dark-700">
         <div className="flex flex-wrap gap-4 items-center justify-between">
           <div className="flex flex-wrap gap-3 items-center">
@@ -559,8 +626,36 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
                         </div>
                       </td>
 
-                      <td className="px-4 py-3 text-xs text-dark-600 dark:text-dark-300">
-                        {tc ? tc.name : lead.telecallerId ? 'Assigned' : <span className="text-amber-600 font-semibold">Unassigned</span>}
+                      <td className="px-4 py-3 text-xs">
+                        {tc ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const nextFilter = telecallerFilter === String(tc._id) ? '' : String(tc._id);
+                              setTelecallerFilter(nextFilter);
+                              addToast(nextFilter ? `Filtered by ${tc.name}` : 'Showing all callers', 'info');
+                            }}
+                            className="text-primary-600 hover:text-primary-700 hover:underline font-semibold cursor-pointer text-left"
+                            title={`Click to filter leads assigned to ${tc.name}`}
+                          >
+                            {tc.name}
+                          </button>
+                        ) : lead.telecallerId ? (
+                          <span className="text-dark-600 dark:text-dark-300">Assigned</span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const nextFilter = telecallerFilter === 'unassigned' ? '' : 'unassigned';
+                              setTelecallerFilter(nextFilter);
+                              addToast(nextFilter ? 'Filtered by Unassigned leads' : 'Showing all leads', 'info');
+                            }}
+                            className="text-amber-600 hover:text-amber-700 hover:underline font-bold cursor-pointer"
+                            title="Click to filter unassigned leads"
+                          >
+                            Unassigned
+                          </button>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-xs text-dark-500 dark:text-dark-400">
                         {new Date(lead.createdAt).toLocaleDateString()}
@@ -576,6 +671,19 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
                       </td>
                       <td className="px-4 py-3 text-center">
                         <div className="flex items-center justify-center gap-1.5">
+                          {/* 1-Click Call Customer */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCustomer360Lead(lead);
+                              setIsCustomer360Open(true);
+                            }}
+                            className="p-1.5 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 transition-colors cursor-pointer"
+                            title="Call Customer / View Profile"
+                          >
+                            <PhoneCall size={16} />
+                          </button>
+
                           {/* Schedule Meeting with Customer (Triggers 1-hour email reminder) */}
                           <button
                             onClick={() => openScheduleMeeting(lead)}
