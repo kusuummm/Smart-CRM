@@ -428,66 +428,56 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
         })}
       </div>
 
-      <div className="bg-white rounded-xl p-4 border border-dark-200 shadow-sm dark:bg-dark-800 dark:border-dark-700">
-        <div className="flex flex-wrap gap-4 items-center justify-between">
-          <div className="flex flex-wrap gap-3 items-center">
-            <span className="text-xs font-semibold text-dark-500 uppercase tracking-wider dark:text-dark-400">
-              Follow-up Status:
-            </span>
-            <div className="flex flex-wrap gap-1.5">
-              <button
-                onClick={() => setStatusFilter('')}
-                className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
-                  statusFilter === ''
-                    ? 'bg-primary-600 text-white'
-                    : 'bg-dark-100 text-dark-600 hover:bg-dark-200 dark:bg-dark-700 dark:text-dark-300'
-                }`}
-              >
-                All Follow-ups
-              </button>
-              {leadStatuses.map((s) => (
+      <div className="bg-white rounded-xl p-3 border border-dark-200 shadow-sm dark:bg-dark-800 dark:border-dark-700 flex flex-wrap gap-3 items-center justify-between">
+        <div className="flex items-center gap-2">
+          {statusFilter ? (
+            <div className="inline-flex items-center gap-2">
+              <span className="text-xs font-medium text-dark-500 dark:text-dark-400">Filtered by:</span>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-primary-50 dark:bg-primary-950/40 text-primary-600 dark:text-primary-400 border border-primary-200 dark:border-primary-800">
+                <span>{leadStatusLabels[statusFilter] || statusFilter}</span>
                 <button
-                  key={s}
-                  onClick={() => handleStatusFilter(s)}
-                  className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
-                    statusFilter === s
-                      ? 'bg-primary-600 text-white'
-                      : 'bg-dark-100 text-dark-600 hover:bg-dark-200 dark:bg-dark-700 dark:text-dark-300'
-                  }`}
+                  type="button"
+                  onClick={() => setStatusFilter('')}
+                  className="hover:text-primary-800 dark:hover:text-primary-200 cursor-pointer ml-1 text-xs font-bold"
+                  title="Clear filter"
                 >
-                  {leadStatusLabels[s] || s.replace('-', ' ')}
+                  ✕
                 </button>
+              </span>
+            </div>
+          ) : (
+            <span className="text-xs text-dark-500 dark:text-dark-400 font-medium">
+              All Pipeline Leads ({leads.length})
+            </span>
+          )}
+        </div>
+
+        <div className="flex items-center gap-3 ml-auto">
+          {isAdmin && telecallers.length > 0 && (
+            <select
+              value={telecallerFilter}
+              onChange={(e) => setTelecallerFilter(e.target.value)}
+              className="px-3 py-1.5 border border-dark-200 rounded-lg text-xs bg-white text-dark-800 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-dark-800 dark:border-dark-700 dark:text-white"
+            >
+              <option value="">All Assigned Leads</option>
+              <option value="unassigned">Unassigned Leads</option>
+              {telecallers.map((tc) => (
+                <option key={tc._id} value={tc._id}>
+                  {tc.name}
+                </option>
               ))}
-            </div>
-          </div>
+            </select>
+          )}
 
-          <div className="flex items-center gap-3">
-            {isAdmin && telecallers.length > 0 && (
-              <select
-                value={telecallerFilter}
-                onChange={(e) => setTelecallerFilter(e.target.value)}
-                className="px-3 py-1.5 border border-dark-200 rounded-lg text-xs bg-white text-dark-800 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-dark-800 dark:border-dark-700 dark:text-white"
-              >
-                <option value="">All Assigned Leads</option>
-                <option value="unassigned">Unassigned Leads</option>
-                {telecallers.map((tc) => (
-                  <option key={tc._id} value={tc._id}>
-                    {tc.name}
-                  </option>
-                ))}
-              </select>
-            )}
-
-            <div className="relative">
-              <Search className="absolute left-3 top-2.5 text-dark-400" size={14} />
-              <input
-                type="text"
-                placeholder="Search leads..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-8 pr-3 py-1.5 border border-dark-200 rounded-lg text-xs bg-white text-dark-800 focus:outline-none focus:ring-2 focus:ring-primary-500 w-48 dark:bg-dark-800 dark:border-dark-700 dark:text-white"
-              />
-            </div>
+          <div className="relative">
+            <Search className="absolute left-3 top-2.5 text-dark-400" size={14} />
+            <input
+              type="text"
+              placeholder="Search leads..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-8 pr-3 py-1.5 border border-dark-200 rounded-lg text-xs bg-white text-dark-800 focus:outline-none focus:ring-2 focus:ring-primary-500 w-52 dark:bg-dark-800 dark:border-dark-700 dark:text-white"
+            />
           </div>
         </div>
       </div>
@@ -497,7 +487,7 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
           <Loader2 className="animate-spin mr-2" size={20} /> Loading follow-ups...
         </div>
       ) : (
-        <div className="bg-white rounded-xl border border-dark-200 shadow-sm overflow-hidden dark:bg-dark-800 dark:border-dark-700">
+        <div className="bg-white rounded-xl border border-dark-200 shadow-sm dark:bg-dark-800 dark:border-dark-700 min-h-[360px]">
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-dark-50 dark:bg-dark-700">
@@ -593,34 +583,43 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
                           </button>
 
                           {statusDropdownLeadId === lead._id && (
-                            <div
-                              onClick={(e) => e.stopPropagation()}
-                              className="absolute left-0 mt-1.5 w-60 rounded-2xl bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 shadow-2xl z-50 p-1.5 space-y-1 animate-in fade-in-50 zoom-in-95"
-                            >
-                              <div className="px-2.5 py-1 text-[10px] font-bold text-dark-400 uppercase tracking-wider border-b border-dark-100 dark:border-dark-700/60">
-                                Follow-up Status Options
+                            <>
+                              <div
+                                className="fixed inset-0 z-40"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setStatusDropdownLeadId(null);
+                                }}
+                              />
+                              <div
+                                onClick={(e) => e.stopPropagation()}
+                                className="absolute left-0 mt-1.5 w-60 rounded-2xl bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 shadow-2xl z-50 p-1.5 space-y-1 animate-in fade-in-50 zoom-in-95"
+                              >
+                                <div className="px-2.5 py-1 text-[10px] font-bold text-dark-400 uppercase tracking-wider border-b border-dark-100 dark:border-dark-700/60">
+                                  Follow-up Status Options
+                                </div>
+                                {statusOptionsConfig.map((opt) => (
+                                  <button
+                                    key={opt.id}
+                                    onClick={() => {
+                                      setStatusDropdownLeadId(null);
+                                      handleQuickStatusChange(lead, opt.id);
+                                    }}
+                                    className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium text-left hover:bg-dark-50 dark:hover:bg-dark-700 transition-colors ${
+                                      lead.status === opt.id
+                                        ? 'bg-primary-50 dark:bg-primary-950/40 text-primary-600 font-bold'
+                                        : 'text-dark-700 dark:text-dark-200'
+                                    }`}
+                                  >
+                                    <span className="flex items-center gap-1.5">
+                                      <span>{opt.icon}</span>
+                                      <span>{opt.label}</span>
+                                    </span>
+                                    {lead.status === opt.id && <Check size={13} className="text-primary-600" />}
+                                  </button>
+                                ))}
                               </div>
-                              {statusOptionsConfig.map((opt) => (
-                                <button
-                                  key={opt.id}
-                                  onClick={() => {
-                                    setStatusDropdownLeadId(null);
-                                    handleQuickStatusChange(lead, opt.id);
-                                  }}
-                                  className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium text-left hover:bg-dark-50 dark:hover:bg-dark-700 transition-colors ${
-                                    lead.status === opt.id
-                                      ? 'bg-primary-50 dark:bg-primary-950/40 text-primary-600 font-bold'
-                                      : 'text-dark-700 dark:text-dark-200'
-                                  }`}
-                                >
-                                  <span className="flex items-center gap-1.5">
-                                    <span>{opt.icon}</span>
-                                    <span>{opt.label}</span>
-                                  </span>
-                                  {lead.status === opt.id && <Check size={13} className="text-primary-600" />}
-                                </button>
-                              ))}
-                            </div>
+                            </>
                           )}
                         </div>
                       </td>
