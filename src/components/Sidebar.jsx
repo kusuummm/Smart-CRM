@@ -69,6 +69,7 @@ export default function Sidebar({
     { type: 'header', label: 'ADMIN CONTROL CENTER' },
     { id: 'admin-panel', label: 'Dashboard Overview', icon: Shield },
     { id: 'admin-users', label: 'Users & Approvals', icon: UserCheck },
+    { id: 'admin-tasks', label: 'Caller Tasks & Schedules', icon: CheckSquare },
     { id: 'admin-agents', label: 'Lead Presence', icon: Activity },
     { id: 'admin-workload', label: 'Workload Balancer', icon: ArrowRightLeft },
     { id: 'admin-reports', label: 'Lead Progress Reports', icon: BarChart2 },

@@ -23,6 +23,7 @@ import { useConfirm } from '../context/ConfirmContext';
 import { getFollowUps, createFollowUp, updateFollowUp, deleteFollowUp } from '../api/followups';
 import { getLeads, updateLead } from '../api/leads';
 import { getUpcomingEvents } from '../api/events';
+import { getUsers } from '../api/users';
 import { audioEngine } from '../utils/audioPlayer';
 
 export default function ToDos({ onNavigate }) {
@@ -58,11 +59,12 @@ export default function ToDos({ onNavigate }) {
   const [showAssignDropdown, setShowAssignDropdown] = useState(false);
 
   // Teams & Staff lists
+  const [telecallers, setTelecallers] = useState([]);
   const teamsList = ['Main Team'];
-  const staffList = [
+  const staffList = useMemo(() => [
     'Select assigned to',
-    ...(user?.name ? [user.name] : []),
-  ];
+    ...telecallers.map((t) => t.name),
+  ], [telecallers]);
 
   // Data states
   const [leads, setLeads] = useState([]);
@@ -78,6 +80,8 @@ export default function ToDos({ onNavigate }) {
     category: 'FOLLOW-UP CALL',
     date: 'Today, 05:00 PM',
     remarks: '',
+    assignedTo: '',
+    priority: 'medium',
   });
 
   // Fetch real CRM records
@@ -87,9 +91,13 @@ export default function ToDos({ onNavigate }) {
       getLeads({ limit: 100 }).catch(() => ({ leads: [] })),
       getFollowUps({ limit: 100 }).catch(() => ({ followUps: [] })),
       getUpcomingEvents(14).catch(() => ({ events: [] })),
+      getUsers().catch(() => ({ users: [] })),
     ])
-      .then(([leadsRes, followUpsRes, eventsRes]) => {
+      .then(([leadsRes, followUpsRes, eventsRes, usersRes]) => {
         setLeads(leadsRes.leads || []);
+        const loadedUsers = (usersRes.users || []).filter(u => u.status === 'active' || u.role === 'telecaller');
+        setTelecallers(loadedUsers);
+
         if (followUpsRes.followUps) {
           const apiMapped = followUpsRes.followUps.map((f) => ({
             _id: f._id,
@@ -101,7 +109,9 @@ export default function ToDos({ onNavigate }) {
             time: f.time || '',
             remarks: f.remarks || 'Follow-up task',
             status: f.status || 'pending',
-            assignedTo: f.createdByName || 'Agent',
+            assignedTo: f.assignedToName || f.createdByName || 'Lead',
+            assignedToId: f.assignedTo || f.createdBy,
+            priority: f.priority || 'medium',
           }));
           setFollowUps(apiMapped);
           try {
@@ -207,6 +217,9 @@ export default function ToDos({ onNavigate }) {
       return;
     }
 
+    const assignedTc = telecallers.find((t) => t._id === newTaskForm.assignedTo);
+    const assignedName = assignedTc?.name || user?.name || 'Lead';
+
     const newId = `fu_${Date.now()}`;
     const createdTask = {
       _id: newId,
@@ -218,7 +231,9 @@ export default function ToDos({ onNavigate }) {
       time: '05:00 PM',
       remarks: newTaskForm.remarks.trim(),
       status: 'pending',
-      assignedTo: user?.name || 'Agent',
+      assignedTo: assignedName,
+      assignedToId: newTaskForm.assignedTo || user?._id,
+      priority: newTaskForm.priority || 'medium',
       createdAt: new Date().toISOString(),
     };
 
@@ -231,6 +246,9 @@ export default function ToDos({ onNavigate }) {
         time: '05:00 PM',
         remarks: `[${newTaskForm.category}] ${newTaskForm.remarks.trim()}`,
         nextFollowUp: newTaskForm.date,
+        type: newTaskForm.category,
+        assignedTo: newTaskForm.assignedTo || user?._id || undefined,
+        priority: newTaskForm.priority || 'medium',
       }).catch(() => null);
       if (serverRes?.followUp?._id) {
         createdTask._id = serverRes.followUp._id;
@@ -252,8 +270,10 @@ export default function ToDos({ onNavigate }) {
       category: 'FOLLOW-UP CALL',
       date: 'Today, 05:00 PM',
       remarks: '',
+      assignedTo: '',
+      priority: 'medium',
     });
-    addToast('Follow-up task created successfully!', 'success');
+    addToast(`Task assigned successfully to ${assignedName}`, 'success');
   };
 
   const handleConvertLead = async (lead) => {
@@ -849,14 +869,32 @@ export default function ToDos({ onNavigate }) {
             className="bg-white dark:bg-dark-800 rounded-2xl max-w-md w-full border border-dark-200 dark:border-dark-700 p-6 shadow-2xl space-y-4 font-inter"
           >
             <div className="flex items-center justify-between pb-3 border-b border-dark-100 dark:border-dark-700">
-              <h3 className="text-base font-bold text-dark-900 dark:text-white">Add Follow-Up Task</h3>
+              <h3 className="text-base font-bold text-dark-900 dark:text-white">Add &amp; Assign Task</h3>
               <button
                 type="button"
                 onClick={() => setIsAddTaskOpen(false)}
-                className="text-dark-400 hover:text-dark-700 text-base cursor-pointer"
+                className="text-dark-400 hover:text-dark-700 transition-colors cursor-pointer"
               >
-                ✕
+                <X size={16} />
               </button>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-dark-600 dark:text-dark-300 mb-1">
+                Assign Task To (Caller / Lead)
+              </label>
+              <select
+                value={newTaskForm.assignedTo}
+                onChange={(e) => setNewTaskForm({ ...newTaskForm, assignedTo: e.target.value })}
+                className="w-full px-3 py-2 text-sm rounded-lg bg-white dark:bg-dark-900 border border-dark-200 dark:border-dark-700 text-dark-900 dark:text-white focus:outline-none focus:border-blue-500 font-medium"
+              >
+                <option value="">Default (Me / Current Lead)</option>
+                {telecallers.map((tc) => (
+                  <option key={tc._id} value={tc._id}>
+                    {tc.name} {tc.email ? `(${tc.email})` : ''}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div>
@@ -887,7 +925,7 @@ export default function ToDos({ onNavigate }) {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <label className="block text-xs font-semibold text-dark-600 dark:text-dark-300 mb-1">
                   Task Category
@@ -900,8 +938,24 @@ export default function ToDos({ onNavigate }) {
                   <option value="FOLLOW-UP CALL">FOLLOW-UP CALL</option>
                   <option value="CALLBACK REQUEST">CALLBACK REQUEST</option>
                   <option value="SITE VISIT">SITE VISIT</option>
-                  <option value="BOOKING/ APPOINTMENT/ DEMO">BOOKING/ APPOINTMENT/ DEMO</option>
+                  <option value="BOOKING/ APPOINTMENT/ DEMO">DEMO / MEETING</option>
                   <option value="REMINDER">REMINDER</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-dark-600 dark:text-dark-300 mb-1">
+                  Priority
+                </label>
+                <select
+                  value={newTaskForm.priority}
+                  onChange={(e) => setNewTaskForm({ ...newTaskForm, priority: e.target.value })}
+                  className="w-full px-3 py-2 text-sm rounded-lg bg-white dark:bg-dark-900 border border-dark-200 dark:border-dark-700 text-dark-900 dark:text-white focus:outline-none focus:border-blue-500 font-medium"
+                >
+                  <option value="normal">Normal</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                  <option value="urgent">Urgent</option>
                 </select>
               </div>
 

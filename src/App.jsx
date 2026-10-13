@@ -80,6 +80,7 @@ const pathToPage = {
   '/admin/agents': 'admin-agents',
   '/admin/workload': 'admin-workload',
   '/admin/reports': 'admin-reports',
+  '/admin/tasks': 'admin-tasks',
   '/admin/portfolio': 'admin-portfolio',
   '/admin/audit': 'admin-audit',
   '/admin/system': 'admin-system',
@@ -135,6 +136,7 @@ const pageToPath = {
   'admin-agents': '/admin/agents',
   'admin-workload': '/admin/workload',
   'admin-reports': '/admin/reports',
+  'admin-tasks': '/admin/tasks',
   'admin-portfolio': '/admin/portfolio',
   'admin-audit': '/admin/audit',
   'admin-system': '/admin/system',
@@ -144,36 +146,16 @@ const pageToPath = {
   'caller-view': '/home',
 };
 
-// Caller-only panel page IDs (Admin is strictly blocked from accessing these)
+// Caller-only panel page IDs (Admin is strictly blocked from accessing these personal caller views)
 const CALLER_PANEL_PAGES = new Set([
   'home',
-  'contacts',
-  'customers',
-  'leads',
-  'todos',
-  'followups',
-  'call-history',
-  'calls',
   'tc-calls',
-  'tc-followups',
   'tc-customers',
   'tc-leads',
   'tc-whatsapp',
   'tc-emails',
   'tc-events',
   'tc-search',
-  'reports',
-  'report-detail',
-  'report-details',
-  'insights',
-  'dashboard',
-  'whatsapp',
-  'emails',
-  'events',
-  'quick-message',
-  'notes',
-  'search',
-  'caller-view',
 ]);
 
 function AppLayout() {
@@ -457,6 +439,7 @@ function AppLayout() {
       case 'admin-system-smtp':
       case 'admin-system-whatsapp':
       case 'admin-system-database':
+      case 'admin-tasks':
         return isAdmin ? (
           <AdminPanel targetSection={currentPage} onNavigate={navigateToPage} />
         ) : (

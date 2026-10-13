@@ -45,6 +45,10 @@ import {
   TrendingUp,
   FileSpreadsheet,
   ArrowUpRight,
+  CheckSquare,
+  Plus,
+  Tag,
+  X,
 } from 'lucide-react';
 import { PageHeader } from '../components/Common';
 import Modal from '../components/Modal';
@@ -68,6 +72,7 @@ import {
   rejectUser,
 } from '../api/users';
 import { getCustomers, updateCustomer, bulkAssignCustomers } from '../api/customers';
+import { getFollowUps, createFollowUp, updateFollowUp, deleteFollowUp } from '../api/followups';
 import { testEmailDelivery } from '../api/emails';
 import CallerProgressReports from '../components/CallerProgressReports';
 
@@ -132,6 +137,28 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
   const [unassignedBatchAgentId, setUnassignedBatchAgentId] = useState('');
   const [isAssigningUnassigned, setIsAssigningUnassigned] = useState(false);
 
+  // Caller Tasks Management State
+  const [tasksList, setTasksList] = useState([]);
+  const [loadingTasks, setLoadingTasks] = useState(false);
+  const [isAssignTaskModalOpen, setIsAssignTaskModalOpen] = useState(false);
+  const [assigningTask, setAssigningTask] = useState(false);
+  const [assignTaskForm, setAssignTaskForm] = useState({
+    assignedTo: '',
+    customerId: '',
+    customerName: '',
+    phone: '',
+    type: 'call',
+    date: new Date().toISOString().split('T')[0],
+    time: '10:00 AM',
+    priority: 'medium',
+    remarks: '',
+  });
+  const [taskFilterAgent, setTaskFilterAgent] = useState('all');
+  const [taskFilterStatus, setTaskFilterStatus] = useState('all'); // 'all' | 'pending' | 'completed'
+  const [taskFilterPriority, setTaskFilterPriority] = useState('all'); // 'all' | 'high' | 'medium' | 'low'
+  const [taskFilterType, setTaskFilterType] = useState('all');
+  const [taskSearchQuery, setTaskSearchQuery] = useState('');
+
   const navigate = useNavigate();
 
   // Unified page navigation handler supporting both prop and URL routing
@@ -163,6 +190,8 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
           'admin-system-smtp': '/admin/system/smtp',
           'admin-system-whatsapp': '/admin/system/whatsapp',
           'admin-system-database': '/admin/system/database',
+          'admin-tasks': '/admin/tasks',
+          tasks: '/admin/tasks',
         };
         const target = pathMap[page] || (page.startsWith('/') ? page : `/${page}`);
         navigate(target);
@@ -233,17 +262,19 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
     else setRefreshing(true);
 
     try {
-      const [usersData, overviewData, auditData, unassignedData] = await Promise.all([
+      const [usersData, overviewData, auditData, unassignedData, followUpsData] = await Promise.all([
         getUsers(),
         getSystemOverview().catch(() => ({ overview: null })),
         getAuditLogs().catch(() => ({ activities: [] })),
         getCustomers({ unassigned: 'true', limit: 100 }).catch(() => ({ customers: [] })),
+        getFollowUps({ limit: 1000 }).catch(() => ({ followUps: [] })),
       ]);
 
       setUsers(usersData.users || []);
       if (overviewData.overview) setSystemOverview(overviewData.overview);
       setAuditLogs(auditData.activities || []);
       setUnassignedList(unassignedData.customers || []);
+      if (followUpsData.followUps) setTasksList(followUpsData.followUps);
     } catch (error) {
       addToast(error.response?.data?.message || 'Failed to load admin data', 'error');
     } finally {
@@ -380,6 +411,157 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentView, inspectorUser, users]);
+
+  // Task Assignment & Management Handlers
+  const openAssignTaskModal = (targetUserId = '', targetUserName = '') => {
+    const defaultAgent = targetUserId || (telecallers[0]?._id || currentUser?._id || '');
+    setAssignTaskForm({
+      assignedTo: defaultAgent,
+      customerId: '',
+      customerName: '',
+      phone: '',
+      type: 'call',
+      date: new Date().toISOString().split('T')[0],
+      time: '10:00 AM',
+      priority: 'medium',
+      remarks: '',
+    });
+    setIsAssignTaskModalOpen(true);
+  };
+
+  const handleCreateAssignTask = async (e) => {
+    e?.preventDefault?.();
+    if (!assignTaskForm.assignedTo) {
+      addToast('Please select a telecaller to assign this task to.', 'error');
+      return;
+    }
+    if (!assignTaskForm.customerName.trim() && !assignTaskForm.remarks.trim()) {
+      addToast('Please provide a customer name or task instructions.', 'error');
+      return;
+    }
+
+    setAssigningTask(true);
+    try {
+      const assignedAgent = users.find((u) => u._id === assignTaskForm.assignedTo);
+      const payload = {
+        customerId: assignTaskForm.customerId || undefined,
+        customerName: assignTaskForm.customerName.trim() || 'General Client Task',
+        phone: assignTaskForm.phone.trim() || '',
+        assignedTo: assignTaskForm.assignedTo,
+        assignedToName: assignedAgent?.name || '',
+        type: assignTaskForm.type || 'call',
+        date: assignTaskForm.date || new Date().toISOString().split('T')[0],
+        time: assignTaskForm.time || '10:00 AM',
+        priority: assignTaskForm.priority || 'medium',
+        remarks: assignTaskForm.remarks.trim(),
+        status: 'pending',
+      };
+
+      await createFollowUp(payload);
+      addToast(`Task assigned to ${assignedAgent?.name || 'telecaller'} successfully!`, 'success');
+      setIsAssignTaskModalOpen(false);
+      // Refresh tasks
+      const res = await getFollowUps({ limit: 1000 }).catch(() => ({ followUps: [] }));
+      if (res.followUps) setTasksList(res.followUps);
+    } catch (err) {
+      addToast(err?.response?.data?.message || 'Failed to assign task', 'error');
+    } finally {
+      setAssigningTask(false);
+    }
+  };
+
+  const handleToggleTaskStatus = async (task) => {
+    const nextStatus = task.status === 'completed' ? 'pending' : 'completed';
+    try {
+      setTasksList((prev) =>
+        prev.map((t) => (t._id === task._id ? { ...t, status: nextStatus } : t))
+      );
+      await updateFollowUp(task._id, { status: nextStatus });
+      addToast(`Task marked as ${nextStatus}!`, 'success');
+    } catch (err) {
+      setTasksList((prev) =>
+        prev.map((t) => (t._id === task._id ? { ...t, status: task.status } : t))
+      );
+      addToast('Failed to update task status', 'error');
+    }
+  };
+
+  const handleReassignTaskCaller = async (task, newUserId) => {
+    const newAgent = users.find((u) => u._id === newUserId);
+    if (!newAgent) return;
+    try {
+      setTasksList((prev) =>
+        prev.map((t) =>
+          t._id === task._id
+            ? { ...t, assignedTo: newAgent._id, assignedToName: newAgent.name }
+            : t
+        )
+      );
+      await updateFollowUp(task._id, {
+        assignedTo: newAgent._id,
+        assignedToName: newAgent.name,
+      });
+      addToast(`Task reassigned to ${newAgent.name}!`, 'success');
+    } catch (err) {
+      addToast('Failed to reassign task', 'error');
+    }
+  };
+
+  const handleDeleteTask = async (task) => {
+    const ok = await confirm({
+      title: 'Delete Task',
+      message: `Are you sure you want to permanently delete this task for "${task.customerName || 'Customer'}"?`,
+      confirmText: 'Delete Task',
+      cancelText: 'Cancel',
+      type: 'danger',
+    });
+    if (!ok) return;
+
+    try {
+      setTasksList((prev) => prev.filter((t) => t._id !== task._id));
+      await deleteFollowUp(task._id);
+      addToast('Task deleted successfully', 'success');
+    } catch (err) {
+      addToast('Failed to delete task', 'error');
+    }
+  };
+
+  const filteredTasks = useMemo(() => {
+    return tasksList.filter((task) => {
+      if (taskFilterAgent !== 'all') {
+        const taskId = typeof task.assignedTo === 'object' ? task.assignedTo?._id : task.assignedTo;
+        const taskCreated = typeof task.createdBy === 'object' ? task.createdBy?._id : task.createdBy;
+        if (taskId !== taskFilterAgent && taskCreated !== taskFilterAgent) return false;
+      }
+      if (taskFilterStatus !== 'all' && task.status !== taskFilterStatus) return false;
+      if (taskFilterPriority !== 'all' && (task.priority || 'medium') !== taskFilterPriority) return false;
+      if (taskFilterType !== 'all') {
+        const tType = (task.type || '').toLowerCase();
+        if (tType !== taskFilterType.toLowerCase()) return false;
+      }
+      if (taskSearchQuery.trim()) {
+        const q = taskSearchQuery.toLowerCase();
+        const cName = (task.customerName || task.customerId?.name || '').toLowerCase();
+        const cPhone = (task.phone || task.customerId?.mobile || '').toLowerCase();
+        const aName = (task.assignedToName || task.createdByName || '').toLowerCase();
+        const rem = (task.remarks || '').toLowerCase();
+        if (!cName.includes(q) && !cPhone.includes(q) && !aName.includes(q) && !rem.includes(q)) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }, [tasksList, taskFilterAgent, taskFilterStatus, taskFilterPriority, taskFilterType, taskSearchQuery]);
+
+  const taskMetrics = useMemo(() => {
+    const total = tasksList.length;
+    const pending = tasksList.filter((t) => t.status === 'pending').length;
+    const completed = tasksList.filter((t) => t.status === 'completed').length;
+    const high = tasksList.filter((t) => t.priority === 'high' && t.status === 'pending').length;
+    const todayStr = new Date().toISOString().split('T')[0];
+    const todayCount = tasksList.filter((t) => t.date && t.date.startsWith(todayStr)).length;
+    return { total, pending, completed, high, todayCount };
+  }, [tasksList]);
 
   // Quick Role Switch Handler
   const handleRoleClick = async (targetUser) => {
@@ -762,7 +944,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
       {(currentView === 'admin-panel' ||
         currentView === 'overview' ||
         currentView === 'admin' ||
-        !['admin-users', 'users', 'admin-agents', 'agents', 'admin-workload', 'workload', 'admin-reports', 'reports', 'admin-portfolio', 'portfolio', 'admin-audit', 'audit', 'admin-system', 'system', 'admin-system-smtp', 'admin-system-whatsapp', 'admin-system-database'].includes(currentView)) && (
+        !['admin-users', 'users', 'admin-agents', 'agents', 'admin-workload', 'workload', 'admin-reports', 'reports', 'admin-portfolio', 'portfolio', 'admin-audit', 'audit', 'admin-system', 'system', 'admin-system-smtp', 'admin-system-whatsapp', 'admin-system-database', 'admin-tasks', 'tasks'].includes(currentView)) && (
         <div className="space-y-6">
           <PageHeader
             title="Admin Control Center"
@@ -1550,6 +1732,17 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                                     </button>
                                   )}
 
+                                  {/* Assign Task to Caller */}
+                                  {(u.role === 'telecaller' || u.role === 'user') && (
+                                    <button
+                                      onClick={() => openAssignTaskModal(u._id, u.name)}
+                                      className="p-2 rounded-lg hover:bg-dark-100 dark:hover:bg-dark-700 text-emerald-600 dark:text-emerald-400 transition-colors"
+                                      title="Assign Task to this caller"
+                                    >
+                                      <CheckSquare size={16} />
+                                    </button>
+                                  )}
+
                                   {isRejected ? (
                                     <button
                                       onClick={() => handleApproveCaller(u._id, u.name)}
@@ -2086,6 +2279,15 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                     >
                       <Users size={13} />
                       Inspect Portfolio
+                    </button>
+
+                    <button
+                      onClick={() => openAssignTaskModal(tc._id, tc.name)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-emerald-200 dark:border-emerald-800/60 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 text-xs font-semibold transition-colors"
+                      title="Assign task to this telecaller"
+                    >
+                      <CheckSquare size={13} />
+                      Assign Task
                     </button>
 
                     <button
@@ -2803,42 +3005,66 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                 </div>
 
                 {/* Page Navigation Tabs */}
-                <div className="flex items-center gap-1.5 p-1 rounded-xl bg-dark-50 dark:bg-dark-900 border border-dark-200 dark:border-dark-700 self-start md:self-auto shadow-2xs">
+                <div className="flex flex-wrap items-center gap-2 self-start md:self-auto">
+                  <div className="flex items-center gap-1.5 p-1 rounded-xl bg-dark-50 dark:bg-dark-900 border border-dark-200 dark:border-dark-700 shadow-2xs">
+                    <button
+                      type="button"
+                      onClick={() => setInspectorTab('report')}
+                      className={`px-3 py-2 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 ${
+                        inspectorTab === 'report'
+                          ? 'bg-primary-600 text-white shadow-xs'
+                          : 'text-dark-600 dark:text-dark-400 hover:text-dark-900 dark:hover:text-white'
+                      }`}
+                    >
+                      <BarChart3 size={14} />
+                      <span>Work Report Graph</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setInspectorTab('profile')}
+                      className={`px-3 py-2 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 ${
+                        inspectorTab === 'profile'
+                          ? 'bg-primary-600 text-white shadow-xs'
+                          : 'text-dark-600 dark:text-dark-400 hover:text-dark-900 dark:hover:text-white'
+                      }`}
+                    >
+                      <User size={14} />
+                      <span>Personal Details</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setInspectorTab('workload')}
+                      className={`px-3 py-2 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 ${
+                        inspectorTab === 'workload'
+                          ? 'bg-primary-600 text-white shadow-xs'
+                          : 'text-dark-600 dark:text-dark-400 hover:text-dark-900 dark:hover:text-white'
+                      }`}
+                    >
+                      <ArrowRightLeft size={14} />
+                      <span>Workload & Transfer</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setInspectorTab('tasks')}
+                      className={`px-3 py-2 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 ${
+                        inspectorTab === 'tasks'
+                          ? 'bg-primary-600 text-white shadow-xs'
+                          : 'text-dark-600 dark:text-dark-400 hover:text-dark-900 dark:hover:text-white'
+                      }`}
+                    >
+                      <CheckSquare size={14} />
+                      <span>Assigned Tasks</span>
+                    </button>
+                  </div>
+
                   <button
                     type="button"
-                    onClick={() => setInspectorTab('report')}
-                    className={`px-3 py-2 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 ${
-                      inspectorTab === 'report'
-                        ? 'bg-primary-600 text-white shadow-xs'
-                        : 'text-dark-600 dark:text-dark-400 hover:text-dark-900 dark:hover:text-white'
-                    }`}
+                    onClick={() => openAssignTaskModal(inspectorUser._id, inspectorUser.name)}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95"
+                    title="Assign task to this telecaller"
                   >
-                    <BarChart3 size={14} />
-                    <span>Work Report Graph</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setInspectorTab('profile')}
-                    className={`px-3 py-2 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 ${
-                      inspectorTab === 'profile'
-                        ? 'bg-primary-600 text-white shadow-xs'
-                        : 'text-dark-600 dark:text-dark-400 hover:text-dark-900 dark:hover:text-white'
-                    }`}
-                  >
-                    <User size={14} />
-                    <span>Personal Details</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setInspectorTab('workload')}
-                    className={`px-3 py-2 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 ${
-                      inspectorTab === 'workload'
-                        ? 'bg-primary-600 text-white shadow-xs'
-                        : 'text-dark-600 dark:text-dark-400 hover:text-dark-900 dark:hover:text-white'
-                    }`}
-                  >
-                    <ArrowRightLeft size={14} />
-                    <span>Workload & Transfer</span>
+                    <Plus size={14} />
+                    <span>Assign Task</span>
                   </button>
                 </div>
               </div>
@@ -3309,7 +3535,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                     </div>
                   </div>
                 </div>
-              ) : (
+              ) : inspectorTab === 'workload' ? (
                 /* Tab 3: Workload & Transfer Portfolio */
                 <div className="space-y-6">
                   <div className="bg-white dark:bg-dark-800 rounded-2xl border border-dark-200 dark:border-dark-700 p-6 shadow-xs">
@@ -3376,6 +3602,149 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                       </div>
                     </div>
                   </div>
+                </div>
+              ) : (
+                /* Tab 4: Assigned Tasks */
+                <div className="space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700">
+                    <div>
+                      <h4 className="font-bold text-sm text-dark-900 dark:text-white flex items-center gap-2">
+                        <CheckSquare size={16} className="text-primary-600" />
+                        Tasks Assigned to {inspectorUser.name}
+                      </h4>
+                      <p className="text-xs text-dark-500 dark:text-dark-400 mt-0.5">
+                        Follow-up schedules, calls, client meetings, and pending action items for this telecaller.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => openAssignTaskModal(inspectorUser._id, inspectorUser.name)}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95 self-start sm:self-auto"
+                    >
+                      <Plus size={14} />
+                      <span>+ Assign Task</span>
+                    </button>
+                  </div>
+
+                  {(() => {
+                    const userTasks = tasksList.filter(
+                      (t) =>
+                        (typeof t.assignedTo === 'object' ? t.assignedTo?._id : t.assignedTo) === inspectorUser._id ||
+                        (typeof t.createdBy === 'object' ? t.createdBy?._id : t.createdBy) === inspectorUser._id
+                    );
+
+                    if (userTasks.length === 0) {
+                      return (
+                        <div className="p-12 text-center bg-white dark:bg-dark-800 rounded-2xl border border-dark-200 dark:border-dark-700">
+                          <CheckSquare size={28} className="text-dark-400 mx-auto mb-2 opacity-50" />
+                          <h5 className="font-bold text-dark-900 dark:text-white text-sm">No tasks assigned yet</h5>
+                          <p className="text-xs text-dark-500 dark:text-dark-400 mt-1 max-w-sm mx-auto">
+                            This telecaller currently has zero assigned tasks. Assign a task or follow-up schedule to keep them productive.
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => openAssignTaskModal(inspectorUser._id, inspectorUser.name)}
+                            className="mt-3.5 inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer"
+                          >
+                            <Plus size={13} />
+                            <span>Assign First Task</span>
+                          </button>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div className="bg-white dark:bg-dark-800 rounded-2xl border border-dark-200 dark:border-dark-700 overflow-hidden">
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-left border-collapse text-xs">
+                            <thead>
+                              <tr className="border-b border-dark-100 dark:border-dark-700/60 bg-dark-50/60 dark:bg-dark-900/40 text-dark-500 dark:text-dark-400 uppercase tracking-wider text-[11px] font-semibold">
+                                <th className="py-2.5 px-4">Status</th>
+                                <th className="py-2.5 px-4">Customer</th>
+                                <th className="py-2.5 px-4">Category</th>
+                                <th className="py-2.5 px-4">Priority</th>
+                                <th className="py-2.5 px-4">Schedule</th>
+                                <th className="py-2.5 px-4">Instructions</th>
+                                <th className="py-2.5 px-4 text-center">Actions</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-dark-100 dark:divide-dark-700/60 text-dark-800 dark:text-dark-200">
+                              {userTasks.map((task) => {
+                                const isDone = task.status === 'completed';
+                                return (
+                                  <tr
+                                    key={task._id}
+                                    className={`hover:bg-dark-50/50 dark:hover:bg-dark-700/40 transition-colors ${
+                                      isDone ? 'opacity-70 bg-gray-50/30 dark:bg-dark-900/20' : ''
+                                    }`}
+                                  >
+                                    <td className="py-3 px-4">
+                                      <button
+                                        type="button"
+                                        onClick={() => handleToggleTaskStatus(task)}
+                                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold cursor-pointer transition-all ${
+                                          isDone
+                                            ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300'
+                                            : 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 hover:bg-amber-200'
+                                        }`}
+                                      >
+                                        {isDone ? <CheckCircle2 size={11} /> : <Clock size={11} />}
+                                        <span className="capitalize">{task.status || 'pending'}</span>
+                                      </button>
+                                    </td>
+                                    <td className="py-3 px-4 font-semibold text-dark-900 dark:text-white">
+                                      <p className="font-bold text-xs">{task.customerName || task.customerId?.name || 'Customer'}</p>
+                                      {(task.phone || task.customerId?.mobile) && (
+                                        <p className="text-[11px] text-dark-500 font-normal">{task.phone || task.customerId?.mobile}</p>
+                                      )}
+                                    </td>
+                                    <td className="py-3 px-4">
+                                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-dark-100 text-dark-700 dark:bg-dark-700 dark:text-dark-300 capitalize">
+                                        {task.type || 'Task'}
+                                      </span>
+                                    </td>
+                                    <td className="py-3 px-4">
+                                      <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase ${
+                                        task.priority === 'high' ? 'bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300'
+                                      }`}>
+                                        {task.priority || 'medium'}
+                                      </span>
+                                    </td>
+                                    <td className="py-3 px-4 whitespace-nowrap text-xs">
+                                      {task.date || 'Today'} {task.time ? `• ${task.time}` : ''}
+                                    </td>
+                                    <td className="py-3 px-4 max-w-xs text-xs text-dark-600 dark:text-dark-300 truncate">
+                                      {task.remarks || '—'}
+                                    </td>
+                                    <td className="py-3 px-4 text-center whitespace-nowrap">
+                                      <div className="inline-flex items-center gap-1">
+                                        <button
+                                          type="button"
+                                          onClick={() => handleToggleTaskStatus(task)}
+                                          className="p-1 rounded hover:bg-dark-100 dark:hover:bg-dark-700 text-dark-600 dark:text-dark-300 transition-colors"
+                                          title="Toggle status"
+                                        >
+                                          <Check size={13} />
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => handleDeleteTask(task)}
+                                          className="p-1 rounded hover:bg-red-100 dark:hover:bg-red-900/40 text-red-600 dark:text-red-400 transition-colors"
+                                          title="Delete task"
+                                        >
+                                          <Trash2 size={13} />
+                                        </button>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
             </div>
@@ -3979,6 +4348,369 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
         </div>
       )}
 
+      {/* 9. CALLER TASKS & SCHEDULES MANAGEMENT PAGE */}
+      {(currentView === 'admin-tasks' || currentView === 'tasks') && (
+        <div className="space-y-6">
+          <PageHeader
+            title="Caller Tasks & Schedules"
+            subtitle="Supervise, assign, and track follow-up tasks, calls, meetings, and outreach schedules across all telecallers."
+            action={
+              <div className="flex items-center gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => loadData(true)}
+                  disabled={refreshing}
+                  className="p-2.5 rounded-xl border border-dark-200 dark:border-dark-700 hover:bg-dark-50 dark:hover:bg-dark-800 text-dark-600 dark:text-dark-300 transition-colors shadow-xs cursor-pointer"
+                  title="Refresh tasks data"
+                >
+                  <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => openAssignTaskModal()}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-sm font-semibold transition-colors shadow-sm cursor-pointer"
+                >
+                  <Plus size={16} />
+                  <span>Assign Task to Caller</span>
+                </button>
+              </div>
+            }
+          />
+
+          {/* Metric Cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-3.5 sm:gap-4">
+            <div className="p-4 rounded-2xl bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 shadow-2xs">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-dark-500 dark:text-dark-400">Total Tasks</span>
+                <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                  <CheckSquare size={16} />
+                </div>
+              </div>
+              <p className="text-2xl font-bold text-dark-900 dark:text-white mt-2">{taskMetrics.total}</p>
+              <span className="text-[11px] text-dark-500 mt-0.5 block">All scheduled follow-ups</span>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 shadow-2xs">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-dark-500 dark:text-dark-400">Pending Tasks</span>
+                <div className="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                  <Clock size={16} />
+                </div>
+              </div>
+              <p className="text-2xl font-bold text-amber-600 dark:text-amber-400 mt-2">{taskMetrics.pending}</p>
+              <span className="text-[11px] text-amber-600/80 mt-0.5 block">Awaiting caller action</span>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 shadow-2xs">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-dark-500 dark:text-dark-400">Completed</span>
+                <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                  <CheckCircle2 size={16} />
+                </div>
+              </div>
+              <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-2">{taskMetrics.completed}</p>
+              <span className="text-[11px] text-emerald-600/80 mt-0.5 block">Successfully resolved</span>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 shadow-2xs">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-dark-500 dark:text-dark-400">High Priority</span>
+                <div className="w-8 h-8 rounded-xl bg-red-50 dark:bg-red-950/50 text-red-600 dark:text-red-400 flex items-center justify-center">
+                  <AlertCircle size={16} />
+                </div>
+              </div>
+              <p className="text-2xl font-bold text-red-600 dark:text-red-400 mt-2">{taskMetrics.high}</p>
+              <span className="text-[11px] text-red-600/80 mt-0.5 block">Urgent pending tasks</span>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 shadow-2xs col-span-2 sm:col-span-1">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-dark-500 dark:text-dark-400">Scheduled Today</span>
+                <div className="w-8 h-8 rounded-xl bg-purple-50 dark:bg-purple-950/50 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+                  <Calendar size={16} />
+                </div>
+              </div>
+              <p className="text-2xl font-bold text-purple-600 dark:text-purple-400 mt-2">{taskMetrics.todayCount}</p>
+              <span className="text-[11px] text-purple-600/80 mt-0.5 block">Due on today's roster</span>
+            </div>
+          </div>
+
+          {/* Filters & Search Toolbar */}
+          <div className="p-4 rounded-2xl bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-2.5 flex-1">
+              {/* Search Box */}
+              <div className="relative flex-1 min-w-[200px] max-w-xs">
+                <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-dark-400" />
+                <input
+                  type="text"
+                  value={taskSearchQuery}
+                  onChange={(e) => setTaskSearchQuery(e.target.value)}
+                  placeholder="Search customer, phone, note..."
+                  className="w-full pl-9 pr-3.5 py-2 text-xs rounded-xl border border-dark-200 dark:border-dark-700 bg-dark-50/50 dark:bg-dark-900/50 text-dark-900 dark:text-white placeholder-dark-400 focus:outline-none focus:border-primary-500"
+                />
+              </div>
+
+              {/* Filter: Telecaller */}
+              <select
+                value={taskFilterAgent}
+                onChange={(e) => setTaskFilterAgent(e.target.value)}
+                className="px-3 py-2 text-xs rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-900 text-dark-800 dark:text-dark-200 font-medium focus:outline-none focus:border-primary-500"
+              >
+                <option value="all">All Telecallers ({users.filter((u) => u.role === 'telecaller').length})</option>
+                {users
+                  .filter((u) => u.role === 'telecaller' || u.role === 'admin')
+                  .map((u) => (
+                    <option key={u._id} value={u._id}>
+                      {u.name} ({u.role})
+                    </option>
+                  ))}
+              </select>
+
+              {/* Filter: Status */}
+              <div className="inline-flex p-1 rounded-xl bg-dark-100 dark:bg-dark-900 border border-dark-200 dark:border-dark-700 text-xs font-semibold">
+                {['all', 'pending', 'completed'].map((st) => (
+                  <button
+                    key={st}
+                    type="button"
+                    onClick={() => setTaskFilterStatus(st)}
+                    className={`px-3 py-1 rounded-lg capitalize transition-colors cursor-pointer ${
+                      taskFilterStatus === st
+                        ? 'bg-white dark:bg-dark-800 text-primary-600 dark:text-primary-400 shadow-2xs font-bold'
+                        : 'text-dark-600 dark:text-dark-400 hover:text-dark-900'
+                    }`}
+                  >
+                    {st}
+                  </button>
+                ))}
+              </div>
+
+              {/* Filter: Priority */}
+              <select
+                value={taskFilterPriority}
+                onChange={(e) => setTaskFilterPriority(e.target.value)}
+                className="px-3 py-2 text-xs rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-900 text-dark-800 dark:text-dark-200 font-medium focus:outline-none focus:border-primary-500"
+              >
+                <option value="all">All Priorities</option>
+                <option value="high">High Priority</option>
+                <option value="medium">Medium Priority</option>
+                <option value="low">Low Priority</option>
+              </select>
+
+              {/* Filter: Type */}
+              <select
+                value={taskFilterType}
+                onChange={(e) => setTaskFilterType(e.target.value)}
+                className="px-3 py-2 text-xs rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-900 text-dark-800 dark:text-dark-200 font-medium focus:outline-none focus:border-primary-500"
+              >
+                <option value="all">All Task Types</option>
+                <option value="call">Call</option>
+                <option value="meeting">Meeting</option>
+                <option value="followup">Follow-up</option>
+                <option value="task">Task / ToDo</option>
+                <option value="email">Email</option>
+                <option value="whatsapp">WhatsApp</option>
+                <option value="demo">Demo</option>
+              </select>
+            </div>
+
+            {/* Quick Count Badge */}
+            <div className="text-xs font-medium text-dark-500 dark:text-dark-400 self-end md:self-auto">
+              Showing <span className="font-bold text-dark-900 dark:text-white">{filteredTasks.length}</span> of {tasksList.length} tasks
+            </div>
+          </div>
+
+          {/* Tasks Table */}
+          <div className="bg-white dark:bg-dark-800 rounded-2xl border border-dark-200 dark:border-dark-700 overflow-hidden shadow-2xs">
+            {filteredTasks.length === 0 ? (
+              <div className="p-16 text-center">
+                <div className="w-14 h-14 rounded-2xl bg-dark-100 dark:bg-dark-700 text-dark-400 mx-auto flex items-center justify-center mb-3">
+                  <CheckSquare size={24} />
+                </div>
+                <h4 className="font-bold text-dark-900 dark:text-white text-base">No tasks found</h4>
+                <p className="text-xs text-dark-500 dark:text-dark-400 mt-1 max-w-sm mx-auto">
+                  {taskSearchQuery || taskFilterAgent !== 'all' || taskFilterStatus !== 'all'
+                    ? 'No tasks matched your current filter criteria. Try resetting filters.'
+                    : 'No caller tasks or follow-ups have been created yet. Assign your first task!'}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => openAssignTaskModal()}
+                  className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer"
+                >
+                  <Plus size={14} />
+                  <span>Assign New Task</span>
+                </button>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="border-b border-dark-100 dark:border-dark-700/60 bg-dark-50/60 dark:bg-dark-900/40 text-dark-500 dark:text-dark-400 uppercase tracking-wider text-[11px] font-semibold">
+                      <th className="py-3 px-4">Status</th>
+                      <th className="py-3 px-4">Customer / Contact</th>
+                      <th className="py-3 px-4">Assigned Telecaller</th>
+                      <th className="py-3 px-4">Category</th>
+                      <th className="py-3 px-4">Priority</th>
+                      <th className="py-3 px-4">Due Schedule</th>
+                      <th className="py-3 px-4">Task Instructions & Remarks</th>
+                      <th className="py-3 px-4 text-center">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-dark-100 dark:divide-dark-700/60 text-dark-800 dark:text-dark-200">
+                    {filteredTasks.map((task) => {
+                      const isDone = task.status === 'completed';
+                      const assignedUserObj = users.find(
+                        (u) => u._id === (typeof task.assignedTo === 'object' ? task.assignedTo?._id : task.assignedTo)
+                      );
+                      const assignedDisplayName =
+                        assignedUserObj?.name || task.assignedToName || task.createdByName || 'Unassigned';
+
+                      const priorityColor =
+                        task.priority === 'high'
+                          ? 'bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-300 border border-red-200 dark:border-red-800/60'
+                          : task.priority === 'low'
+                          ? 'bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60'
+                          : 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60';
+
+                      return (
+                        <tr
+                          key={task._id}
+                          className={`hover:bg-dark-50/50 dark:hover:bg-dark-700/40 transition-colors ${
+                            isDone ? 'opacity-70 bg-gray-50/30 dark:bg-dark-900/20' : ''
+                          }`}
+                        >
+                          {/* Toggle Status */}
+                          <td className="py-3.5 px-4">
+                            <button
+                              type="button"
+                              onClick={() => handleToggleTaskStatus(task)}
+                              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold cursor-pointer transition-all active:scale-95 ${
+                                isDone
+                                  ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800'
+                                  : 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-800 hover:bg-amber-200'
+                              }`}
+                              title={`Click to mark as ${isDone ? 'pending' : 'completed'}`}
+                            >
+                              {isDone ? <CheckCircle2 size={12} /> : <Clock size={12} />}
+                              <span className="capitalize">{task.status || 'pending'}</span>
+                            </button>
+                          </td>
+
+                          {/* Customer / Contact */}
+                          <td className="py-3.5 px-4 font-semibold text-dark-900 dark:text-white">
+                            <div>
+                              <p className="font-bold text-xs">{task.customerName || task.customerId?.name || 'Customer'}</p>
+                              {(task.phone || task.customerId?.mobile) && (
+                                <p className="text-[11px] text-dark-500 font-normal flex items-center gap-1 mt-0.5">
+                                  <Phone size={10} className="opacity-70" />
+                                  <span>{task.phone || task.customerId?.mobile}</span>
+                                </p>
+                              )}
+                            </div>
+                          </td>
+
+                          {/* Assigned Telecaller */}
+                          <td className="py-3.5 px-4">
+                            <div className="flex items-center gap-2">
+                              <div className="w-7 h-7 rounded-lg bg-primary-100 dark:bg-primary-950/60 text-primary-600 dark:text-primary-400 font-bold flex items-center justify-center text-[10px] flex-shrink-0">
+                                {initials(assignedDisplayName)}
+                              </div>
+                              <div className="min-w-0">
+                                <p className="font-semibold text-xs text-dark-900 dark:text-white truncate">
+                                  {assignedDisplayName}
+                                </p>
+                                {/* Quick Reassign Selector */}
+                                <select
+                                  value={assignedUserObj?._id || ''}
+                                  onChange={(e) => handleReassignTaskCaller(task, e.target.value)}
+                                  className="text-[10px] text-dark-500 dark:text-dark-400 bg-transparent border-0 underline hover:text-primary-600 cursor-pointer p-0 focus:outline-none"
+                                  title="Click to reassign to another caller"
+                                >
+                                  <option value="" disabled>Change Lead</option>
+                                  {users
+                                    .filter((u) => u.role === 'telecaller' || u.role === 'admin')
+                                    .map((u) => (
+                                      <option key={u._id} value={u._id}>
+                                        Assign to {u.name}
+                                      </option>
+                                    ))}
+                                </select>
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* Category */}
+                          <td className="py-3.5 px-4">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-[11px] font-semibold bg-dark-100 text-dark-700 dark:bg-dark-700 dark:text-dark-300 capitalize">
+                              <Tag size={10} />
+                              {task.type || 'Follow-up'}
+                            </span>
+                          </td>
+
+                          {/* Priority */}
+                          <td className="py-3.5 px-4">
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${priorityColor}`}>
+                              {task.priority || 'medium'}
+                            </span>
+                          </td>
+
+                          {/* Schedule / Date */}
+                          <td className="py-3.5 px-4 whitespace-nowrap">
+                            <div className="flex items-center gap-1.5 text-xs text-dark-700 dark:text-dark-300">
+                              <Calendar size={12} className="text-dark-400" />
+                              <span>{task.date || 'Today'}</span>
+                            </div>
+                            {task.time && (
+                              <div className="flex items-center gap-1.5 text-[11px] text-dark-500 mt-0.5">
+                                <Clock size={10} className="text-dark-400" />
+                                <span>{task.time}</span>
+                              </div>
+                            )}
+                          </td>
+
+                          {/* Remarks */}
+                          <td className="py-3.5 px-4 max-w-xs">
+                            <p className="text-xs text-dark-700 dark:text-dark-300 line-clamp-2 leading-relaxed">
+                              {task.remarks || 'No specific agenda or instructions provided.'}
+                            </p>
+                          </td>
+
+                          {/* Actions */}
+                          <td className="py-3.5 px-4 text-center whitespace-nowrap">
+                            <div className="inline-flex items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() => handleToggleTaskStatus(task)}
+                                className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                                  isDone
+                                    ? 'hover:bg-amber-50 dark:hover:bg-amber-950/50 text-amber-600'
+                                    : 'hover:bg-emerald-50 dark:hover:bg-emerald-950/50 text-emerald-600'
+                                }`}
+                                title={isDone ? 'Reopen task as pending' : 'Mark task completed'}
+                              >
+                                {isDone ? <RefreshCw size={14} /> : <Check size={14} />}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteTask(task)}
+                                className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/50 text-red-600 dark:text-red-400 transition-colors cursor-pointer"
+                                title="Delete task permanently"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
 
 
 
@@ -4241,6 +4973,165 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
           }}
         />
       )}
+
+      {/* GLOBAL MODAL: Assign Task to Caller / Lead */}
+      <Modal
+        isOpen={isAssignTaskModalOpen}
+        onClose={() => setIsAssignTaskModalOpen(false)}
+        title="Assign Task & Follow-up Schedule"
+        size="md"
+      >
+        <form onSubmit={handleCreateAssignTask} className="space-y-4">
+          {/* Target Telecaller Selector */}
+          <div>
+            <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1.5">
+              Assign Task To (Caller / Lead) <span className="text-red-500">*</span>
+            </label>
+            <select
+              value={assignTaskForm.assignedTo}
+              onChange={(e) => setAssignTaskForm({ ...assignTaskForm, assignedTo: e.target.value })}
+              className="w-full px-3 py-2 text-xs rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-900 text-dark-900 dark:text-white font-medium focus:outline-none focus:border-primary-500"
+              required
+            >
+              <option value="" disabled>Select telecaller / team member...</option>
+              {users
+                .filter((u) => u.role === 'telecaller' || u.role === 'admin')
+                .map((u) => (
+                  <option key={u._id} value={u._id}>
+                    {u.name} — {u.role === 'admin' ? 'Administrator' : 'Lead'} ({u.assignedLeads || 0} leads, {u.assignedCustomers || 0} clients)
+                  </option>
+                ))}
+            </select>
+          </div>
+
+          {/* Customer / Contact Details */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1.5">
+                Customer / Contact Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. Ramesh Patel or Acme Corp"
+                value={assignTaskForm.customerName}
+                onChange={(e) => setAssignTaskForm({ ...assignTaskForm, customerName: e.target.value })}
+                className="w-full px-3 py-2 text-xs rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-900 text-dark-900 dark:text-white focus:outline-none focus:border-primary-500"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1.5">
+                Contact Phone / Mobile
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. +91 9876543210"
+                value={assignTaskForm.phone}
+                onChange={(e) => setAssignTaskForm({ ...assignTaskForm, phone: e.target.value })}
+                className="w-full px-3 py-2 text-xs rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-900 text-dark-900 dark:text-white focus:outline-none focus:border-primary-500"
+              />
+            </div>
+          </div>
+
+          {/* Task Type / Category & Priority */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1.5">
+                Task Category
+              </label>
+              <select
+                value={assignTaskForm.type}
+                onChange={(e) => setAssignTaskForm({ ...assignTaskForm, type: e.target.value })}
+                className="w-full px-3 py-2 text-xs rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-900 text-dark-900 dark:text-white font-medium focus:outline-none focus:border-primary-500"
+              >
+                <option value="call">Follow-up Call</option>
+                <option value="meeting">Scheduled Meeting</option>
+                <option value="followup">General Follow-up</option>
+                <option value="task">Action Item / Task</option>
+                <option value="email">Email Outreach</option>
+                <option value="whatsapp">WhatsApp Outreach</option>
+                <option value="demo">Product Demo</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1.5">
+                Task Priority
+              </label>
+              <select
+                value={assignTaskForm.priority}
+                onChange={(e) => setAssignTaskForm({ ...assignTaskForm, priority: e.target.value })}
+                className="w-full px-3 py-2 text-xs rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-900 text-dark-900 dark:text-white font-medium focus:outline-none focus:border-primary-500"
+              >
+                <option value="high">High Priority (Urgent)</option>
+                <option value="medium">Medium Priority (Standard)</option>
+                <option value="low">Low Priority (Flexible)</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Schedule Date & Time */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1.5">
+                Due Date
+              </label>
+              <input
+                type="date"
+                value={assignTaskForm.date}
+                onChange={(e) => setAssignTaskForm({ ...assignTaskForm, date: e.target.value })}
+                className="w-full px-3 py-2 text-xs rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-900 text-dark-900 dark:text-white focus:outline-none focus:border-primary-500"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1.5">
+                Due Time
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. 10:00 AM or 04:30 PM"
+                value={assignTaskForm.time}
+                onChange={(e) => setAssignTaskForm({ ...assignTaskForm, time: e.target.value })}
+                className="w-full px-3 py-2 text-xs rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-900 text-dark-900 dark:text-white focus:outline-none focus:border-primary-500"
+              />
+            </div>
+          </div>
+
+          {/* Remarks / Instructions */}
+          <div>
+            <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1.5">
+              Task Instructions & Agenda Remarks <span className="text-red-500">*</span>
+            </label>
+            <textarea
+              rows={3}
+              placeholder="Provide clear instructions, talking points, deal stage context, or expected outcome for the telecaller..."
+              value={assignTaskForm.remarks}
+              onChange={(e) => setAssignTaskForm({ ...assignTaskForm, remarks: e.target.value })}
+              className="w-full px-3 py-2 text-xs rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-900 text-dark-900 dark:text-white focus:outline-none focus:border-primary-500"
+              required
+            />
+          </div>
+
+          {/* Modal Action Buttons */}
+          <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-dark-100 dark:border-dark-700">
+            <button
+              type="button"
+              onClick={() => setIsAssignTaskModalOpen(false)}
+              className="px-4 py-2 text-xs font-semibold text-dark-600 dark:text-dark-300 hover:bg-dark-100 dark:hover:bg-dark-700 rounded-xl transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={assigningTask}
+              className="inline-flex items-center gap-2 px-5 py-2 text-xs font-bold text-white bg-primary-600 hover:bg-primary-700 rounded-xl transition-colors shadow-xs disabled:opacity-50 cursor-pointer"
+            >
+              {assigningTask && <Loader2 size={13} className="animate-spin" />}
+              <span>{assigningTask ? 'Assigning Task...' : 'Assign Task Now'}</span>
+            </button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }
