@@ -401,7 +401,6 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
               onClick={() => {
                 const nextStatus = isSelected && card.id !== '' ? '' : card.id;
                 handleStatusFilter(nextStatus);
-                addToast(nextStatus ? `Filtered by ${card.label}` : 'Showing all leads', 'info');
               }}
               className={`p-3 rounded-2xl border text-left transition-all cursor-pointer shadow-2xs hover:scale-[1.02] flex flex-col justify-between ${
                 isSelected
@@ -633,7 +632,6 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
                             onClick={() => {
                               const nextFilter = telecallerFilter === String(tc._id) ? '' : String(tc._id);
                               setTelecallerFilter(nextFilter);
-                              addToast(nextFilter ? `Filtered by ${tc.name}` : 'Showing all callers', 'info');
                             }}
                             className="text-primary-600 hover:text-primary-700 hover:underline font-semibold cursor-pointer text-left"
                             title={`Click to filter leads assigned to ${tc.name}`}
@@ -648,7 +646,6 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
                             onClick={() => {
                               const nextFilter = telecallerFilter === 'unassigned' ? '' : 'unassigned';
                               setTelecallerFilter(nextFilter);
-                              addToast(nextFilter ? 'Filtered by Unassigned leads' : 'Showing all leads', 'info');
                             }}
                             className="text-amber-600 hover:text-amber-700 hover:underline font-bold cursor-pointer"
                             title="Click to filter unassigned leads"

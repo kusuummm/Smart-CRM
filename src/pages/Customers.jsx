@@ -448,7 +448,6 @@ export default function Customers({ onNavigate }) {
                   onClick={() => {
                     setStatusDropdownCustomerId(null);
                     setFilters((prev) => ({ ...prev, status: prev.status === val ? '' : val }));
-                    addToast(`Filtered by ${val} status`, 'info');
                   }}
                   className="w-full text-left px-2.5 py-1 text-[11px] text-primary-600 hover:underline font-semibold cursor-pointer"
                 >
@@ -470,10 +469,8 @@ export default function Customers({ onNavigate }) {
             onClick={() => {
               if (val && val !== 'Unassigned') {
                 setFilters((prev) => ({ ...prev, telecaller: prev.telecaller === val ? '' : val }));
-                addToast(`Filtered by ${val}`, 'info');
               } else {
                 setFilters((prev) => ({ ...prev, telecaller: prev.telecaller === 'unassigned' ? '' : 'unassigned' }));
-                addToast('Filtered by Unassigned clients', 'info');
               }
             }}
             className={`text-xs font-medium px-2 py-0.5 rounded-full hover:underline cursor-pointer ${

@@ -952,7 +952,6 @@ export default function CallHistory({ onNavigate, initialCallType = 'all' }) {
               key={tab.id}
               onClick={() => {
                 setCallTypeFilter(tab.id);
-                addToast(`Filtered by ${tab.label}`, 'info');
               }}
               className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
                 callTypeFilter === tab.id
@@ -1277,7 +1276,6 @@ export default function CallHistory({ onNavigate, initialCallType = 'all' }) {
                             const target = c.callType?.toLowerCase();
                             const next = callTypeFilter === target ? 'all' : target;
                             setCallTypeFilter(next);
-                            addToast(next === 'all' ? 'Showing all calls' : `Filtered by ${c.callType} calls`, 'info');
                           }}
                           className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all hover:scale-105 cursor-pointer shadow-2xs ${
                             callTypeFilter === c.callType?.toLowerCase()
@@ -1305,7 +1303,6 @@ export default function CallHistory({ onNavigate, initialCallType = 'all' }) {
                             const target = c.callStatus === 'Answered' ? 'connected' : 'missed';
                             const next = callTypeFilter === target ? 'all' : target;
                             setCallTypeFilter(next);
-                            addToast(next === 'all' ? 'Showing all calls' : `Filtered by ${c.callStatus} calls`, 'info');
                           }}
                           className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold transition-all hover:scale-105 cursor-pointer shadow-2xs ${
                             callTypeFilter === (c.callStatus === 'Answered' ? 'connected' : 'missed')
