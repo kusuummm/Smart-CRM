@@ -746,6 +746,12 @@ export default function ContactDetailView({
                 <span className="text-[14px] font-normal text-[rgba(0,0,0,0.88)] dark:text-dark-200 ml-1">
                   +91 {contactPhone}
                 </span>
+                {leadStage && leadStage !== 'Select Follow-up Status' && (
+                  <span className="ml-2 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                    <span>⚡</span>
+                    <span>{leadStage}</span>
+                  </span>
+                )}
               </div>
 
               <div className="flex items-center gap-3">
@@ -911,7 +917,7 @@ export default function ContactDetailView({
                       onUpdateContact?.({ ...contact, leadStage: newStage, status: newStage });
                       addToast(`Follow-up Status set to ${newStage}`, 'success');
                     }}
-                    className="w-full appearance-none px-3 py-2 text-[14px] font-normal rounded-md bg-white dark:bg-dark-900 border border-[#d9d9d9] dark:border-dark-700 text-[rgba(0,0,0,0.45)] dark:text-dark-400 focus:outline-none focus:border-[#1890ff] cursor-pointer"
+                    className="w-full appearance-none px-3 py-2 text-[14px] font-medium rounded-md bg-white dark:bg-dark-900 border border-[#d9d9d9] dark:border-dark-700 text-dark-900 dark:text-white focus:outline-none focus:border-[#1890ff] cursor-pointer shadow-2xs"
                   >
                     <option value="Select Follow-up Status">Select Follow-up Status</option>
                     <option value="New Follow-up">New Follow-up</option>

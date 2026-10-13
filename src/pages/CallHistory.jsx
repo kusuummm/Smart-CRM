@@ -31,10 +31,22 @@ import {
 import { useToast } from '../components/Toast';
 import { useAuth } from '../context/AuthContext';
 import { getCalls, createCall } from '../api/callHistory';
+import { getCustomers, updateCustomer } from '../api/customers';
 import CallRecordingModal from '../components/CallRecordingModal';
 import Customer360Modal from '../components/Customer360Modal';
 import { audioEngine, formatSeconds, generateWaveform } from '../utils/audioPlayer';
 import { realCallRecorder } from '../utils/realCallRecorder';
+
+export const FOLLOW_UP_STATUSES = [
+  { id: 'new', label: 'New Follow-up', icon: '🌱', badge: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300' },
+  { id: 'contacted', label: 'Contacted', icon: '📞', badge: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300' },
+  { id: 'interested', label: 'Interested', icon: '⭐', badge: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300' },
+  { id: 'meeting', label: 'Meeting Scheduled', icon: '📅', badge: 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/40 dark:text-purple-300' },
+  { id: 'follow-up', label: 'In Progress', icon: '⏰', badge: 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-300' },
+  { id: 'converted', label: 'Won / Converted', icon: '🏆', badge: 'bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-950/40 dark:text-teal-300' },
+  { id: 'not-interested', label: 'Not Interested', icon: '❌', badge: 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300' },
+  { id: 'closed', label: 'Closed', icon: '🔒', badge: 'bg-dark-100 text-dark-700 border-dark-200 dark:bg-dark-800 dark:text-dark-300' },
+];
 
 export default function CallHistory({ onNavigate, initialCallType = 'all' }) {
   const { user } = useAuth();
@@ -43,6 +55,11 @@ export default function CallHistory({ onNavigate, initialCallType = 'all' }) {
   // Customer 360 Full History Modal State
   const [selected360Customer, setSelected360Customer] = useState(null);
   const [is360ModalOpen, setIs360ModalOpen] = useState(false);
+
+  // Customer Map & Follow-up status state
+  const [customerMap, setCustomerMap] = useState({});
+  const [openStatusDropdownCallId, setOpenStatusDropdownCallId] = useState(null);
+  const [followUpFilter, setFollowUpFilter] = useState('');
 
   // Search & Filter states matching screenshots
   const [callTypeFilter, setCallTypeFilter] = useState(initialCallType || 'all');
@@ -147,6 +164,7 @@ export default function CallHistory({ onNavigate, initialCallType = 'all' }) {
     function handleClickOutside(e) {
       if (teamRef.current && !teamRef.current.contains(e.target)) setShowTeamDropdown(false);
       if (staffRef.current && !staffRef.current.contains(e.target)) setShowStaffDropdown(false);
+      setOpenStatusDropdownCallId(null);
     }
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -162,6 +180,20 @@ export default function CallHistory({ onNavigate, initialCallType = 'all' }) {
   const [calls, setCalls] = useState([]);
 
   useEffect(() => {
+    // 1. Fetch Customers to map follow-up statuses
+    getCustomers({ limit: 500 })
+      .then((res) => {
+        const cMap = {};
+        (res.customers || []).forEach((cust) => {
+          const p10 = String(cust.mobile || cust.phone || '').replace(/\D/g, '').slice(-10);
+          if (p10) cMap[p10] = cust;
+          if (cust._id) cMap[cust._id] = cust;
+        });
+        setCustomerMap(cMap);
+      })
+      .catch(() => {});
+
+    // 2. Load calls
     const localCalls = JSON.parse(localStorage.getItem('smartcrm_all_calls') || '[]');
     const mappedLocal = localCalls.map((c) => ({
       id: c.id,
@@ -170,7 +202,7 @@ export default function CallHistory({ onNavigate, initialCallType = 'all' }) {
       displayPhone: (c.customerPhone || '').replace('+91', ''),
       team: 'Main Team',
       staff: c.calledByName || user?.name || 'Agent',
-      tags: c.status || 'Recent Call',
+      followUpStatus: c.followUpStatus || 'new',
       callType: c.callType || 'Outgoing',
       callStatus: c.status === 'connected' ? 'Answered' : 'Missed',
       duration: c.duration ? (c.duration.includes('s') ? c.duration : `${c.duration}s`) : '12s',
@@ -191,35 +223,39 @@ export default function CallHistory({ onNavigate, initialCallType = 'all' }) {
     getCalls({ limit: 100 })
       .then((res) => {
         if (res.calls && res.calls.length > 0) {
-          const mapped = res.calls.map((c) => ({
-            id: c._id,
-            customerNumber: c.customerPhone || c.customerId?.mobile || c.mobile || '',
-            customerName: c.customerName || c.customerId?.name || 'Customer',
-            displayPhone: c.customerPhone || c.customerId?.mobile || '',
-            team: 'Main Team',
-            staff: c.calledByName || user?.name || 'Agent',
-            tags: c.status || '-',
-            callType: c.callType || 'Outgoing',
-            callStatus: c.status === 'connected' ? 'Answered' : 'Missed',
-            duration: c.duration ? `${c.duration}s` : '-',
-            recordingDuration: c.duration ? `${c.duration}s` : '-',
-            ringDuration: '10s',
-            date: c.date ? `${c.date} ${c.time || ''}` : 'Today',
-            recordingUrl: c.recordingUrl || '',
-            waveform: c.waveform && c.waveform.length > 0 ? c.waveform : generateWaveform(28),
-            transcript: c.remarks
-              ? [
-                  { speaker: c.calledByName || user?.name || 'Agent', role: 'agent', time: '00:02', text: c.remarks },
-                ]
-              : [],
-            aiSummary: {
-              sentiment: 'Positive',
-              score: 90,
-              summary: c.remarks || 'Call recorded and logged in CRM.',
-              keyPoints: ['Call Logged'],
-              followUps: [],
-            },
-          }));
+          const mapped = res.calls.map((c) => {
+            const clean10 = String(c.customerPhone || c.customerId?.mobile || c.mobile || '').replace(/\D/g, '').slice(-10);
+            return {
+              id: c._id,
+              customerId: c.customerId?._id || c.customerId || null,
+              customerNumber: c.customerPhone || c.customerId?.mobile || c.mobile || '',
+              customerName: c.customerName || c.customerId?.name || 'Customer',
+              displayPhone: c.customerPhone || c.customerId?.mobile || '',
+              team: 'Main Team',
+              staff: c.calledByName || user?.name || 'Agent',
+              followUpStatus: c.followUpStatus || c.customerId?.status || 'new',
+              callType: c.callType || 'Outgoing',
+              callStatus: c.status === 'connected' ? 'Answered' : 'Missed',
+              duration: c.duration ? `${c.duration}s` : '-',
+              recordingDuration: c.duration ? `${c.duration}s` : '-',
+              ringDuration: '10s',
+              date: c.date ? `${c.date} ${c.time || ''}` : 'Today',
+              recordingUrl: c.recordingUrl || '',
+              waveform: c.waveform && c.waveform.length > 0 ? c.waveform : generateWaveform(28),
+              transcript: c.remarks
+                ? [
+                    { speaker: c.calledByName || user?.name || 'Agent', role: 'agent', time: '00:02', text: c.remarks },
+                  ]
+                : [],
+              aiSummary: {
+                sentiment: 'Positive',
+                score: 90,
+                summary: c.remarks || 'Call recorded and logged in CRM.',
+                keyPoints: ['Call Logged'],
+                followUps: [],
+              },
+            };
+          });
           const existingIds = new Set(mapped.map((m) => m.id));
           const localOnly = mappedLocal.filter((l) => !existingIds.has(l.id));
           setCalls([...localOnly, ...mapped]);
@@ -233,6 +269,28 @@ export default function CallHistory({ onNavigate, initialCallType = 'all' }) {
         setCalls(mappedLocal);
       });
   }, [user]);
+
+  // Update Follow-up status handler
+  const handleUpdateFollowUpStatus = async (callRecord, newStatus) => {
+    setOpenStatusDropdownCallId(null);
+    const clean10 = String(callRecord.customerNumber || '').replace(/\D/g, '').slice(-10);
+    const targetCust = customerMap[clean10] || (callRecord.customerId?._id ? customerMap[callRecord.customerId._id] : customerMap[callRecord.customerId]);
+
+    setCalls((prev) =>
+      prev.map((c) => (c.id === callRecord.id ? { ...c, followUpStatus: newStatus } : c))
+    );
+
+    const stObj = FOLLOW_UP_STATUSES.find((s) => s.id === newStatus);
+
+    try {
+      if (targetCust?._id) {
+        await updateCustomer(targetCust._id, { status: newStatus });
+      }
+      addToast(`Follow-up status set to "${stObj?.label || newStatus}"`, 'success');
+    } catch {
+      addToast(`Follow-up status updated`, 'info');
+    }
+  };
 
   // Handle In-Row Audio Play/Pause  // Handle In-Row Audio Play/Pause
   const handleToggleRowPlay = (c) => {
@@ -547,9 +605,15 @@ export default function CallHistory({ onNavigate, initialCallType = 'all' }) {
         matchType = c.callStatus?.toLowerCase() === 'missed' || c.status === 'missed';
       }
 
-      return matchCust && matchTeam && matchStaff && matchType;
+      // Follow-up status filter
+      const clean10 = String(c.customerNumber || '').replace(/\D/g, '').slice(-10);
+      const cust = customerMap[clean10] || (c.customerId?._id ? customerMap[c.customerId._id] : customerMap[c.customerId]);
+      const currentStatus = c.followUpStatus || cust?.status || 'new';
+      const matchFollowUp = !followUpFilter || currentStatus === followUpFilter;
+
+      return matchCust && matchTeam && matchStaff && matchType && matchFollowUp;
     });
-  }, [calls, customerSearch, selectedTeam, selectedStaff, callTypeFilter]);
+  }, [calls, customerSearch, selectedTeam, selectedStaff, callTypeFilter, followUpFilter, customerMap]);
 
   const displayedCalls = filteredCalls.slice(0, visibleCount);
 
@@ -607,8 +671,8 @@ export default function CallHistory({ onNavigate, initialCallType = 'all' }) {
         </div>
       </div>
 
-      {/* 2. Four Filter Controls Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+      {/* 2. Five Filter Controls Row */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs">
         {/* Filter 1: CUSTOMER */}
         <div>
           <label className="block text-dark-500 font-bold uppercase tracking-wider text-[11px] mb-1.5">
@@ -624,6 +688,25 @@ export default function CallHistory({ onNavigate, initialCallType = 'all' }) {
               className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 text-dark-900 dark:text-white placeholder:text-dark-400 focus:outline-none focus:ring-1 focus:ring-blue-500 shadow-2xs"
             />
           </div>
+        </div>
+
+        {/* Filter 2: FOLLOW-UP STATUS */}
+        <div>
+          <label className="block text-dark-500 font-bold uppercase tracking-wider text-[11px] mb-1.5">
+            FOLLOW-UP STATUS
+          </label>
+          <select
+            value={followUpFilter}
+            onChange={(e) => setFollowUpFilter(e.target.value)}
+            className="w-full px-3 py-2.5 rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 text-dark-900 dark:text-white font-medium focus:outline-none focus:ring-1 focus:ring-blue-500 shadow-2xs cursor-pointer"
+          >
+            <option value="">All Follow-ups</option>
+            {FOLLOW_UP_STATUSES.map((st) => (
+              <option key={st.id} value={st.id}>
+                {st.icon} {st.label}
+              </option>
+            ))}
+          </select>
         </div>
 
         {/* Filter 2: TEAM (Dropdown with checkbox options) */}
@@ -802,25 +885,52 @@ export default function CallHistory({ onNavigate, initialCallType = 'all' }) {
       </div>
 
       {/* 3. Active Filter Chips & Clear All */}
-      {selectedTeam && (
-        <div className="flex items-center gap-2 text-xs">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 font-medium border border-blue-200 dark:border-blue-900/60 shadow-2xs">
-            <span>Team: {selectedTeam}</span>
-            <button
-              onClick={() => setSelectedTeam('')}
-              className="hover:text-rose-600 transition-colors font-bold"
-            >
-              ×
-            </button>
-          </span>
+      {(selectedTeam || followUpFilter || customerSearch) && (
+        <div className="flex items-center gap-2 text-xs flex-wrap">
+          {selectedTeam && (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 font-medium border border-blue-200 dark:border-blue-900/60 shadow-2xs">
+              <span>Team: {selectedTeam}</span>
+              <button
+                onClick={() => setSelectedTeam('')}
+                className="hover:text-rose-600 transition-colors font-bold cursor-pointer"
+              >
+                ×
+              </button>
+            </span>
+          )}
+
+          {followUpFilter && (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 font-medium border border-purple-200 dark:border-purple-900/60 shadow-2xs">
+              <span>Status: {FOLLOW_UP_STATUSES.find((s) => s.id === followUpFilter)?.label || followUpFilter}</span>
+              <button
+                onClick={() => setFollowUpFilter('')}
+                className="hover:text-rose-600 transition-colors font-bold cursor-pointer"
+              >
+                ×
+              </button>
+            </span>
+          )}
+
+          {customerSearch && (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-dark-100 dark:bg-dark-700 text-dark-800 dark:text-dark-200 font-medium border border-dark-200 dark:border-dark-600 shadow-2xs">
+              <span>Search: {customerSearch}</span>
+              <button
+                onClick={() => setCustomerSearch('')}
+                className="hover:text-rose-600 transition-colors font-bold cursor-pointer"
+              >
+                ×
+              </button>
+            </span>
+          )}
 
           <button
             onClick={() => {
               setSelectedTeam('');
               setSelectedStaff('All staff');
               setCustomerSearch('');
+              setFollowUpFilter('');
             }}
-            className="text-blue-600 hover:underline font-semibold ml-1"
+            className="text-blue-600 hover:underline font-semibold ml-1 cursor-pointer"
           >
             Clear all
           </button>
@@ -890,10 +1000,9 @@ export default function CallHistory({ onNavigate, initialCallType = 'all' }) {
                 <th className="py-4 px-4 w-32">
                   <span>CALL</span>
                 </th>
-                <th className="py-4 px-4 w-24">
+                <th className="py-4 px-4 min-w-[170px]">
                   <div className="flex items-center gap-1">
-                    <span>TAGS</span>
-                    <Search size={12} />
+                    <span>FOLLOW-UP STATUS</span>
                   </div>
                 </th>
                 <th className="py-4 px-4 w-28">
@@ -1098,15 +1207,66 @@ export default function CallHistory({ onNavigate, initialCallType = 'all' }) {
                         </button>
                       </td>
 
-                      {/* TAGS */}
-                      <td className="py-4 px-4 text-dark-500">
-                        {c.tags !== '-' ? (
-                          <span className="px-2 py-0.5 rounded-md bg-dark-100 dark:bg-dark-700 text-dark-700 dark:text-dark-200 text-[11px] font-semibold">
-                            {c.tags}
-                          </span>
-                        ) : (
-                          '-'
-                        )}
+                      {/* FOLLOW-UP STATUS */}
+                      <td className="py-4 px-4 relative">
+                        {(() => {
+                          const clean10 = String(c.customerNumber || '').replace(/\D/g, '').slice(-10);
+                          const cust = customerMap[clean10] || (c.customerId?._id ? customerMap[c.customerId._id] : customerMap[c.customerId]);
+                          const currentStatusKey = c.followUpStatus || cust?.status || 'new';
+                          const currentStatusObj =
+                            FOLLOW_UP_STATUSES.find((s) => s.id === currentStatusKey) || FOLLOW_UP_STATUSES[0];
+
+                          return (
+                            <div className="relative inline-block text-left">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setOpenStatusDropdownCallId(
+                                    openStatusDropdownCallId === c.id ? null : c.id
+                                  );
+                                }}
+                                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border transition-all shadow-2xs hover:scale-[1.02] cursor-pointer ${currentStatusObj.badge}`}
+                                title="Click to change customer follow-up status"
+                              >
+                                <span>{currentStatusObj.icon}</span>
+                                <span className="whitespace-nowrap">{currentStatusObj.label}</span>
+                                <ChevronDown size={11} className="opacity-70" />
+                              </button>
+
+                              {openStatusDropdownCallId === c.id && (
+                                <div
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="absolute left-0 mt-1 w-52 rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 p-1.5 shadow-xl z-50 space-y-0.5 animate-in fade-in zoom-in-95"
+                                >
+                                  <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-dark-400">
+                                    Update Follow-Up
+                                  </div>
+                                  {FOLLOW_UP_STATUSES.map((st) => (
+                                    <button
+                                      key={st.id}
+                                      type="button"
+                                      onClick={() => handleUpdateFollowUpStatus(c, st.id)}
+                                      className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors text-left cursor-pointer ${
+                                        currentStatusKey === st.id
+                                          ? 'bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 font-bold'
+                                          : 'hover:bg-dark-50 dark:hover:bg-dark-700 text-dark-700 dark:text-dark-200'
+                                      }`}
+                                    >
+                                      <span className="flex items-center gap-2">
+                                        <span>{st.icon}</span>
+                                        <span>{st.label}</span>
+                                      </span>
+                                      {currentStatusKey === st.id && (
+                                        <Check size={12} className="text-blue-600" />
+                                      )}
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </td>
 
                       {/* CALL TYPE */}
