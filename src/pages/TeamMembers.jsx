@@ -32,7 +32,7 @@ const ROLES_LIST = [
   { name: 'Owner', desc: 'Full workspace administrator' },
   { name: 'Manager', desc: 'Manage teams and view reports' },
   { name: 'Member', desc: 'Standard staff member' },
-  { name: 'Telecaller', desc: 'Calling agent with dialer access' },
+  { name: 'Lead', desc: 'Calling agent with dialer access' },
   { name: 'AI Agent', desc: 'Automated AI calling assistant' },
 ];
 export default function TeamMembers({ onNavigate }) {
@@ -130,7 +130,7 @@ export default function TeamMembers({ onNavigate }) {
           const r = String(u.role || '').toLowerCase();
           if (r === 'admin' || r === 'owner') displayRole = 'Owner';
           else if (r === 'manager') displayRole = 'Manager';
-          else if (r === 'telecaller') displayRole = 'Telecaller';
+          else if (r === 'telecaller') displayRole = 'Lead';
           else if (r === 'ai_agent' || r === 'ai agent') displayRole = 'AI Agent';
           else if (u.role) displayRole = u.role.charAt(0).toUpperCase() + u.role.slice(1);
 
@@ -206,7 +206,7 @@ export default function TeamMembers({ onNavigate }) {
         const backendRole =
           newRole === 'Owner'
             ? 'admin'
-            : newRole === 'Telecaller'
+            : newRole === 'Lead' || newRole === 'Telecaller'
             ? 'telecaller'
             : newRole === 'Manager'
             ? 'manager'
@@ -698,7 +698,7 @@ export default function TeamMembers({ onNavigate }) {
                             <option value="Member">Member</option>
                             <option value="Owner">Owner</option>
                             <option value="Manager">Manager</option>
-                            <option value="Telecaller">Telecaller</option>
+                            <option value="Lead">Lead</option>
                             <option value="AI Agent">AI Agent</option>
                           </select>
                           <ChevronDown

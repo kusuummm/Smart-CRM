@@ -111,7 +111,7 @@ export default function Teams({ onNavigate, onOpenBuyNumber }) {
                 : u.role === 'manager'
                 ? 'Manager'
                 : u.role === 'telecaller'
-                ? 'Telecaller'
+                ? 'Lead'
                 : 'Member',
           }));
           setStaffList(apiMapped);
@@ -260,7 +260,7 @@ export default function Teams({ onNavigate, onOpenBuyNumber }) {
           ? 'admin'
           : newRole === 'Manager'
           ? 'manager'
-          : newRole === 'Telecaller'
+          : newRole === 'Lead' || newRole === 'Telecaller'
           ? 'telecaller'
           : 'user';
       updateUser(staffId, { role: backendRole }).catch(() => {});
@@ -956,7 +956,7 @@ export default function Teams({ onNavigate, onOpenBuyNumber }) {
                                   <div className="px-2 py-1 text-[10px] font-bold text-dark-400 uppercase tracking-wider border-b border-dark-100 dark:border-dark-700/60 mb-1">
                                     Filter Role
                                   </div>
-                                  {['', 'Owner', 'Manager', 'Member', 'Telecaller', 'AI Agent'].map((r) => (
+                                  {['', 'Owner', 'Manager', 'Member', 'Lead', 'AI Agent'].map((r) => (
                                     <button
                                       key={r || 'all'}
                                       type="button"
@@ -1082,7 +1082,7 @@ export default function Teams({ onNavigate, onOpenBuyNumber }) {
                                       ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 border-blue-200 dark:border-blue-800 hover:bg-blue-100'
                                       : staff.role === 'AI Agent'
                                       ? 'bg-violet-50 text-violet-700 dark:bg-violet-950/50 dark:text-violet-300 border-violet-200 dark:border-violet-800 hover:bg-violet-100'
-                                      : staff.role === 'Telecaller'
+                                      : staff.role === 'Lead' || staff.role === 'Telecaller'
                                       ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300 border-amber-200 dark:border-amber-800 hover:bg-amber-100'
                                       : 'bg-dark-50 text-dark-800 dark:bg-dark-900/60 dark:text-dark-100 border-dark-200 dark:border-dark-700 hover:bg-dark-100'
                                   }`}
@@ -1102,7 +1102,7 @@ export default function Teams({ onNavigate, onOpenBuyNumber }) {
                                       <div className="px-2 py-1 text-[10px] font-bold text-dark-400 uppercase tracking-wider border-b border-dark-100 dark:border-dark-700/60 mb-1">
                                         Change Role
                                       </div>
-                                      {['Owner', 'Manager', 'Member', 'Telecaller', 'AI Agent'].map((r) => (
+                                      {['Owner', 'Manager', 'Member', 'Lead', 'AI Agent'].map((r) => (
                                         <button
                                           key={r}
                                           type="button"
@@ -1336,7 +1336,7 @@ export default function Teams({ onNavigate, onOpenBuyNumber }) {
                   onChange={(e) => setNewMember({ ...newMember, role: e.target.value })}
                   className="w-full px-3 py-2 text-xs rounded-xl bg-dark-50 dark:bg-dark-900 border border-dark-200 dark:border-dark-700 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="Member">Member (Telecaller / Agent)</option>
+                  <option value="Member">Member (Lead / Agent)</option>
                   <option value="Manager">Manager</option>
                   <option value="AI Agent">AI Agent (Voice Bot)</option>
                 </select>
@@ -1433,8 +1433,8 @@ export default function Teams({ onNavigate, onOpenBuyNumber }) {
                 >
                   <option value="Owner">Owner</option>
                   <option value="Manager">Manager</option>
-                  <option value="Member">Member (Telecaller / Agent)</option>
-                  <option value="Telecaller">Telecaller</option>
+                  <option value="Member">Member (Lead / Agent)</option>
+                  <option value="Lead">Lead</option>
                   <option value="AI Agent">AI Agent (Voice Bot)</option>
                 </select>
               </div>

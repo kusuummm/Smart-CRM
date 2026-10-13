@@ -299,7 +299,7 @@ export default function Customers({ onNavigate }) {
                 setQuickTargetAgentId(row.telecallerId || '');
               }}
               className="p-1 rounded hover:bg-dark-100 dark:hover:bg-dark-700 text-dark-400 hover:text-primary-600 transition-colors"
-              title="Quick Reassign User"
+              title="Quick Reassign Lead"
             >
               <ArrowRightLeft size={13} />
             </button>
@@ -548,7 +548,7 @@ export default function Customers({ onNavigate }) {
               onChange={(e) => setFilters({ ...filters, telecaller: e.target.value })}
               className="px-3 py-2 border border-dark-200 dark:border-dark-700 rounded-lg text-sm bg-white dark:bg-dark-800 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
             >
-              <option value="">All Assigned Users</option>
+              <option value="">All Assigned Leads</option>
               <option value="unassigned">⚠️ Unassigned Clients Only</option>
               {telecallers.map((tc) => (
                 <option key={tc._id} value={tc.name}>
@@ -684,12 +684,12 @@ export default function Customers({ onNavigate }) {
       <Modal
         isOpen={Boolean(quickReassignCustomer)}
         onClose={() => setQuickReassignCustomer(null)}
-        title={`Reassign User — ${quickReassignCustomer?.name}`}
+        title={`Reassign Lead — ${quickReassignCustomer?.name}`}
         size="sm"
       >
         <div className="space-y-4">
           <p className="text-xs text-dark-600 dark:text-dark-300">
-            Current Assigned User:{' '}
+            Current Assigned Lead:{' '}
             <strong className="text-dark-900 dark:text-white">
               {quickReassignCustomer?.assignedTelecaller || 'Unassigned'}
             </strong>
@@ -697,7 +697,7 @@ export default function Customers({ onNavigate }) {
 
           <div>
             <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1.5">
-              Select New Assigned User
+              Select New Assigned Lead
             </label>
             <select
               value={quickTargetAgentId}

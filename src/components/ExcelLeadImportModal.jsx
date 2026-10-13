@@ -273,11 +273,11 @@ export default function ExcelLeadImportModal({ isOpen, onClose, onImportSuccess 
   // ================= 3. EXECUTE CHUNKED BULK IMPORT =================
   const handleStartImport = async () => {
     if (assignmentStrategy === 'round-robin' && selectedCallerIds.length === 0) {
-      toast.error('Please select at least one telecaller for Round-Robin assignment');
+      toast.error('Please select at least one lead for Round-Robin assignment');
       return;
     }
     if (assignmentStrategy === 'direct' && !directCallerId) {
-      toast.error('Please select a telecaller to assign leads to');
+      toast.error('Please select a lead to assign contacts to');
       return;
     }
 
@@ -401,7 +401,7 @@ export default function ExcelLeadImportModal({ isOpen, onClose, onImportSuccess 
                 Excel / CSV Lead Importer & Assigner
               </h2>
               <p className="text-xs text-dark-500 dark:text-dark-400">
-                Bulk ingest thousands of leads, deduplicate & distribute across telecallers
+                Bulk ingest thousands of leads, deduplicate & distribute across leads
               </p>
             </div>
           </div>
@@ -736,7 +736,7 @@ export default function ExcelLeadImportModal({ isOpen, onClose, onImportSuccess 
                   Lead Assignment & Distribution Strategy
                 </h3>
                 <p className="text-xs text-dark-500 dark:text-dark-400">
-                  Select how {rawData.length.toLocaleString()} leads should be assigned among telecallers.
+                  Select how {rawData.length.toLocaleString()} contacts should be assigned among leads.
                 </p>
               </div>
 
@@ -770,7 +770,7 @@ export default function ExcelLeadImportModal({ isOpen, onClose, onImportSuccess 
                     <span className="font-bold text-xs">Round-Robin</span>
                   </div>
                   <p className="text-[11px] text-dark-500 dark:text-dark-400">
-                    Evenly distributes leads one-by-one across all selected active telecallers.
+                    Evenly distributes contacts one-by-one across all selected active leads.
                   </p>
                 </div>
 
@@ -785,10 +785,10 @@ export default function ExcelLeadImportModal({ isOpen, onClose, onImportSuccess 
                 >
                   <div className="flex items-center gap-2 mb-1">
                     <User size={15} className="text-emerald-600" />
-                    <span className="font-bold text-xs">Direct Single Caller</span>
+                    <span className="font-bold text-xs">Direct Single Lead</span>
                   </div>
                   <p className="text-[11px] text-dark-500 dark:text-dark-400">
-                    Assigns the entire batch exclusively to one chosen telecaller.
+                    Assigns the entire batch exclusively to one chosen lead.
                   </p>
                 </div>
 
@@ -806,7 +806,7 @@ export default function ExcelLeadImportModal({ isOpen, onClose, onImportSuccess 
                     <span className="font-bold text-xs">Unassigned Pool</span>
                   </div>
                   <p className="text-[11px] text-dark-500 dark:text-dark-400">
-                    Imports leads as unassigned for callers to claim later or manual dispatch.
+                    Imports contacts as unassigned for leads to claim later or manual dispatch.
                   </p>
                 </div>
               </div>
@@ -816,7 +816,7 @@ export default function ExcelLeadImportModal({ isOpen, onClose, onImportSuccess 
                 <div className="p-3.5 rounded-xl bg-dark-50/60 dark:bg-dark-800/40 border border-dark-200 dark:border-dark-700 space-y-2">
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-semibold text-dark-700 dark:text-dark-300">
-                      Participating Telecallers ({selectedCallerIds.length} of {activeTelecallers.length} selected)
+                      Participating Leads ({selectedCallerIds.length} of {activeTelecallers.length} selected)
                     </label>
                     <button
                       type="button"
@@ -829,7 +829,7 @@ export default function ExcelLeadImportModal({ isOpen, onClose, onImportSuccess 
 
                   {activeTelecallers.length === 0 ? (
                     <p className="text-xs text-amber-600 dark:text-amber-400">
-                      No approved active telecallers found in system. Leads will be imported as Unassigned.
+                      No approved active leads found in system. Contacts will be imported as Unassigned.
                     </p>
                   ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-40 overflow-y-auto">
@@ -870,7 +870,7 @@ export default function ExcelLeadImportModal({ isOpen, onClose, onImportSuccess 
               {assignmentStrategy === 'direct' && (
                 <div className="p-3.5 rounded-xl bg-dark-50/60 dark:bg-dark-800/40 border border-dark-200 dark:border-dark-700">
                   <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1">
-                    Select Target Telecaller
+                    Select Target Lead
                   </label>
                   <select
                     value={directCallerId}
@@ -1042,7 +1042,7 @@ export default function ExcelLeadImportModal({ isOpen, onClose, onImportSuccess 
                 <div className="p-4 rounded-xl border border-dark-200 dark:border-dark-700 bg-dark-50/50 dark:bg-dark-800/40 text-left space-y-2">
                   <span className="text-xs font-bold text-dark-700 dark:text-dark-300 flex items-center gap-1.5">
                     <Users size={14} className="text-emerald-600" />
-                    <span>Caller Distribution Breakdown</span>
+                    <span>Lead Distribution Breakdown</span>
                   </span>
                   <div className="space-y-1.5 max-h-36 overflow-y-auto pt-1">
                     {Object.entries(progress.callerBreakdown).map(([name, count]) => (

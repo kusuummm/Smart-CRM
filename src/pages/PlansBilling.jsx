@@ -96,7 +96,7 @@ export default function PlansBilling({ onNavigate }) {
     },
     {
       id: 'INV-2026-008',
-      title: 'Users (x2) Telecaller Add-on Quota',
+      title: 'Users (x2) Lead Add-on Quota',
       date: '14 Nov 2025',
       amount: '₹1,180.00',
       status: 'Paid',
@@ -545,7 +545,7 @@ export default function PlansBilling({ onNavigate }) {
                   Unlimited All-in-One Pro (1 Year)
                 </p>
                 <p className="text-dark-500 mt-0.5">
-                  Extends validity to 12 Feb 2028 with 10 telecaller seats and unlimited outbound
+                  Extends validity to 12 Feb 2028 with 10 lead seats and unlimited outbound
                   calling.
                 </p>
                 <p className="text-base font-extrabold text-blue-600 dark:text-blue-400 mt-2">

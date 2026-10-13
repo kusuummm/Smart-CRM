@@ -225,7 +225,7 @@ export default function CallerProgressReports({ onNavigate }) {
             </div>
             <div>
               <h2 className="text-xl font-bold text-dark-900 dark:text-white">
-                Overall Telecaller Progress &amp; Performance
+                Overall Lead Progress &amp; Performance
               </h2>
               <p className="text-xs text-dark-500 dark:text-dark-400 mt-0.5">
                 Aggregate team-wide metrics over time. Click on any chart node, bar, or pie slice to inspect detailed activity logs.
@@ -427,7 +427,7 @@ export default function CallerProgressReports({ onNavigate }) {
             handleQuickNavigate('admin-agents');
           }}
           className="bg-white dark:bg-dark-800 p-4 rounded-2xl border border-dark-200 dark:border-dark-700 shadow-xs cursor-pointer hover:shadow-md hover:border-purple-400 dark:hover:border-purple-500 transition-all group"
-          title="Click to view active telecallers in Telecaller Presence"
+          title="Click to view active leads in Lead Presence"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-dark-500 uppercase tracking-wider">Active Callers</span>
@@ -445,7 +445,7 @@ export default function CallerProgressReports({ onNavigate }) {
             <span className="text-sm font-normal text-dark-400">/ {summary.totalRegisteredCallers || 0}</span>
           </p>
           <p className="mt-2 text-[11px] text-purple-700 dark:text-purple-300 font-medium">
-            Contributing telecallers
+            Contributing leads
           </p>
         </div>
       </div>
@@ -675,7 +675,7 @@ export default function CallerProgressReports({ onNavigate }) {
         <div className="p-4 border-b border-dark-200 dark:border-dark-700 flex flex-wrap items-center justify-between gap-3">
           <div>
             <h4 className="font-bold text-sm text-dark-900 dark:text-white">
-              Contributing Telecallers Overview
+              Contributing Leads Overview
             </h4>
             <p className="text-xs text-dark-500">
               Breakdown of total calls, talk time, and conversions logged by each caller in this period

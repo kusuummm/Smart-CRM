@@ -5,7 +5,7 @@ export function TutorialModal({ isOpen, onClose }) {
   if (!isOpen) return null;
 
   const steps = [
-    { title: '1. Managing Telephony & DIDs', desc: 'Assign incoming virtual numbers to telecallers and set ring timeout rules.' },
+    { title: '1. Managing Telephony & DIDs', desc: 'Assign incoming virtual numbers to leads and set ring timeout rules.' },
     { title: '2. Live Call Monitoring', desc: 'Track active conversations, whisper coaching, and warm transfer calls in real time.' },
     { title: '3. Automated Follow-Ups & WhatsApp', desc: 'Trigger smart WhatsApp follow-up messages automatically right after any call ends.' },
     { title: '4. AI Receptionist Setup', desc: 'Deploy 24/7 conversational AI agents to answer customer inquiries when your staff is off-duty.' },

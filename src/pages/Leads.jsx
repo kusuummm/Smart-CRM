@@ -397,7 +397,7 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
                 onChange={(e) => setTelecallerFilter(e.target.value)}
                 className="px-3 py-1.5 border border-dark-200 rounded-lg text-xs bg-white text-dark-800 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-dark-800 dark:border-dark-700 dark:text-white"
               >
-                <option value="">All Users</option>
+                <option value="">All Assigned Leads</option>
                 <option value="unassigned">Unassigned Leads</option>
                 {telecallers.map((tc) => (
                   <option key={tc._id} value={tc._id}>
@@ -438,7 +438,7 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
                   Follow-up Status
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-dark-500 uppercase tracking-wider dark:text-dark-400">
-                  Assigned User
+                  Assigned Lead
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-dark-500 uppercase tracking-wider dark:text-dark-400">
                   Created
@@ -716,7 +716,7 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
 
             <div>
               <label className="block text-xs font-bold text-dark-700 dark:text-dark-300 mb-1">
-                Assign Telecaller (Lead Owner)
+                Assign Lead Owner
               </label>
               <select
                 value={assignForm.telecallerId}
@@ -940,7 +940,7 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
           {isAdmin && (
             <div>
               <label className="block text-xs font-semibold text-dark-700 mb-1.5 dark:text-gray-300">
-                Assigned Telecaller (Admin Control)
+                Assigned Lead (Admin Control)
               </label>
               <select
                 value={form.telecallerId || ''}

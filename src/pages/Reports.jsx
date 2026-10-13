@@ -1167,7 +1167,7 @@ export default function Reports({ onNavigate }) {
       {activeTab === 'team' && (
         <div className="p-6 rounded-2xl bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 shadow-xs space-y-4">
           <h3 className="font-bold text-dark-900 dark:text-white text-base">
-            Telecaller Performance Breakdown
+            Lead Performance Breakdown
           </h3>
           <div className="overflow-x-auto">
             <table className="w-full text-xs text-left">

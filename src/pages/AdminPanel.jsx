@@ -872,7 +872,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                   {users.filter((u) => u.role === 'telecaller' || u.role === 'user').length}
                 </p>
                 <p className="text-xs text-dark-500 dark:text-dark-400 mt-0.5">
-                  Registered Telecallers
+                  Registered Leads
                 </p>
               </div>
             </div>
@@ -955,7 +955,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                     {unassignedList.length} Customer Account(s) Are Currently Unassigned
                   </h4>
                   <p className="text-xs text-blue-800 dark:text-blue-300 mt-0.5">
-                    These accounts have no assigned telecaller. Distribute them in one click.
+                    These accounts have no assigned lead. Distribute them in one click.
                   </p>
                 </div>
               </div>
@@ -1005,8 +1005,8 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                   <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">{onlineTelecallersCount} Online</span>
                 </div>
                 <div className="mt-4">
-                  <h4 className="font-bold text-base text-dark-900 dark:text-white">Telecaller Live Presence</h4>
-                  <p className="text-xs text-dark-500 dark:text-dark-400 mt-1">Live availability monitoring, online/offline status tracking, and assigned lead counts.</p>
+                  <h4 className="font-bold text-base text-dark-900 dark:text-white">Lead Live Presence</h4>
+                  <p className="text-xs text-dark-500 dark:text-dark-400 mt-1">Live availability monitoring, online/offline status tracking, and assigned contact counts.</p>
                 </div>
                 <div className="mt-4 pt-3 border-t border-dark-100 dark:border-dark-700/60 flex items-center justify-between text-xs font-semibold text-primary-600 dark:text-primary-400">
                   <span>Open Presence Page</span>
@@ -1103,7 +1103,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
         <div className="space-y-6">
           <PageHeader
             title="Users & Approvals"
-            subtitle="Review pending caller registrations, manage user permissions, and maintain telecaller roster."
+            subtitle="Review pending user registrations, manage permissions, and maintain lead roster."
             action={
               <div className="flex items-center gap-2.5">
                 <button
@@ -1142,13 +1142,13 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                   </div>
                   <div>
                     <h3 className="text-base font-extrabold text-dark-900 dark:text-white flex items-center gap-2">
-                      <span>Pending Caller Registrations</span>
+                      <span>Pending Lead Registrations</span>
                       <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-500 text-white">
                         {pendingUsers.length} waiting
                       </span>
                     </h3>
                     <p className="text-xs text-amber-800 dark:text-amber-200 font-medium mt-0.5">
-                      New callers cannot log in until you approve their account. Review each applicant below.
+                      New leads cannot log in until you approve their account. Review each applicant below.
                     </p>
                   </div>
                 </div>
@@ -1172,7 +1172,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                               {pendingUser.name}
                             </h4>
                             <span className="text-[11px] font-semibold text-amber-600 dark:text-amber-400">
-                              Applicant • Telecaller
+                              Applicant • Lead
                             </span>
                           </div>
                         </div>
@@ -1400,11 +1400,11 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                                 title={
                                   isSelf
                                     ? 'Your account (Administrator)'
-                                    : `Click to change role (currently ${u.role === 'admin' ? 'Administrator' : 'Telecaller'})`
+                                    : `Click to change role (currently ${u.role === 'admin' ? 'Administrator' : 'Lead'})`
                                 }
                               >
                                 {u.role === 'admin' ? <Shield size={13} /> : <User size={13} />}
-                                <span>{u.role === 'admin' ? 'Administrator' : 'Telecaller'}</span>
+                                <span>{u.role === 'admin' ? 'Administrator' : 'Lead'}</span>
                                 {!isSelf && <ArrowUpDown size={11} className="opacity-50 ml-0.5" />}
                               </button>
                             </td>
@@ -1417,7 +1417,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                                     type="button"
                                     onClick={() => openInspector(u)}
                                     className="inline-flex items-center gap-1.5 px-3 py-1 font-bold text-xs bg-purple-50 hover:bg-purple-100 text-purple-700 dark:bg-purple-950/50 dark:hover:bg-purple-900/60 dark:text-purple-300 rounded-lg border border-purple-200 dark:border-purple-800/60 shadow-2xs transition-all cursor-pointer hover:shadow-xs active:scale-95"
-                                    title="Click to inspect telecaller workload and reassign leads"
+                                    title="Click to inspect lead workload and reassign contacts"
                                   >
                                     <Activity size={13} className="text-purple-600 dark:text-purple-400" />
                                     <span>{u.assignedLeads || 0} Leads</span>
@@ -1507,7 +1507,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                                   <button
                                     onClick={() => handleApproveCaller(u._id, u.name)}
                                     className="inline-flex items-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-xs transition-colors cursor-pointer"
-                                    title="Approve telecaller account"
+                                    title="Approve lead account"
                                   >
                                     <Check size={14} /> Approve
                                   </button>
@@ -1615,8 +1615,8 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
       {(currentView === 'admin-agents' || currentView === 'agents') && (
         <div className="space-y-6">
           <PageHeader
-            title="Telecaller Live Presence"
-            subtitle="Real-time monitoring of telecaller availability, online/offline status, and assigned lead counts."
+            title="Lead Live Presence"
+            subtitle="Real-time monitoring of lead availability, online/offline status, and assigned contact counts."
             action={
               <div className="flex items-center gap-2.5">
                 <button
@@ -1632,7 +1632,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                   className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-sm font-semibold transition-colors shadow-sm"
                 >
                   <UserPlus size={17} />
-                  <span>Add Telecaller</span>
+                  <span>Add Lead</span>
                 </button>
               </div>
             }
@@ -1642,14 +1642,14 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <h3 className="text-lg font-bold text-dark-900 dark:text-white flex items-center gap-2">
-                <span>Telecaller Live Roster & Presence</span>
+                <span>Lead Live Roster & Presence</span>
                 <span className="px-2 py-0.5 rounded-full text-xs bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 font-semibold flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                   Live Presence
                 </span>
               </h3>
               <p className="text-xs text-dark-500 dark:text-dark-400">
-                Monitor online callers, workload distribution, and reassign leads in real-time
+                Monitor online leads, workload distribution, and reassign contacts in real-time
               </p>
             </div>
 
@@ -1664,7 +1664,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                     : 'bg-white dark:bg-dark-800 text-dark-600 dark:text-dark-300 border border-dark-200 dark:border-dark-700 hover:bg-dark-50'
                 }`}
               >
-                All Callers ({users.filter((u) => u.role === 'telecaller' || u.role === 'user').length})
+                All Leads ({users.filter((u) => u.role === 'telecaller' || u.role === 'user').length})
               </button>
               <button
                 type="button"
@@ -1706,15 +1706,15 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                 <Users size={32} className="mx-auto mb-3 opacity-40" />
                 <p className="font-semibold text-dark-700 dark:text-dark-300">
                   {agentGridFilter === 'online'
-                    ? 'No telecallers currently online'
+                    ? 'No leads currently online'
                     : agentGridFilter === 'offline'
-                    ? 'No telecallers currently offline'
-                    : 'No telecallers registered yet'}
+                    ? 'No leads currently offline'
+                    : 'No leads registered yet'}
                 </p>
                 <p className="text-xs text-dark-400 mt-1">
                   {agentGridFilter === 'online'
-                    ? 'Callers will appear as Online as soon as they log into their portal.'
-                    : 'Registered callers appear in this dashboard.'}
+                    ? 'Leads will appear as Online as soon as they log into their portal.'
+                    : 'Registered leads appear in this dashboard.'}
                 </p>
               </div>
             ) : (
@@ -1741,7 +1741,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                               type="button"
                               onClick={() => openInspector(agent)}
                               className="relative cursor-pointer group text-left"
-                              title="Click to inspect telecaller workload and portfolio"
+                              title="Click to inspect lead workload and portfolio"
                             >
                               <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 group-hover:scale-105 text-white font-bold text-base flex items-center justify-center shadow-xs transition-transform">
                                 {initials(agent.name)}
@@ -1758,7 +1758,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                                 type="button"
                                 onClick={() => openInspector(agent)}
                                 className="font-bold text-dark-900 dark:text-white text-base hover:text-primary-600 dark:hover:text-primary-400 cursor-pointer transition-colors text-left"
-                                title="Click to inspect telecaller workload and portfolio"
+                                title="Click to inspect lead workload and portfolio"
                               >
                                 {agent.name}
                               </button>
@@ -1769,7 +1769,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                                   className="text-xs font-semibold text-dark-500 hover:text-primary-600 dark:text-dark-400 dark:hover:text-primary-400 cursor-pointer hover:underline transition-colors"
                                   title="Click to change user role"
                                 >
-                                  Telecaller
+                                  Lead
                                 </button>
                                 <span className="text-dark-300">•</span>
                                 <button
@@ -2113,7 +2113,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
         <div className="space-y-6">
           <PageHeader
             title="Audit Activity Log"
-            subtitle="Real-time chronological communications and activity logs across all telecallers and channels."
+            subtitle="Real-time chronological communications and activity logs across all leads and channels."
             action={
               <button
                 onClick={() => loadData(true)}
@@ -2632,7 +2632,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
               <div className="hidden sm:flex items-center gap-1.5 text-xs text-dark-400">
                 <span>/</span>
                 <span className="font-medium text-dark-600 dark:text-dark-300">
-                  {inspectorUser ? inspectorUser.name : 'Telecaller Oversight'}
+                  {inspectorUser ? inspectorUser.name : 'Lead Oversight'}
                 </span>
                 {inspectorUser && (!inspectorUser.isApproved || inspectorUser.status === 'pending') && (
                   <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
@@ -2643,7 +2643,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
             </div>
 
             <div className="flex items-center gap-2">
-              {/* Telecaller Switcher Dropdown (includes all callers, active and pending) */}
+              {/* Lead Switcher Dropdown (includes all leads, active and pending) */}
               {users.filter((u) => u.role === 'telecaller' || u.role === 'user').length > 1 && (
                 <div className="relative">
                   <select
@@ -2654,7 +2654,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                     }}
                     className="px-3 py-2 bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 rounded-xl text-xs font-semibold text-dark-800 dark:text-dark-200 focus:outline-none focus:ring-2 focus:ring-primary-500 cursor-pointer shadow-2xs"
                   >
-                    <option value="" disabled>Switch Caller...</option>
+                    <option value="" disabled>Switch Lead...</option>
                     {users
                       .filter((u) => u.role === 'telecaller' || u.role === 'user')
                       .map((tc) => (
@@ -2666,7 +2666,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                 </div>
               )}
 
-              {/* Approve Caller Access Button (if pending) */}
+              {/* Approve Lead Access Button (if pending) */}
               {inspectorUser && (!inspectorUser.isApproved || inspectorUser.status === 'pending') && (
                 <button
                   type="button"
@@ -2674,7 +2674,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                   className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-colors cursor-pointer shadow-xs"
                 >
                   <Check size={14} />
-                  <span>Approve Caller Access</span>
+                  <span>Approve Lead Access</span>
                 </button>
               )}
 
@@ -2720,7 +2720,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                         </span>
                       </h4>
                       <p className="text-xs text-amber-800 dark:text-amber-300 mt-1 leading-relaxed">
-                        This telecaller is assigned to the CRM but cannot log in or access caller tools until you approve their account. You can verify their personal details below and grant system access.
+                        This lead is assigned to the CRM but cannot log in or access tools until you approve their account. You can verify their personal details below and grant system access.
                       </p>
                     </div>
                   </div>
@@ -2766,7 +2766,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                         {inspectorUser.name}
                       </h3>
                       <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-primary-100 text-primary-700 dark:bg-primary-950/60 dark:text-primary-300">
-                        Telecaller
+                        Lead
                       </span>
                       {(!inspectorUser.isApproved || inspectorUser.status === 'pending') ? (
                         <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
@@ -3142,7 +3142,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                     <div>
                       <p className="font-bold">Customer & Client Privacy Isolation Policy Active</p>
                       <p className="mt-0.5 text-blue-800 dark:text-blue-300 leading-relaxed">
-                        Administrators have full executive visibility into productivity timelines, outreach graphs, and conversion analytics. In accordance with strict caller isolation, individual customer/client contact records, phone numbers, and call logs assigned to <strong>{inspectorUser.name}</strong> remain strictly private and accessible only within the telecaller portal.
+                        Administrators have full executive visibility into productivity timelines, outreach graphs, and conversion analytics. In accordance with strict caller isolation, individual customer/client contact records, phone numbers, and call logs assigned to <strong>{inspectorUser.name}</strong> remain strictly private and accessible only within the lead portal.
                       </p>
                     </div>
                   </div>
@@ -3155,7 +3155,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                       <div>
                         <h4 className="text-base font-bold text-dark-900 dark:text-white flex items-center gap-2">
                           <User size={18} className="text-primary-600" />
-                          <span>Caller Personal Details & Credentials</span>
+                          <span>Lead Personal Details & Credentials</span>
                         </h4>
                         <p className="text-xs text-dark-500 dark:text-dark-400 mt-0.5">
                           Account identity, authentication status, and personal contact parameters
@@ -3219,16 +3219,16 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                         ) : (
                           <span className="text-sm text-dark-400 italic mt-1 block">Not configured</span>
                         )}
-                        <span className="text-[11px] text-dark-400 mt-1 block">Direct telecaller contact</span>
+                        <span className="text-[11px] text-dark-400 mt-1 block">Direct lead contact</span>
                       </div>
 
                       <div className="p-4 rounded-xl bg-dark-50/60 dark:bg-dark-900/40 border border-dark-100 dark:border-dark-700/60">
                         <span className="text-xs text-dark-400 font-medium block">System Role</span>
                         <span className="font-bold text-sm text-dark-900 dark:text-white mt-1 block flex items-center gap-1.5">
                           <User size={14} className="text-primary-600" />
-                          <span>Telecaller</span>
+                          <span>Lead</span>
                         </span>
-                        <span className="text-[11px] text-dark-400 mt-1 block">Restricted caller panel access</span>
+                        <span className="text-[11px] text-dark-400 mt-1 block">Restricted lead panel access</span>
                       </div>
 
                       <div className="p-4 rounded-xl bg-dark-50/60 dark:bg-dark-900/40 border border-dark-100 dark:border-dark-700/60">
@@ -3304,7 +3304,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                         Client Records Confidentiality & Privacy Guarantee
                       </p>
                       <p className="leading-relaxed text-emerald-800 dark:text-emerald-300">
-                        In accordance with Smart CRM security design, individual customer/client names, phone numbers, notes, and call recordings assigned to <strong>{inspectorUser.name}</strong> are strictly private and isolated to this telecaller. Administrators have full access to caller personal credentials, approval status, and performance work report graphs, but not caller client records.
+                        In accordance with Smart CRM security design, individual customer/client names, phone numbers, notes, and call recordings assigned to <strong>{inspectorUser.name}</strong> are strictly private and isolated to this lead. Administrators have full access to lead personal credentials, approval status, and performance work report graphs, but not lead client records.
                       </p>
                     </div>
                   </div>
@@ -3318,13 +3318,13 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                       <span>Quick Workload Rebalancer & Account Transfer</span>
                     </h4>
                     <p className="text-xs text-dark-500 dark:text-dark-400 mt-1">
-                      Reassign all {inspectorUser.assignedCustomers || 0} customer accounts and active leads from {inspectorUser.name} to another active telecaller.
+                      Reassign all {inspectorUser.assignedCustomers || 0} customer accounts and active contacts from {inspectorUser.name} to another active lead.
                     </p>
 
                     <div className="mt-5 p-5 rounded-xl bg-dark-50 dark:bg-dark-900/40 border border-dark-100 dark:border-dark-700/60 space-y-4">
                       <div>
                         <label className="block text-xs font-bold text-dark-700 dark:text-dark-300 mb-1.5">
-                          Target Telecaller (Transfer all accounts to):
+                          Target Lead (Transfer all accounts to):
                         </label>
                         <select
                           value={transferForm.toUserId}
@@ -3336,7 +3336,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                           }
                           className="w-full px-3.5 py-2.5 bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 rounded-xl text-xs sm:text-sm text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 font-medium"
                         >
-                          <option value="">Select target active telecaller...</option>
+                          <option value="">Select target active lead...</option>
                           {telecallers
                             .filter((u) => u._id !== inspectorUser._id)
                             .map((u) => (
@@ -3352,7 +3352,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                           type="button"
                           onClick={async () => {
                             if (!transferForm.toUserId) {
-                              addToast('Please select a target telecaller', 'error');
+                              addToast('Please select a target lead', 'error');
                               return;
                             }
                             await handleExecuteTransfer();
@@ -3383,9 +3383,9 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
             /* Fallback if no caller is selected */
             <div className="p-12 text-center bg-white dark:bg-dark-800 rounded-2xl border border-dark-200 dark:border-dark-700">
               <Users size={32} className="text-dark-400 mx-auto mb-2 opacity-50" />
-              <h4 className="font-bold text-dark-900 dark:text-white text-base">Select a Telecaller to Inspect</h4>
+              <h4 className="font-bold text-dark-900 dark:text-white text-base">Select a Lead to Inspect</h4>
               <p className="text-xs text-dark-500 dark:text-dark-400 mt-1 max-w-sm mx-auto">
-                Choose a caller below to view their personal details, approval status, and 7-day outreach report graph.
+                Choose a lead below to view their personal details, approval status, and 7-day outreach report graph.
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-2xl mx-auto mt-6">
                 {users
@@ -3530,7 +3530,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                       </span>
                     </div>
                     <p className="text-xs sm:text-sm text-dark-600 dark:text-dark-300 mt-1 max-w-2xl leading-relaxed">
-                      Connected to one.com mail relay on Port 587 with STARTTLS encryption. Dispatches welcome emails, verification links, telecaller notices, and executive reports.
+                      Connected to one.com mail relay on Port 587 with STARTTLS encryption. Dispatches welcome emails, verification links, lead notices, and executive reports.
                     </p>
                   </div>
                 </div>
@@ -3794,7 +3794,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                           Automated Follow-up Tasks & Reminders
                         </p>
                         <p className="text-[11px] text-dark-500">
-                          Check scheduled reminder alerts and follow-up activities assigned to telecallers.
+                          Check scheduled reminder alerts and follow-up activities assigned to leads.
                         </p>
                       </div>
                       <ChevronRight size={16} className="text-dark-400 group-hover:text-green-600 group-hover:translate-x-0.5 transition-all" />
@@ -3941,10 +3941,10 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                     { label: 'Sales Leads', count: systemOverview?.metrics?.totalLeads || 0, target: 'leads', desc: 'Prospect pipeline & sales opportunities' },
                     { label: 'Follow-up Tasks', count: systemOverview?.metrics?.totalFollowUps || 0, target: 'todos', desc: 'Pending & scheduled caller actions' },
                     { label: 'Event Reminders', count: systemOverview?.metrics?.totalEvents || 0, target: 'events', desc: 'Calendar meetings & demos scheduled' },
-                    { label: 'Call History Logs', count: systemOverview?.metrics?.totalCalls || 0, target: 'call-history', desc: 'Telecaller outbound & inbound call records' },
+                    { label: 'Call History Logs', count: systemOverview?.metrics?.totalCalls || 0, target: 'call-history', desc: 'Lead outbound & inbound call records' },
                     { label: 'WhatsApp Logs', count: systemOverview?.metrics?.totalWhatsApp || 0, target: 'whatsapp', desc: 'Direct message threads & template logs' },
                     { label: 'Emails Dispatched', count: systemOverview?.metrics?.totalEmails || 0, target: 'emails', desc: 'Outbound relay messages sent via SMTP' },
-                    { label: 'Team User Accounts', count: systemOverview?.metrics?.totalUsers || 0, target: 'admin-users', desc: 'Registered admins & active telecallers' },
+                    { label: 'Team User Accounts', count: systemOverview?.metrics?.totalUsers || 0, target: 'admin-users', desc: 'Registered admins & active leads' },
                   ].map((item) => (
                     <button
                       key={item.label}

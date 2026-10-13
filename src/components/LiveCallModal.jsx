@@ -57,7 +57,7 @@ export default function LiveCallModal({ isOpen, onClose, user }) {
                 Live Call Monitoring Dashboard
               </h2>
               <p className="text-xs text-dark-500 dark:text-dark-400">
-                Real-time active call streams, telecaller line statuses & queue
+                Real-time active call streams, lead line statuses & queue
               </p>
             </div>
           </div>

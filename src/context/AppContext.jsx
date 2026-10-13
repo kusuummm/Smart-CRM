@@ -17,7 +17,7 @@ const translations = {
     adminPanel: 'Admin Panel',
     settings: 'Settings',
     myAccount: 'My Account',
-    telecallerDashboard: 'User Panel',
+    telecallerDashboard: 'Lead Panel',
     userPanel: 'User Hub',
     userHub: 'User Hub',
     eventUpdates: 'Event Updates',
@@ -62,7 +62,7 @@ const translations = {
     demoCredentials: 'Demo Credentials:',
 
     // Roles & Panel
-    telecaller: 'User',
+    telecaller: 'Lead',
 
     // Settings
     appearance: 'Appearance',
@@ -118,7 +118,7 @@ const translations = {
     companyName: 'Company Name',
     leadSource: 'Lead Source',
     interestedProduct: 'Interested Product',
-    assignedTelecaller: 'Assigned User',
+    assignedTelecaller: 'Assigned Lead',
     deleteCustomer: 'Delete Customer',
     areYouSureDelete: 'Are you sure you want to delete "{name}"? This action cannot be undone.',
     update: 'Update',
@@ -160,7 +160,7 @@ const translations = {
     adminPanel: 'एडमिन पैनल',
     settings: 'सेटिंग्स',
     myAccount: 'मेरा अकाउंट',
-    telecallerDashboard: 'यूज़र हब',
+    telecallerDashboard: 'लीड पैनल',
     userPanel: 'यूज़र हब',
     userHub: 'यूज़र हब',
     eventUpdates: 'इवेंट अपडेट्स',
@@ -205,7 +205,7 @@ const translations = {
     demoCredentials: 'डेमो क्रेडेंशियल:',
 
     // Roles & Panel
-    telecaller: 'यूज़र',
+    telecaller: 'लीड',
 
     // Settings
     appearance: 'दिखावट',
@@ -261,7 +261,7 @@ const translations = {
     companyName: 'कंपनी का नाम',
     leadSource: 'लीड सोर्स',
     interestedProduct: 'इंटरेस्टेड प्रोडक्ट',
-    assignedTelecaller: 'असाइन यूज़र',
+    assignedTelecaller: 'असाइन लीड',
     deleteCustomer: 'ग्राहक हटाएं',
     areYouSureDelete: 'क्या आप "{name}" को हटाना चाहते हैं? यह कार्रवाई पूर्ववत नहीं की जा सकती।',
     update: 'अपडेट करें',

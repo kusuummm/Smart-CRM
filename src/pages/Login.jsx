@@ -253,7 +253,7 @@ export default function Login({ isAddingAccount = false, onCancelAdd }) {
                   {authMode === 'login'
                     ? 'Customer Relationship Management'
                     : authMode === 'register'
-                    ? 'Caller Registration'
+                    ? 'Lead Registration'
                     : 'Account Recovery'}
                 </p>
               </div>
@@ -382,13 +382,13 @@ export default function Login({ isAddingAccount = false, onCancelAdd }) {
               {/* Toggle to Register */}
               <div className="pt-2 text-center border-t border-dark-100 dark:border-dark-800">
                 <p className="text-xs text-dark-600 dark:text-dark-400">
-                  New Caller?{' '}
+                  New User?{' '}
                   <button
                     type="button"
                     onClick={() => resetAllModes('register')}
                     className="font-bold text-primary-600 hover:text-primary-700 dark:text-primary-400 hover:underline cursor-pointer"
                   >
-                    Register Caller Account
+                    Register Lead Account
                   </button>
                 </p>
               </div>
@@ -399,9 +399,9 @@ export default function Login({ isAddingAccount = false, onCancelAdd }) {
           {authMode === 'register' && (
             <form onSubmit={handleRegisterSubmit} className="space-y-3.5">
               <div className="mb-2">
-                <h2 className="text-lg font-bold text-dark-900 dark:text-white">Caller Registration</h2>
+                <h2 className="text-lg font-bold text-dark-900 dark:text-white">Lead Registration</h2>
                 <p className="text-xs text-dark-500 dark:text-dark-400">
-                  Create your caller account with email & password (requires admin approval)
+                  Create your lead account with email &amp; password (requires admin approval)
                 </p>
               </div>
 
@@ -525,7 +525,7 @@ export default function Login({ isAddingAccount = false, onCancelAdd }) {
                 className="w-full mt-2 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl font-semibold text-sm shadow-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
               >
                 {loading ? <Loader2 size={16} className="animate-spin" /> : <UserPlus size={16} />}
-                {loading ? 'Submitting Registration...' : 'Register Caller Account'}
+                {loading ? 'Submitting Registration...' : 'Register Lead Account'}
               </button>
 
               <div className="pt-2 text-center">

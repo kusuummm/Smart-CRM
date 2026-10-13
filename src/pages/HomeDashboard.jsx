@@ -270,7 +270,7 @@ export default function HomeDashboard({
               className="px-3.5 py-2 bg-white dark:bg-dark-800 border border-dark-200/90 dark:border-dark-700 rounded-xl font-medium text-dark-700 dark:text-dark-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 shadow-2xs hover:border-dark-300 transition-colors cursor-pointer"
             >
               <option value="All Teams">Select team</option>
-              <option value="Telecaller Team">Telecaller Team</option>
+              <option value="Lead Team">Lead Team</option>
               <option value="Sales Line">Sales Line</option>
               <option value="Support Line">Support Line</option>
               <option value="__manage__">Manage Teams →</option>
@@ -503,7 +503,7 @@ export default function HomeDashboard({
             <table className="w-full text-xs text-left">
               <thead>
                 <tr className="border-b border-dark-200 dark:border-dark-700 text-dark-400 uppercase tracking-wider font-semibold">
-                  <th className="py-2.5">Staff / Telecaller</th>
+                  <th className="py-2.5">Staff / Lead</th>
                   <th className="py-2.5">Outgoing</th>
                   <th className="py-2.5">Incoming</th>
                   <th className="py-2.5">Connected</th>

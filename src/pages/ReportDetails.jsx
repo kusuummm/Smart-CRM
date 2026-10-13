@@ -420,7 +420,7 @@ export default function ReportDetails({
             {staffName}
           </p>
           <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
-            Active Telecaller
+            Active Lead
           </span>
         </div>
       </div>

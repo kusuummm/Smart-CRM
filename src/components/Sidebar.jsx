@@ -69,9 +69,9 @@ export default function Sidebar({
     { type: 'header', label: 'ADMIN CONTROL CENTER' },
     { id: 'admin-panel', label: 'Dashboard Overview', icon: Shield },
     { id: 'admin-users', label: 'Users & Approvals', icon: UserCheck },
-    { id: 'admin-agents', label: 'Telecaller Presence', icon: Activity },
+    { id: 'admin-agents', label: 'Lead Presence', icon: Activity },
     { id: 'admin-workload', label: 'Workload Balancer', icon: ArrowRightLeft },
-    { id: 'admin-reports', label: 'Caller Progress Reports', icon: BarChart2 },
+    { id: 'admin-reports', label: 'Lead Progress Reports', icon: BarChart2 },
     { id: 'admin-audit', label: 'Audit Activity Log', icon: Clock },
     { id: 'admin-system', label: 'System Diagnostics', icon: Database },
 
