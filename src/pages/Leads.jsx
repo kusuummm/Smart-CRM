@@ -18,6 +18,7 @@ import {
   Video,
   UserPlus,
   FileSpreadsheet,
+  ArrowRightLeft,
 } from 'lucide-react';
 import { PageHeader } from '../components/Common';
 import Modal from '../components/Modal';
@@ -120,12 +121,16 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
     loadLeads();
   }, [loadLeads]);
 
+  // Quick reassign lead state
+  const [reassignTargetLead, setReassignTargetLead] = useState(null);
+  const [reassignSelectedTcId, setReassignSelectedTcId] = useState('');
+  const [isReassigning, setIsReassigning] = useState(false);
+
   useEffect(() => {
-    if (!isAdmin) return;
     getUsers({ role: 'telecaller' })
       .then((data) => setTelecallers(data.users || []))
       .catch(() => {});
-  }, [isAdmin]);
+  }, []);
 
   // Load available customers when Admin opens the assign modal
   const openAssignCustomerModal = async () => {
@@ -222,7 +227,7 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
     setSaving(true);
     try {
       const payload = { status: form.status, remark: form.remark };
-      if (isAdmin && form.telecallerId) {
+      if (form.telecallerId) {
         payload.telecallerId = form.telecallerId;
       }
       const data = await updateLeadStatus(editingLead._id, payload);
@@ -274,6 +279,33 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
       addToast(err.response?.data?.message || 'Failed to assign customer to lead', 'error');
     } finally {
       setIsAssigning(false);
+    }
+  };
+
+  // Reassign Lead handler
+  const handleConfirmReassignLead = async () => {
+    if (!reassignTargetLead) return;
+    const selectedTc = telecallers.find((tc) => String(tc._id) === String(reassignSelectedTcId));
+    const targetLabel = selectedTc ? selectedTc.name : 'Unassigned';
+
+    setIsReassigning(true);
+    try {
+      const payload = {
+        telecallerId: reassignSelectedTcId || null,
+        remark: `Assigned lead changed to ${targetLabel} by ${user?.name || 'User'}`,
+      };
+
+      const res = await updateLeadStatus(reassignTargetLead._id, payload);
+      setLeads((prev) =>
+        prev.map((l) => (l._id === reassignTargetLead._id ? res.lead : l))
+      );
+      addToast(`Customer lead changed to ${targetLabel}!`, 'success');
+      setReassignTargetLead(null);
+      loadLeads();
+    } catch (err) {
+      addToast(err.response?.data?.message || 'Failed to change customer lead', 'error');
+    } finally {
+      setIsReassigning(false);
     }
   };
 
@@ -625,33 +657,46 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
                       </td>
 
                       <td className="px-4 py-3 text-xs">
-                        {tc ? (
+                        <div className="flex items-center gap-1.5">
+                          {tc ? (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const nextFilter = telecallerFilter === String(tc._id) ? '' : String(tc._id);
+                                setTelecallerFilter(nextFilter);
+                              }}
+                              className="text-primary-600 hover:text-primary-700 hover:underline font-semibold cursor-pointer text-left"
+                              title={`Click to filter leads assigned to ${tc.name}`}
+                            >
+                              {tc.name}
+                            </button>
+                          ) : lead.telecallerId ? (
+                            <span className="text-dark-600 dark:text-dark-300">Assigned</span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const nextFilter = telecallerFilter === 'unassigned' ? '' : 'unassigned';
+                                setTelecallerFilter(nextFilter);
+                              }}
+                              className="text-amber-600 hover:text-amber-700 hover:underline font-bold cursor-pointer"
+                              title="Click to filter unassigned leads"
+                            >
+                              Unassigned
+                            </button>
+                          )}
                           <button
                             type="button"
                             onClick={() => {
-                              const nextFilter = telecallerFilter === String(tc._id) ? '' : String(tc._id);
-                              setTelecallerFilter(nextFilter);
+                              setReassignTargetLead(lead);
+                              setReassignSelectedTcId(lead.telecallerId ? String(lead.telecallerId) : '');
                             }}
-                            className="text-primary-600 hover:text-primary-700 hover:underline font-semibold cursor-pointer text-left"
-                            title={`Click to filter leads assigned to ${tc.name}`}
+                            className="p-1 rounded hover:bg-dark-100 dark:hover:bg-dark-700 text-dark-400 hover:text-primary-600 transition-colors cursor-pointer"
+                            title="Change Customer Lead"
                           >
-                            {tc.name}
+                            <ArrowRightLeft size={13} />
                           </button>
-                        ) : lead.telecallerId ? (
-                          <span className="text-dark-600 dark:text-dark-300">Assigned</span>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const nextFilter = telecallerFilter === 'unassigned' ? '' : 'unassigned';
-                              setTelecallerFilter(nextFilter);
-                            }}
-                            className="text-amber-600 hover:text-amber-700 hover:underline font-bold cursor-pointer"
-                            title="Click to filter unassigned leads"
-                          >
-                            Unassigned
-                          </button>
-                        )}
+                        </div>
                       </td>
                       <td className="px-4 py-3 text-xs text-dark-500 dark:text-dark-400">
                         {new Date(lead.createdAt).toLocaleDateString()}
@@ -1064,25 +1109,23 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
             </select>
           </div>
 
-          {isAdmin && (
-            <div>
-              <label className="block text-xs font-semibold text-dark-700 mb-1.5 dark:text-gray-300">
-                Assigned Lead (Admin Control)
-              </label>
-              <select
-                value={form.telecallerId || ''}
-                onChange={(e) => setForm({ ...form, telecallerId: e.target.value })}
-                className="w-full px-3 py-2 border border-dark-200 dark:border-dark-700 rounded-lg text-sm bg-white dark:bg-dark-800 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-              >
-                <option value="">Keep Current / Unassigned</option>
-                {telecallers.map((tc) => (
-                  <option key={tc._id} value={tc._id}>
-                    {tc.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
+          <div>
+            <label className="block text-xs font-semibold text-dark-700 mb-1.5 dark:text-gray-300">
+              Assigned Lead
+            </label>
+            <select
+              value={form.telecallerId || ''}
+              onChange={(e) => setForm({ ...form, telecallerId: e.target.value })}
+              className="w-full px-3 py-2 border border-dark-200 dark:border-dark-700 rounded-lg text-sm bg-white dark:bg-dark-800 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 font-medium"
+            >
+              <option value="">Keep Current / Unassigned</option>
+              {telecallers.map((tc) => (
+                <option key={tc._id} value={tc._id}>
+                  {tc.name}
+                </option>
+              ))}
+            </select>
+          </div>
 
           <div>
             <label className="block text-xs font-semibold text-dark-700 mb-1.5 dark:text-gray-300">Follow-up Remarks / Notes *</label>
@@ -1108,6 +1151,57 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
               className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 transition-colors"
             >
               {saving ? 'Saving & Sending Emails...' : 'Update Follow-up Status'}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* QUICK REASSIGN LEAD MODAL */}
+      <Modal
+        isOpen={Boolean(reassignTargetLead)}
+        onClose={() => setReassignTargetLead(null)}
+        title={`Change Lead for ${reassignTargetLead?.customerName || 'Customer'}`}
+        size="sm"
+      >
+        <div className="space-y-4">
+          <p className="text-xs text-dark-600 dark:text-dark-300">
+            Reassign this customer to an active lead/agent. Follow-up history and email notifications will be updated automatically.
+          </p>
+
+          <div>
+            <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1.5">
+              Select New Assigned Lead
+            </label>
+            <select
+              value={reassignSelectedTcId}
+              onChange={(e) => setReassignSelectedTcId(e.target.value)}
+              className="w-full px-3 py-2 border border-dark-200 dark:border-dark-700 rounded-lg text-sm bg-white dark:bg-dark-800 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 font-medium"
+            >
+              <option value="">⚠️ Set to Unassigned (Admin Pool)</option>
+              {telecallers.map((tc) => (
+                <option key={tc._id} value={tc._id}>
+                  {tc.name} {tc.email ? `(${tc.email})` : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-3 border-t border-dark-200 dark:border-dark-700">
+            <button
+              type="button"
+              onClick={() => setReassignTargetLead(null)}
+              className="px-4 py-2 text-sm font-medium text-dark-700 dark:text-dark-300 hover:bg-dark-100 dark:hover:bg-dark-700 rounded-lg transition-colors cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleConfirmReassignLead}
+              disabled={isReassigning}
+              className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-bold text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors cursor-pointer disabled:opacity-50 shadow-xs"
+            >
+              {isReassigning ? <Loader2 size={15} className="animate-spin" /> : <ArrowRightLeft size={15} />}
+              <span>{isReassigning ? 'Reassigning...' : 'Confirm Change'}</span>
             </button>
           </div>
         </div>

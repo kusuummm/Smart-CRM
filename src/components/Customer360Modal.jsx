@@ -34,6 +34,8 @@ import {
   ArrowRight,
   Shield,
   Send,
+  Loader2,
+  ArrowRightLeft,
 } from 'lucide-react';
 import { audioEngine, formatSeconds, generateWaveform } from '../utils/audioPlayer';
 import { useToast } from './Toast';
@@ -43,7 +45,8 @@ import { getCustomers, updateCustomer } from '../api/customers';
 import { getCalls, createCall, deleteCall } from '../api/callHistory';
 import { getFollowUps, createFollowUp, updateFollowUp, deleteFollowUp } from '../api/followups';
 import { getNotes, createNote, deleteNote } from '../api/notes';
-import { getLeads, updateLeadStatus } from '../api/leads';
+import { getLeads, updateLeadStatus, createLead } from '../api/leads';
+import { getUsers } from '../api/users';
 
 const FOLLOW_UP_STATUS_OPTIONS = [
   { id: 'new', label: 'New Follow-up', icon: '🌱', color: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300' },
@@ -83,6 +86,9 @@ export default function Customer360Modal({ isOpen, onClose, customer, onStartCal
 
   const [copiedPhone, setCopiedPhone] = useState(false);
   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
+  const [leadDropdownOpen, setLeadDropdownOpen] = useState(false);
+  const [availableLeads, setAvailableLeads] = useState([]);
+  const [reassigningLead, setReassigningLead] = useState(false);
 
   // Calls list & Audio playback
   const [calls, setCalls] = useState([]);
@@ -115,7 +121,18 @@ export default function Customer360Modal({ isOpen, onClose, customer, onStartCal
     city: '',
     state: '',
     product: '',
+    telecallerId: '',
+    assignedLead: '',
   });
+
+  // Fetch available telecallers / leads when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      getUsers({ role: 'telecaller' })
+        .then((data) => setAvailableLeads(data.users || []))
+        .catch(() => {});
+    }
+  }, [isOpen]);
 
   // Stop audio on unmount or modal close
   useEffect(() => {
@@ -191,6 +208,8 @@ export default function Customer360Modal({ isOpen, onClose, customer, onStartCal
       city: initialProfile.city,
       state: initialProfile.state,
       product: initialProfile.product,
+      telecallerId: customer.telecallerId?._id || customer.telecallerId || '',
+      assignedLead: initialProfile.assignedLead,
     });
 
     // 1. Fetch Calls for this customer
@@ -230,6 +249,8 @@ export default function Customer360Modal({ isOpen, onClose, customer, onStartCal
               city: match.city || prev.city,
               state: match.state || prev.state,
               product: match.interestedProduct || prev.product,
+              telecallerId: match.telecallerId || '',
+              assignedLead: match.assignedTelecaller || prev.assignedLead,
             });
           }
         })
@@ -480,19 +501,87 @@ export default function Customer360Modal({ isOpen, onClose, customer, onStartCal
     }
   };
 
+  // Change / Reassign Customer Lead Handler
+  const handleReassignCustomerLead = async (newTelecallerId, newTelecallerName) => {
+    setLeadDropdownOpen(false);
+    if (profile.assignedLead === newTelecallerName) return;
+
+    setReassigningLead(true);
+    try {
+      // 1. Update Customer record if customerId is present
+      if (profile.id && profile.id.length === 24) {
+        await updateCustomer(profile.id, {
+          telecallerId: newTelecallerId || null,
+          assignedTelecaller: newTelecallerName,
+        });
+      }
+
+      // 2. Update Lead record if leadId is present
+      if (profile.leadId && profile.leadId.length === 24) {
+        await updateLeadStatus(profile.leadId, {
+          telecallerId: newTelecallerId || null,
+          status: profile.status,
+          remark: `Assigned lead changed to ${newTelecallerName} by ${user?.name || 'User'}`,
+        });
+      } else if (profile.id && profile.id.length === 24) {
+        // If not in lead pipeline yet, register lead with assigned caller
+        try {
+          const newLeadRes = await createLead({
+            customerId: profile.id,
+            telecallerId: newTelecallerId || null,
+            status: profile.status || 'new',
+            remark: `Assigned lead set to ${newTelecallerName}`,
+          });
+          if (newLeadRes?.lead?._id) {
+            setProfile((prev) => ({ ...prev, leadId: newLeadRes.lead._id }));
+          }
+        } catch {}
+      }
+
+      setProfile((prev) => ({
+        ...prev,
+        assignedLead: newTelecallerName,
+      }));
+
+      addToast(`Customer lead changed to ${newTelecallerName}!`, 'success');
+      onUpdateContact?.({
+        ...customer,
+        telecallerId: newTelecallerId || null,
+        assignedTelecaller: newTelecallerName,
+      });
+    } catch (err) {
+      addToast(err.response?.data?.message || 'Failed to change customer lead', 'error');
+    } finally {
+      setReassigningLead(false);
+    }
+  };
+
   // Save Customer Details
   const handleSaveDetails = async (e) => {
     e.preventDefault();
     try {
       if (profile.id && profile.id.length === 24) {
-        await updateCustomer(profile.id, {
+        const payload = {
           name: editForm.name,
           email: editForm.email,
           company: editForm.company,
           city: editForm.city,
           state: editForm.state,
           interestedProduct: editForm.product,
-        });
+        };
+        if (editForm.telecallerId !== undefined) {
+          payload.telecallerId = editForm.telecallerId || null;
+          payload.assignedTelecaller = editForm.assignedLead;
+        }
+        await updateCustomer(profile.id, payload);
+
+        if (profile.leadId && profile.leadId.length === 24 && editForm.telecallerId !== undefined) {
+          await updateLeadStatus(profile.leadId, {
+            telecallerId: editForm.telecallerId || null,
+            status: profile.status,
+            remark: `Assigned lead changed to ${editForm.assignedLead} by ${user?.name || 'User'}`,
+          }).catch(() => {});
+        }
       }
       setProfile((prev) => ({
         ...prev,
@@ -502,6 +591,7 @@ export default function Customer360Modal({ isOpen, onClose, customer, onStartCal
         city: editForm.city,
         state: editForm.state,
         product: editForm.product,
+        assignedLead: editForm.assignedLead || prev.assignedLead,
       }));
       setIsEditingDetails(false);
       addToast('Customer details saved successfully', 'success');
@@ -767,9 +857,79 @@ export default function Customer360Modal({ isOpen, onClose, customer, onStartCal
                   </div>
                 )}
 
-                <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-dark-100 dark:bg-dark-800 text-[11px] font-semibold text-dark-600 dark:text-dark-300">
-                  <UserCheck size={12} className="text-blue-600" />
-                  <span>Assigned Lead: {profile.assignedLead}</span>
+                {/* Interactive Assigned Lead Dropdown Trigger */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-dark-100 hover:bg-dark-200 dark:bg-dark-800 dark:hover:bg-dark-700 text-[11px] font-semibold text-dark-700 dark:text-dark-200 border border-dark-200 dark:border-dark-700 transition-all cursor-pointer group shadow-2xs"
+                    title="Click to change customer lead"
+                  >
+                    <UserCheck size={12} className="text-blue-600 group-hover:scale-110 transition-transform" />
+                    <span>
+                      Assigned Lead: <strong className="text-dark-900 dark:text-white ml-0.5">{profile.assignedLead || 'Unassigned'}</strong>
+                    </span>
+                    <ChevronDown size={11} className="opacity-70 ml-0.5" />
+                  </button>
+
+                  {/* Lead Dropdown Menu */}
+                  {leadDropdownOpen && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-40"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setLeadDropdownOpen(false);
+                        }}
+                      />
+                      <div className="absolute left-0 mt-2 w-64 rounded-2xl bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 shadow-2xl z-50 p-1.5 space-y-1 animate-in fade-in zoom-in-95">
+                        <div className="px-3 py-1.5 text-[10px] font-bold text-dark-400 uppercase tracking-wider border-b border-dark-100 dark:border-dark-700/60 flex items-center justify-between">
+                          <span>Change Customer Lead</span>
+                          {reassigningLead && <Loader2 size={12} className="animate-spin text-primary-600" />}
+                        </div>
+                        <div className="max-h-60 overflow-y-auto space-y-1 py-1">
+                          <button
+                            type="button"
+                            disabled={reassigningLead}
+                            onClick={() => handleReassignCustomerLead(null, 'Unassigned')}
+                            className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-left transition-colors cursor-pointer ${
+                              profile.assignedLead === 'Unassigned'
+                                ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 font-bold'
+                                : 'text-dark-700 dark:text-dark-200 hover:bg-dark-50 dark:hover:bg-dark-700'
+                            }`}
+                          >
+                            <span className="flex items-center gap-2">
+                              <span className="w-2 h-2 rounded-full bg-amber-400" />
+                              <span>Unassigned (Pool)</span>
+                            </span>
+                            {profile.assignedLead === 'Unassigned' && <Check size={14} className="text-amber-600" />}
+                          </button>
+                          {availableLeads.map((tc) => (
+                            <button
+                              key={tc._id}
+                              type="button"
+                              disabled={reassigningLead}
+                              onClick={() => handleReassignCustomerLead(tc._id, tc.name)}
+                              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-left transition-colors cursor-pointer ${
+                                profile.assignedLead === tc.name
+                                  ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-300 font-bold'
+                                  : 'text-dark-700 dark:text-dark-200 hover:bg-dark-50 dark:hover:bg-dark-700'
+                              }`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <span className={`w-2 h-2 rounded-full ${tc.isOnline ? 'bg-emerald-500' : 'bg-dark-300'}`} />
+                                <div className="truncate">
+                                  <div className="font-bold truncate">{tc.name}</div>
+                                  {tc.email && <div className="text-[10px] text-dark-400 font-normal truncate">{tc.email}</div>}
+                                </div>
+                              </div>
+                              {profile.assignedLead === tc.name && <Check size={14} className="text-blue-600" />}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -1394,6 +1554,31 @@ export default function Customer360Modal({ isOpen, onClose, customer, onStartCal
                         className="w-full px-3 py-2 text-xs rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 text-dark-900 dark:text-white"
                       />
                     </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1">
+                        Assigned Lead
+                      </label>
+                      <select
+                        value={editForm.telecallerId || ''}
+                        onChange={(e) => {
+                          const tc = availableLeads.find((l) => String(l._id) === String(e.target.value));
+                          setEditForm({
+                            ...editForm,
+                            telecallerId: e.target.value,
+                            assignedLead: tc ? tc.name : 'Unassigned',
+                          });
+                        }}
+                        className="w-full px-3 py-2 text-xs rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 text-dark-900 dark:text-white font-medium"
+                      >
+                        <option value="">Unassigned (Admin Pool)</option>
+                        {availableLeads.map((tc) => (
+                          <option key={tc._id} value={tc._id}>
+                            {tc.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
 
                   <div className="flex justify-end gap-2 pt-2">
@@ -1478,9 +1663,18 @@ export default function Customer360Modal({ isOpen, onClose, customer, onStartCal
                   </div>
 
                   <div className="p-4 rounded-xl border border-dark-200 dark:border-dark-700 bg-dark-50/50 dark:bg-dark-800/40 space-y-1">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-dark-400">
-                      Assigned Lead (Caller)
-                    </span>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-dark-400">
+                        Assigned Lead (Caller)
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setLeadDropdownOpen(true)}
+                        className="text-[11px] font-semibold text-primary-600 hover:underline cursor-pointer"
+                      >
+                        Change Lead
+                      </button>
+                    </div>
                     <p className="text-sm font-semibold text-dark-900 dark:text-white">
                       {profile.assignedLead}
                     </p>

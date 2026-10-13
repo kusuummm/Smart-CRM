@@ -159,12 +159,10 @@ export default function Customers({ onNavigate }) {
   }, [loadCustomers]);
 
   useEffect(() => {
-    if (!isAdmin) return;
     getUsers({ role: 'telecaller' })
       .then((data) => setTelecallers(data.users || []))
       .catch(() => {});
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAdmin]);
+  }, []);
 
   const filtered = customers.filter((c) => {
     const searchMatch =
@@ -482,18 +480,16 @@ export default function Customers({ onNavigate }) {
           >
             {val || 'Unassigned'}
           </button>
-          {isAdmin && (
-            <button
-              onClick={() => {
-                setQuickReassignCustomer(row);
-                setQuickTargetAgentId(row.telecallerId || '');
-              }}
-              className="p-1 rounded hover:bg-dark-100 dark:hover:bg-dark-700 text-dark-400 hover:text-primary-600 transition-colors cursor-pointer"
-              title="Quick Reassign Lead"
-            >
-              <ArrowRightLeft size={13} />
-            </button>
-          )}
+          <button
+            onClick={() => {
+              setQuickReassignCustomer(row);
+              setQuickTargetAgentId(row.telecallerId || '');
+            }}
+            className="p-1 rounded hover:bg-dark-100 dark:hover:bg-dark-700 text-dark-400 hover:text-primary-600 transition-colors cursor-pointer"
+            title="Change Customer Lead"
+          >
+            <ArrowRightLeft size={13} />
+          </button>
         </div>
       ),
     },
