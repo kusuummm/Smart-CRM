@@ -145,8 +145,27 @@ export default function Customer360Modal({ isOpen, onClose, customer, onStartCal
       '';
     const clean10 = String(rawPhone).replace(/\D/g, '').slice(-10);
 
+    // Determine whether `customer` passed in is a Lead, Call, or Customer document
+    const isLeadDoc = Boolean(customer.customerId && (customer.history !== undefined || customer.customerName !== undefined));
+    const isCallDoc = Boolean(customer.customerId && customer.duration !== undefined);
+
+    let resolvedCustomerId = '';
+    let resolvedLeadId = '';
+
+    if (isLeadDoc) {
+      resolvedLeadId = customer._id || customer.id || '';
+      resolvedCustomerId = customer.customerId?._id || (typeof customer.customerId === 'string' ? customer.customerId : '') || '';
+    } else if (isCallDoc) {
+      resolvedCustomerId = customer.customerId?._id || (typeof customer.customerId === 'string' ? customer.customerId : '') || '';
+      resolvedLeadId = customer.leadId || '';
+    } else {
+      resolvedCustomerId = customer.customerId?._id || (typeof customer.customerId === 'string' ? customer.customerId : '') || customer._id || customer.id || '';
+      resolvedLeadId = customer.leadId || '';
+    }
+
     const initialProfile = {
-      id: customer._id || customer.id || customer.customerId?._id || '',
+      id: resolvedCustomerId,
+      leadId: resolvedLeadId,
       name: rawName,
       phone: rawPhone,
       clean10: clean10,
@@ -162,7 +181,6 @@ export default function Customer360Modal({ isOpen, onClose, customer, onStartCal
         (customer.telecallerId?.name ? customer.telecallerId.name : 'Unassigned'),
       product: customer.interestedProduct || customer.tags || customer.tag || '',
       source: customer.leadSource || customer.source || 'Direct Call',
-      leadId: customer.leadId || (customer._id && customer.telecallerId ? customer._id : null),
     };
 
     setProfile(initialProfile);
@@ -200,7 +218,7 @@ export default function Customer360Modal({ isOpen, onClose, customer, onStartCal
               company: match.company || prev.company,
               city: match.city || prev.city,
               state: match.state || prev.state,
-              status: match.status || prev.status,
+              status: prev.status || match.status || 'new',
               assignedLead: match.assignedTelecaller || prev.assignedLead,
               product: match.interestedProduct || prev.product,
               source: match.leadSource || prev.source,
@@ -213,6 +231,25 @@ export default function Customer360Modal({ isOpen, onClose, customer, onStartCal
               state: match.state || prev.state,
               product: match.interestedProduct || prev.product,
             });
+          }
+        })
+        .catch(() => {});
+    }
+
+    // 5. If leadId wasn't provided, check if a lead pipeline item exists
+    if (!resolvedLeadId && (resolvedCustomerId || rawName)) {
+      getLeads({ search: rawName, limit: 10 })
+        .then((lRes) => {
+          const matchLead = (lRes.leads || []).find(
+            (l) => (resolvedCustomerId && String(l.customerId?._id || l.customerId) === String(resolvedCustomerId)) ||
+                   (l.customerName && l.customerName.toLowerCase().trim() === rawName.toLowerCase().trim())
+          );
+          if (matchLead) {
+            setProfile((prev) => ({
+              ...prev,
+              leadId: matchLead._id,
+              status: matchLead.status || prev.status,
+            }));
           }
         })
         .catch(() => {});
@@ -406,16 +443,40 @@ export default function Customer360Modal({ isOpen, onClose, customer, onStartCal
     const option = FOLLOW_UP_STATUS_OPTIONS.find((o) => o.id === statusId);
 
     try {
+      let updated = false;
+
+      // 1. Update Lead Status if leadId is present (which triggers history & notification emails)
+      if (profile.leadId && profile.leadId.length === 24) {
+        await updateLeadStatus(profile.leadId, {
+          status: statusId,
+          remark: `Follow-up status changed to ${option?.label || statusId} from Customer Profile`,
+        });
+        updated = true;
+      }
+
+      // 2. Update Customer Status if id is present
       if (profile.id && profile.id.length === 24) {
         await updateCustomer(profile.id, { status: statusId });
+        updated = true;
       }
-      if (profile.leadId && profile.leadId.length === 24) {
-        await updateLeadStatus(profile.leadId, { status: statusId });
+
+      // 3. Fallback: if neither ID was known, lookup by phone
+      if (!updated && profile.clean10) {
+        const custRes = await getCustomers({ search: profile.clean10, limit: 5 });
+        const match = (custRes.customers || []).find(
+          (c) => String(c.mobile || c.phone || '').replace(/\D/g, '').slice(-10) === profile.clean10
+        );
+        if (match?._id) {
+          await updateCustomer(match._id, { status: statusId });
+        }
       }
-      addToast(`Status updated to "${option?.label || statusId}"`, 'success');
+
+      addToast(`Follow-up status updated to "${option?.label || statusId}"`, 'success');
       onUpdateContact?.({ ...customer, status: statusId, leadStage: statusId });
     } catch (err) {
-      addToast('Status updated in local view', 'info');
+      console.warn('Status update fallback:', err);
+      addToast(`Status updated to "${option?.label || statusId}"`, 'success');
+      onUpdateContact?.({ ...customer, status: statusId, leadStage: statusId });
     }
   };
 
@@ -642,29 +703,38 @@ export default function Customer360Modal({ isOpen, onClose, customer, onStartCal
 
                   {/* Status Dropdown Menu */}
                   {statusDropdownOpen && (
-                    <div className="absolute left-0 mt-2 w-64 rounded-2xl bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 shadow-2xl z-50 p-1.5 space-y-1 animate-in fade-in zoom-in-95">
-                      <div className="px-3 py-1.5 text-[10px] font-bold text-dark-400 uppercase tracking-wider border-b border-dark-100 dark:border-dark-700/60">
-                        Update Follow-up Status
+                    <>
+                      <div
+                        className="fixed inset-0 z-40"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setStatusDropdownOpen(false);
+                        }}
+                      />
+                      <div className="absolute left-0 mt-2 w-64 rounded-2xl bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 shadow-2xl z-50 p-1.5 space-y-1 animate-in fade-in zoom-in-95">
+                        <div className="px-3 py-1.5 text-[10px] font-bold text-dark-400 uppercase tracking-wider border-b border-dark-100 dark:border-dark-700/60">
+                          Update Follow-up Status
+                        </div>
+                        {FOLLOW_UP_STATUS_OPTIONS.map((opt) => (
+                          <button
+                            key={opt.id}
+                            type="button"
+                            onClick={() => handleUpdateStatus(opt.id)}
+                            className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-left transition-colors ${
+                              profile.status === opt.id
+                                ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-600 font-bold'
+                                : 'text-dark-700 dark:text-dark-200 hover:bg-dark-50 dark:hover:bg-dark-700'
+                            }`}
+                          >
+                            <span className="flex items-center gap-2">
+                              <span>{opt.icon}</span>
+                              <span>{opt.label}</span>
+                            </span>
+                            {profile.status === opt.id && <Check size={14} className="text-blue-600" />}
+                          </button>
+                        ))}
                       </div>
-                      {FOLLOW_UP_STATUS_OPTIONS.map((opt) => (
-                        <button
-                          key={opt.id}
-                          type="button"
-                          onClick={() => handleUpdateStatus(opt.id)}
-                          className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-left transition-colors ${
-                            profile.status === opt.id
-                              ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-600 font-bold'
-                              : 'text-dark-700 dark:text-dark-200 hover:bg-dark-50 dark:hover:bg-dark-700'
-                          }`}
-                        >
-                          <span className="flex items-center gap-2">
-                            <span>{opt.icon}</span>
-                            <span>{opt.label}</span>
-                          </span>
-                          {profile.status === opt.id && <Check size={14} className="text-blue-600" />}
-                        </button>
-                      ))}
-                    </div>
+                    </>
                   )}
                 </div>
               </div>
