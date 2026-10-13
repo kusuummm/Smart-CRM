@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo } from 'react';
 import {
   MessageSquare,
   Sparkles,
-  Megaphone,
   RefreshCw,
   Calendar,
   ChevronDown,
@@ -42,8 +41,6 @@ export default function HomeDashboard({
   const [refreshing, setRefreshing] = useState(false);
   const [lastSynced, setLastSynced] = useState('Just now');
 
-  // Dismissable announcement banner
-  const [showIvrBanner, setShowIvrBanner] = useState(true);
 
   // Filter states
   const [selectedTeam, setSelectedTeam] = useState('All Teams');
@@ -217,35 +214,6 @@ export default function HomeDashboard({
 
       </div>
 
-      {/* 4. IVR Announcement Card */}
-      {showIvrBanner && (
-        <div className="rounded-2xl p-4 sm:p-5 bg-indigo-50/70 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center flex-shrink-0">
-              <Megaphone size={16} />
-            </div>
-            <p className="text-xs sm:text-sm font-semibold text-indigo-950 dark:text-indigo-200">
-              New: IVR management has been upgraded — set up your new flow in Settings.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2 self-end sm:self-auto">
-            <button
-              onClick={() => onNavigate?.('settings')}
-              className="px-3.5 py-1.5 text-xs font-bold text-dark-800 dark:text-white bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 rounded-xl hover:bg-dark-50 shadow-2xs transition-colors"
-            >
-              Set up now &gt;
-            </button>
-            <button
-              onClick={() => setShowIvrBanner(false)}
-              className="p-1.5 text-dark-400 hover:text-dark-700 rounded-lg hover:bg-indigo-100/50 transition-colors"
-              title="Dismiss"
-            >
-              <X size={16} />
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* 4. Call Insights Section Header with Filter Controls */}
       <div className="space-y-4">
