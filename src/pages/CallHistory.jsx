@@ -622,7 +622,7 @@ export default function CallHistory({ onNavigate, initialCallType = 'all' }) {
   const displayedCalls = filteredCalls.slice(0, visibleCount);
 
   return (
-    <div className="space-y-5 max-w-7xl mx-auto pb-12 animate-in fade-in duration-200">
+    <div className="space-y-5 max-w-7xl mx-auto pb-12 w-full min-w-0 animate-in fade-in duration-200">
       {/* 1. Header Bar matching screenshot */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         {/* Left Title with Handset Icon */}
@@ -977,9 +977,9 @@ export default function CallHistory({ onNavigate, initialCallType = 'all' }) {
       </div>
 
       {/* 5. Call History Data Table with Customer Call Recordings */}
-      <div className="bg-white dark:bg-dark-800 rounded-lg border border-[#e8e8e8] dark:border-dark-700 shadow-2xs overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs text-left">
+      <div className="bg-white dark:bg-dark-800 rounded-lg border border-[#e8e8e8] dark:border-dark-700 shadow-2xs overflow-hidden w-full min-w-0">
+        <div className="overflow-x-auto w-full min-w-0 scrollbar-thin">
+          <table className="w-full text-xs text-left min-w-[1050px]">
             <thead>
               <tr className="border-b border-[#f0f0f0] dark:border-dark-700/80 bg-[#fafafa] dark:bg-dark-800/40 text-[rgba(0,0,0,0.65)] dark:text-dark-400 uppercase tracking-wider font-medium text-[12px]">
                 <th className="py-3.5 px-4 min-w-[140px]">
@@ -1347,7 +1347,7 @@ export default function CallHistory({ onNavigate, initialCallType = 'all' }) {
       </div>
 
       {/* 6. Footer Controls: View more button & 50 / page dropdown */}
-      <div className="flex items-center justify-between pt-2">
+      <div className="flex items-center justify-between pt-2 w-full min-w-0">
         <div className="flex-1 flex justify-center">
           <button
             onClick={() => setVisibleCount((prev) => prev + 25)}

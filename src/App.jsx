@@ -500,7 +500,7 @@ function AppLayout() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50/60 dark:bg-dark-900 flex flex-col">
+    <div className="min-h-screen bg-gray-50/60 dark:bg-dark-900 flex flex-col w-full max-w-full overflow-x-hidden">
       {/* Top Header */}
       <Header
         user={user}
@@ -512,7 +512,7 @@ function AppLayout() {
       />
 
       {/* Main Container with Sidebar */}
-      <div className="flex flex-1">
+      <div className="flex flex-1 w-full min-w-0 overflow-x-hidden">
         <Sidebar
           currentPage={currentPage}
           onNavigate={navigateToPage}
@@ -521,7 +521,7 @@ function AppLayout() {
         />
 
         <main
-          className={`flex-1 p-4 sm:p-6 lg:p-8 transition-[margin] duration-300 ease-in-out ${
+          className={`flex-1 min-w-0 max-w-full p-4 sm:p-6 lg:p-8 transition-[margin] duration-300 ease-in-out overflow-x-hidden ${
             collapsed ? 'ml-[72px]' : 'ml-[230px]'
           }`}
         >
