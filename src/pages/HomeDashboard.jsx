@@ -21,6 +21,9 @@ import {
   Sliders,
   Users,
   Radio,
+  Sun,
+  Sunrise,
+  Moon,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/Toast';
@@ -65,14 +68,14 @@ export default function HomeDashboard({
   const greeting = useMemo(() => {
     const hour = new Date().getHours();
     let text = 'Good afternoon';
-    let emoji = '⛅';
+    let Icon = Sun;
 
     if (hour < 12) {
       text = 'Good morning';
-      emoji = '🌅';
+      Icon = Sunrise;
     } else if (hour >= 17) {
       text = 'Good evening';
-      emoji = '🌙';
+      Icon = Moon;
     }
 
     // User first name in caps
@@ -81,7 +84,7 @@ export default function HomeDashboard({
       : user?.email
       ? user.email.split('@')[0].toUpperCase()
       : '';
-    return { text: firstName ? `${text}, ${firstName}` : text, emoji };
+    return { text: firstName ? `${text}, ${firstName}` : text, Icon };
   }, [user]);
 
   // Current formatted date (e.g. "Friday, Oct 9")
@@ -198,7 +201,7 @@ export default function HomeDashboard({
         <div>
           <h1 className="text-2xl sm:text-3xl font-heading font-bold text-dark-900 dark:text-white flex items-center gap-2">
             <span>{greeting.text}</span>
-            <span className="text-2xl">{greeting.emoji}</span>
+            {greeting.Icon && <greeting.Icon size={24} className="text-amber-500 shrink-0" />}
           </h1>
           <div className="flex items-center gap-2 mt-1">
             <p className="text-xs sm:text-sm font-medium text-dark-500 dark:text-dark-400">
@@ -285,7 +288,7 @@ export default function HomeDashboard({
                 className="text-dark-400 hover:text-dark-700 ml-1 transition-colors"
                 title="Reset date"
               >
-                ✕
+                <X size={12} />
               </button>
             </div>
 

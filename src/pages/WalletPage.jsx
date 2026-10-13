@@ -14,6 +14,7 @@ import {
   Building2,
   X,
   CreditCard,
+  Gift,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/Toast';
@@ -194,8 +195,8 @@ export default function WalletPage({ onNavigate }) {
             {/* Free credits for AI Call Summary inner pill */}
             <div className="bg-white dark:bg-dark-800 rounded-xl border border-blue-100 dark:border-blue-900/50 p-3 flex items-center justify-between shadow-2xs">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-orange-50 dark:bg-orange-950/40 text-orange-600 flex items-center justify-center font-bold text-xs shrink-0">
-                  🎁
+                <div className="w-8 h-8 rounded-lg bg-orange-50 dark:bg-orange-950/40 text-orange-600 flex items-center justify-center shrink-0">
+                  <Gift size={16} />
                 </div>
                 <div>
                   <p className="text-xs font-bold text-dark-900 dark:text-white">Free credits</p>

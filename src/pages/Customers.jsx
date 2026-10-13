@@ -680,7 +680,7 @@ export default function Customers({ onNavigate }) {
               className="px-3 py-1.5 text-xs sm:text-sm bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 rounded-lg text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
             >
               <option value="">Assign selected to...</option>
-              <option value="unassigned">⚠️ Set to Unassigned</option>
+              <option value="unassigned">Set to Unassigned</option>
               {telecallers.map((tc) => (
                 <option key={tc._id} value={tc._id}>
                   {tc.name}
@@ -776,7 +776,7 @@ export default function Customers({ onNavigate }) {
               className="px-3 py-2 border border-dark-200 dark:border-dark-700 rounded-lg text-sm bg-white dark:bg-dark-800 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
             >
               <option value="">All Assigned Leads</option>
-              <option value="unassigned">⚠️ Unassigned Clients Only</option>
+              <option value="unassigned">Unassigned Clients Only</option>
               {telecallers.map((tc) => (
                 <option key={tc._id} value={tc.name}>
                   {tc.name}
@@ -944,7 +944,7 @@ export default function Customers({ onNavigate }) {
               onChange={(e) => setQuickTargetAgentId(e.target.value)}
               className="w-full px-3 py-2 border border-dark-200 dark:border-dark-700 rounded-lg text-sm bg-white dark:bg-dark-800 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
             >
-              <option value="">⚠️ Set to Unassigned</option>
+              <option value="">Set to Unassigned</option>
               {telecallers.map((tc) => (
                 <option key={tc._id} value={tc._id}>
                   {tc.name}

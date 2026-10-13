@@ -397,10 +397,10 @@ export default function TelecallerPanel({ onNavigate }) {
                 onChange={(e) => handleStatusChange(e.target.value)}
                 className="bg-transparent text-xs font-semibold text-white focus:outline-none cursor-pointer"
               >
-                <option value="available" className="text-gray-900">🟢 Available & Online</option>
-                <option value="in_call" className="text-gray-900">📞 In a Client Call</option>
-                <option value="meeting" className="text-gray-900">👥 In Meeting</option>
-                <option value="break" className="text-gray-900">☕ On Break</option>
+                <option value="available" className="text-gray-900">Available & Online</option>
+                <option value="in_call" className="text-gray-900">In a Client Call</option>
+                <option value="meeting" className="text-gray-900">In Meeting</option>
+                <option value="break" className="text-gray-900">On Break</option>
               </select>
             </div>
 

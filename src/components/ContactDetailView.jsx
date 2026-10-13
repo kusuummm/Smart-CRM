@@ -23,6 +23,7 @@ import {
   Calendar,
   Send,
   User,
+  Zap,
 } from 'lucide-react';
 import { audioEngine } from '../utils/audioPlayer';
 import CallRecordingModal from './CallRecordingModal';
@@ -748,7 +749,7 @@ export default function ContactDetailView({
                 </span>
                 {leadStage && leadStage !== 'Select Follow-up Status' && (
                   <span className="ml-2 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
-                    <span>⚡</span>
+                    <Zap size={11} className="shrink-0" />
                     <span>{leadStage}</span>
                   </span>
                 )}
@@ -1047,7 +1048,7 @@ export default function ContactDetailView({
                           : 'bg-[#1890ff] hover:bg-[#40a9ff] text-white'
                       }`}
                     >
-                      {task.completed ? 'Completed ✓' : 'Mark as Complete'}
+                      {task.completed ? 'Completed' : 'Mark as Complete'}
                     </button>
                   </div>
                 </div>
@@ -1161,9 +1162,9 @@ export default function ContactDetailView({
               <button
                 type="button"
                 onClick={() => setIsAddFollowUpOpen(false)}
-                className="text-[rgba(0,0,0,0.45)] hover:text-[rgba(0,0,0,0.88)] text-base font-normal cursor-pointer"
+                className="text-[rgba(0,0,0,0.45)] hover:text-[rgba(0,0,0,0.88)] transition-colors cursor-pointer"
               >
-                ✕
+                <X size={16} />
               </button>
             </div>
 
@@ -1241,9 +1242,9 @@ export default function ContactDetailView({
               <button
                 type="button"
                 onClick={() => setIsNotesModalOpen(false)}
-                className="text-[rgba(0,0,0,0.45)] hover:text-[rgba(0,0,0,0.88)] text-base font-normal cursor-pointer"
+                className="text-[rgba(0,0,0,0.45)] hover:text-[rgba(0,0,0,0.88)] transition-colors cursor-pointer"
               >
-                ✕
+                <X size={16} />
               </button>
             </div>
 
@@ -1314,9 +1315,9 @@ export default function ContactDetailView({
               <button
                 type="button"
                 onClick={() => setIsMessageModalOpen(false)}
-                className="text-[rgba(0,0,0,0.45)] dark:text-dark-400 hover:text-[rgba(0,0,0,0.88)] dark:hover:text-white text-base font-normal cursor-pointer"
+                className="text-[rgba(0,0,0,0.45)] dark:text-dark-400 hover:text-[rgba(0,0,0,0.88)] dark:hover:text-white transition-colors cursor-pointer"
               >
-                ✕
+                <X size={16} />
               </button>
             </div>
 

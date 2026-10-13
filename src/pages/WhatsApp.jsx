@@ -19,6 +19,7 @@ import {
   FileText,
   Calendar,
   AlertCircle,
+  Lock,
 } from 'lucide-react';
 import { useToast } from '../components/Toast';
 import { useAuth } from '../context/AuthContext';
@@ -122,10 +123,10 @@ export default function WhatsApp({ onNavigate }) {
 
   // Quick Reply Template Presets
   const quickTemplates = [
-    { label: '👋 Intro Greeting', text: `Hello! Thank you for connecting with ${selectedOrg?.name || 'our team'}. How can we assist your business today?` },
-    { label: '📄 Share Information', text: 'Please find our product catalog and business information attached.' },
-    { label: '💳 Payment Reminder', text: 'Gentle reminder: Your invoice is ready. Kindly complete the payment to ensure uninterrupted service.' },
-    { label: '🗓️ Schedule Call', text: 'Would you be available for a quick 10-minute discovery call with our team today?' },
+    { label: 'Intro Greeting', text: `Hello! Thank you for connecting with ${selectedOrg?.name || 'our team'}. How can we assist your business today?` },
+    { label: 'Share Information', text: 'Please find our product catalog and business information attached.' },
+    { label: 'Payment Reminder', text: 'Gentle reminder: Your invoice is ready. Kindly complete the payment to ensure uninterrupted service.' },
+    { label: 'Schedule Call', text: 'Would you be available for a quick 10-minute discovery call with our team today?' },
   ];
 
   // Send message handler
@@ -486,8 +487,9 @@ export default function WhatsApp({ onNavigate }) {
           >
             {/* Encryption notice */}
             <div className="text-center my-2">
-              <span className="inline-block px-3 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-[11px] font-medium text-amber-800 dark:text-amber-300 shadow-2xs">
-                🔒 Messages are end-to-end encrypted through Meta WhatsApp Cloud API
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-[11px] font-medium text-amber-800 dark:text-amber-300 shadow-2xs">
+                <Lock size={12} className="shrink-0" />
+                <span>Messages are end-to-end encrypted through Meta WhatsApp Cloud API</span>
               </span>
             </div>
 

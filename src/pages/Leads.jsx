@@ -19,6 +19,12 @@ import {
   UserPlus,
   FileSpreadsheet,
   ArrowRightLeft,
+  Star,
+  Layers,
+  CheckCircle2,
+  XCircle,
+  Lock,
+  X,
 } from 'lucide-react';
 import { PageHeader } from '../components/Common';
 import Modal from '../components/Modal';
@@ -34,16 +40,16 @@ import { getUsers } from '../api/users';
 import { getCustomers } from '../api/customers';
 import { createMeeting } from '../api/meetings';
 
-// Descriptive follow-up status options with icons and follow-up wording
+// Descriptive follow-up status options with clean SVG icons (no emojis)
 const statusOptionsConfig = [
-  { id: 'new', label: 'New Follow-up', icon: '🌱' },
-  { id: 'contacted', label: 'Follow-up: Contacted', icon: '📞' },
-  { id: 'interested', label: 'Follow-up: Interested', icon: '⭐' },
-  { id: 'meeting', label: 'Follow-up: Meeting Scheduled', icon: '📅' },
-  { id: 'follow-up', label: 'Follow-up: In Progress', icon: '⏰' },
-  { id: 'converted', label: 'Follow-up: Converted / Won', icon: '🏆' },
-  { id: 'not-interested', label: 'Follow-up: Not Interested', icon: '❌' },
-  { id: 'closed', label: 'Follow-up: Closed', icon: '🔒' },
+  { id: 'new', label: 'New Follow-up', Icon: Sparkles },
+  { id: 'contacted', label: 'Follow-up: Contacted', Icon: PhoneCall },
+  { id: 'interested', label: 'Follow-up: Interested', Icon: Star },
+  { id: 'meeting', label: 'Follow-up: Meeting Scheduled', Icon: Calendar },
+  { id: 'follow-up', label: 'Follow-up: In Progress', Icon: Clock },
+  { id: 'converted', label: 'Follow-up: Converted / Won', Icon: CheckCircle2 },
+  { id: 'not-interested', label: 'Follow-up: Not Interested', Icon: XCircle },
+  { id: 'closed', label: 'Follow-up: Closed', Icon: Lock },
 ];
 
 export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus }) {
@@ -182,14 +188,14 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
 
   const pipelineCards = useMemo(
     () => [
-      { id: '', label: 'All Leads', icon: '📋', count: pipelineStats.all, color: 'text-dark-700 dark:text-dark-200' },
-      { id: 'new', label: 'New Follow-up', icon: '🌱', count: pipelineStats.new || 0, color: 'text-emerald-600' },
-      { id: 'contacted', label: 'Contacted', icon: '📞', count: pipelineStats.contacted || 0, color: 'text-blue-600' },
-      { id: 'interested', label: 'Interested', icon: '⭐', count: pipelineStats.interested || 0, color: 'text-amber-600' },
-      { id: 'meeting', label: 'Meeting', icon: '📅', count: pipelineStats.meeting || 0, color: 'text-purple-600' },
-      { id: 'follow-up', label: 'In Progress', icon: '⏰', count: pipelineStats['follow-up'] || 0, color: 'text-indigo-600' },
-      { id: 'converted', label: 'Won / Converted', icon: '🏆', count: pipelineStats.converted || 0, color: 'text-teal-600' },
-      { id: 'not-interested', label: 'Not Interested', icon: '❌', count: pipelineStats['not-interested'] || 0, color: 'text-rose-600' },
+      { id: '', label: 'All Leads', Icon: Layers, count: pipelineStats.all, color: 'text-dark-700 dark:text-dark-200', bg: 'bg-dark-100 dark:bg-dark-800' },
+      { id: 'new', label: 'New Follow-up', Icon: Sparkles, count: pipelineStats.new || 0, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-950/40' },
+      { id: 'contacted', label: 'Contacted', Icon: PhoneCall, count: pipelineStats.contacted || 0, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-950/40' },
+      { id: 'interested', label: 'Interested', Icon: Star, count: pipelineStats.interested || 0, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-950/40' },
+      { id: 'meeting', label: 'Meeting', Icon: Calendar, count: pipelineStats.meeting || 0, color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-50 dark:bg-purple-950/40' },
+      { id: 'follow-up', label: 'In Progress', Icon: Clock, count: pipelineStats['follow-up'] || 0, color: 'text-indigo-600 dark:text-indigo-400', bg: 'bg-indigo-50 dark:bg-indigo-950/40' },
+      { id: 'converted', label: 'Won / Converted', Icon: CheckCircle2, count: pipelineStats.converted || 0, color: 'text-teal-600 dark:text-teal-400', bg: 'bg-teal-50 dark:bg-teal-950/40' },
+      { id: 'not-interested', label: 'Not Interested', Icon: XCircle, count: pipelineStats['not-interested'] || 0, color: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-50 dark:bg-rose-950/40' },
     ],
     [pipelineStats]
   );
@@ -426,6 +432,7 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2.5">
         {pipelineCards.map((card) => {
           const isSelected = statusFilter === card.id;
+          const CardIcon = card.Icon;
           return (
             <button
               key={card.id || 'all'}
@@ -442,16 +449,18 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
               title={`Click to filter leads by ${card.label}`}
             >
               <div className="flex items-center justify-between">
-                <span className="text-base">{card.icon}</span>
-                <span className={`text-base font-extrabold ${card.color}`}>
+                <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${card.bg} ${card.color}`}>
+                  <CardIcon size={14} />
+                </div>
+                <span className={`text-base font-extrabold tabular-nums ${card.color}`}>
                   {card.count}
                 </span>
               </div>
-              <div className="mt-2">
+              <div className="mt-2.5">
                 <p className="text-[11px] font-bold text-dark-800 dark:text-dark-200 truncate">
                   {card.label}
                 </p>
-                <p className="text-[10px] text-dark-400 font-medium">
+                <p className="text-[10px] text-dark-400 font-medium tabular-nums mt-0.5">
                   {leads.length > 0 ? `${Math.round((card.count / leads.length) * 100)}%` : '0%'}
                 </p>
               </div>
@@ -470,10 +479,10 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
                 <button
                   type="button"
                   onClick={() => setStatusFilter('')}
-                  className="hover:text-primary-800 dark:hover:text-primary-200 cursor-pointer ml-1 text-xs font-bold"
+                  className="hover:text-primary-800 dark:hover:text-primary-200 cursor-pointer ml-1 p-0.5 rounded text-xs"
                   title="Clear filter"
                 >
-                  ✕
+                  <X size={12} />
                 </button>
               </span>
             </div>
@@ -643,8 +652,15 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
                                         : 'text-dark-700 dark:text-dark-200'
                                     }`}
                                   >
-                                    <span className="flex items-center gap-1.5">
-                                      <span>{opt.icon}</span>
+                                    <span className="flex items-center gap-2">
+                                      {opt.Icon && (
+                                        <opt.Icon
+                                          size={13}
+                                          className={`shrink-0 ${
+                                            lead.status === opt.id ? 'text-primary-600' : 'text-dark-400'
+                                          }`}
+                                        />
+                                      )}
                                       <span>{opt.label}</span>
                                     </span>
                                     {lead.status === opt.id && <Check size={13} className="text-primary-600" />}
@@ -797,7 +813,12 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
                             : 'bg-white dark:bg-dark-800 text-dark-700 dark:text-dark-300 border-dark-200 dark:border-dark-700 hover:border-primary-400'
                         }`}
                       >
-                        <span>{opt.icon}</span>
+                        {opt.Icon && (
+                          <opt.Icon
+                            size={13}
+                            className={`shrink-0 ${isActive ? 'text-white' : 'text-dark-500'}`}
+                          />
+                        )}
                         <span>{opt.label}</span>
                         {isActive && <Check size={12} />}
                       </button>
@@ -1177,7 +1198,7 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
               onChange={(e) => setReassignSelectedTcId(e.target.value)}
               className="w-full px-3 py-2 border border-dark-200 dark:border-dark-700 rounded-lg text-sm bg-white dark:bg-dark-800 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 font-medium"
             >
-              <option value="">⚠️ Set to Unassigned (Admin Pool)</option>
+              <option value="">Set to Unassigned (Admin Pool)</option>
               {telecallers.map((tc) => (
                 <option key={tc._id} value={tc._id}>
                   {tc.name} {tc.email ? `(${tc.email})` : ''}

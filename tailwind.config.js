@@ -6,25 +6,18 @@ export default {
     extend: {
       fontFamily: {
         sans: [
+          '"Plus Jakarta Sans"',
+          'Inter',
           '-apple-system',
           'BlinkMacSystemFont',
           '"Segoe UI"',
           'Roboto',
-          '"Helvetica Neue"',
-          'Arial',
-          '"Noto Sans"',
           'sans-serif',
-          '"Apple Color Emoji"',
-          '"Segoe UI Emoji"',
-          '"Segoe UI Symbol"',
-          '"Noto Color Emoji"',
         ],
         inter: [
           'Inter',
+          '"Plus Jakarta Sans"',
           'sans-serif',
-          '"Segoe UI Emoji"',
-          '"Apple Color Emoji"',
-          '"Noto Color Emoji"',
         ],
       },
       colors: {

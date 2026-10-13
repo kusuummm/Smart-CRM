@@ -403,7 +403,7 @@ export default function ExcelLeadImportModal({ isOpen, onClose, onImportSuccess 
 
     for (let c = 0; c < totalChunks; c++) {
       if (cancelRef.current) {
-        toast('Import paused / stopped by user', { icon: '🛑' });
+        toast('Import paused / stopped by user');
         break;
       }
 

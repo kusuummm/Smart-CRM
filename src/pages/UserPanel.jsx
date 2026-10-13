@@ -221,7 +221,7 @@ export default function UserPanel({ onNavigate }) {
 
     if (diffDays === 0) {
       return {
-        label: 'Due Today! 🎉',
+        label: 'Due Today!',
         isToday: true,
         badgeClass: 'bg-rose-500 text-white font-bold animate-pulse shadow-sm',
       };
@@ -395,11 +395,11 @@ export default function UserPanel({ onNavigate }) {
     let msg = '';
     let subj = '';
     if (event.type === 'birthday') {
-      msg = `Dear ${cust.name || 'Friend'}, wishing you a very Happy Birthday! May your year ahead be blessed with happiness, health, and success. Warm regards! 🎉🎂`;
-      subj = `Happy Birthday from SmartCRM! 🎂`;
+      msg = `Dear ${cust.name || 'Friend'}, wishing you a very Happy Birthday! May your year ahead be blessed with happiness, health, and success. Warm regards!`;
+      subj = `Happy Birthday from SmartCRM!`;
     } else if (event.type === 'anniversary') {
-      msg = `Dear ${cust.name || 'Friend'}, warm congratulations on your anniversary! Wishing you continued joy and prosperity. ✨🥂`;
-      subj = `Heartiest Anniversary Congratulations! ✨`;
+      msg = `Dear ${cust.name || 'Friend'}, warm congratulations on your anniversary! Wishing you continued joy and prosperity.`;
+      subj = `Heartiest Anniversary Congratulations!`;
     } else if (event.type === 'emi') {
       msg = `Dear ${cust.name || 'Customer'}, this is a gentle reminder that your scheduled EMI / payment is due. Please feel free to reach out if you have any questions.`;
       subj = `Payment Due Notice`;
@@ -477,7 +477,7 @@ export default function UserPanel({ onNavigate }) {
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-xl sm:text-2xl font-bold text-dark-900 dark:text-white">
-                  Welcome back, {user?.name || 'User'}! 👋
+                  Welcome back, {user?.name || 'User'}!
                 </h1>
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary-100 text-primary-800 dark:bg-primary-950/60 dark:text-primary-300 border border-primary-200 dark:border-primary-800">
                   User Hub
@@ -750,9 +750,9 @@ export default function UserPanel({ onNavigate }) {
             {[
               { id: 'upcoming', label: 'Upcoming (7 Days)' },
               { id: 'today', label: "Due Today" },
-              { id: 'birthday', label: '🎂 Birthdays' },
-              { id: 'anniversary', label: '✨ Anniversaries' },
-              { id: 'emi_renewal', label: '💳 Dues & Renewals' },
+              { id: 'birthday', label: 'Birthdays' },
+              { id: 'anniversary', label: 'Anniversaries' },
+              { id: 'emi_renewal', label: 'Dues & Renewals' },
               { id: 'all', label: 'All Active' },
               { id: 'completed', label: 'Completed' },
             ].map((cat) => (
@@ -1016,13 +1016,13 @@ export default function UserPanel({ onNavigate }) {
                       setMessageForm((prev) => ({
                         ...prev,
                         templateType: 'birthday',
-                        subject: 'Happy Birthday! 🎉',
+                        subject: 'Happy Birthday!',
                         message: 'Wishing you a very Happy Birthday! May this year bring you abundant joy, health, and great milestones!',
                       }));
                     }}
                     className="text-left text-[11px] p-2 rounded-lg bg-dark-50 dark:bg-dark-700 hover:bg-primary-50 dark:hover:bg-primary-950/40 border border-dark-100 dark:border-dark-600 font-medium"
                   >
-                    🎂 Birthday Wish
+                    Birthday Wish
                   </button>
                   <button
                     type="button"
@@ -1030,13 +1030,13 @@ export default function UserPanel({ onNavigate }) {
                       setMessageForm((prev) => ({
                         ...prev,
                         templateType: 'anniversary',
-                        subject: 'Happy Anniversary! ✨',
+                        subject: 'Happy Anniversary!',
                         message: 'Warmest congratulations on your anniversary! Wishing you continued happiness and prosperity.',
                       }));
                     }}
                     className="text-left text-[11px] p-2 rounded-lg bg-dark-50 dark:bg-dark-700 hover:bg-primary-50 dark:hover:bg-primary-950/40 border border-dark-100 dark:border-dark-600 font-medium"
                   >
-                    🎉 Anniversary
+                    Anniversary
                   </button>
                   <button
                     type="button"
@@ -1050,7 +1050,7 @@ export default function UserPanel({ onNavigate }) {
                     }}
                     className="text-left text-[11px] p-2 rounded-lg bg-dark-50 dark:bg-dark-700 hover:bg-primary-50 dark:hover:bg-primary-950/40 border border-dark-100 dark:border-dark-600 font-medium"
                   >
-                    💳 Due Reminder
+                    Due Reminder
                   </button>
                   <button
                     type="button"
@@ -1064,7 +1064,7 @@ export default function UserPanel({ onNavigate }) {
                     }}
                     className="text-left text-[11px] p-2 rounded-lg bg-dark-50 dark:bg-dark-700 hover:bg-primary-50 dark:hover:bg-primary-950/40 border border-dark-100 dark:border-dark-600 font-medium"
                   >
-                    👋 General Greeting
+                    General Greeting
                   </button>
                 </div>
               </div>
@@ -1190,7 +1190,7 @@ export default function UserPanel({ onNavigate }) {
             <div className="space-y-3">
               <div className="p-4 rounded-xl bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900/50">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-blue-700 dark:text-blue-300">📢 Monthly Celebration Drive</span>
+                  <span className="text-xs font-bold text-blue-700 dark:text-blue-300">Monthly Celebration Drive</span>
                   <span className="text-[10px] text-dark-400">Active</span>
                 </div>
                 <p className="text-xs text-dark-600 dark:text-dark-300 mt-1">
@@ -1200,7 +1200,7 @@ export default function UserPanel({ onNavigate }) {
 
               <div className="p-4 rounded-xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/50">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-amber-700 dark:text-amber-300">💳 Payment Follow-up Protocol</span>
+                  <span className="text-xs font-bold text-amber-700 dark:text-amber-300">Payment Follow-up Protocol</span>
                   <span className="text-[10px] text-dark-400">Notice</span>
                 </div>
                 <p className="text-xs text-dark-600 dark:text-dark-300 mt-1">
@@ -1276,10 +1276,10 @@ export default function UserPanel({ onNavigate }) {
                 onChange={(e) => setEventForm({ ...eventForm, type: e.target.value })}
                 className="w-full px-3 py-2 border border-dark-200 dark:border-dark-700 rounded-xl text-xs dark:bg-dark-700 dark:text-white focus:ring-2 focus:ring-primary-500 focus:outline-none"
               >
-                <option value="birthday">🎂 Birthday</option>
-                <option value="anniversary">✨ Anniversary</option>
-                <option value="emi">💳 EMI Due</option>
-                <option value="renewal">🛡️ Policy/Service Renewal</option>
+                <option value="birthday">Birthday</option>
+                <option value="anniversary">Anniversary</option>
+                <option value="emi">EMI Due</option>
+                <option value="renewal">Policy/Service Renewal</option>
               </select>
             </div>
 

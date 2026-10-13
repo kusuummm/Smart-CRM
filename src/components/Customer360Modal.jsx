@@ -36,6 +36,9 @@ import {
   Send,
   Loader2,
   ArrowRightLeft,
+  Star,
+  XCircle,
+  Lock,
 } from 'lucide-react';
 import { audioEngine, formatSeconds, generateWaveform } from '../utils/audioPlayer';
 import { useToast } from './Toast';
@@ -49,14 +52,14 @@ import { getLeads, updateLeadStatus, createLead } from '../api/leads';
 import { getUsers } from '../api/users';
 
 const FOLLOW_UP_STATUS_OPTIONS = [
-  { id: 'new', label: 'New Follow-up', icon: '🌱', color: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300' },
-  { id: 'contacted', label: 'Follow-up: Contacted', icon: '📞', color: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300' },
-  { id: 'interested', label: 'Follow-up: Interested', icon: '⭐', color: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300' },
-  { id: 'meeting', label: 'Follow-up: Meeting Scheduled', icon: '📅', color: 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/40 dark:text-purple-300' },
-  { id: 'follow-up', label: 'Follow-up: In Progress', icon: '⏰', color: 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-300' },
-  { id: 'converted', label: 'Follow-up: Converted / Won', icon: '🏆', color: 'bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-950/40 dark:text-teal-300' },
-  { id: 'not-interested', label: 'Follow-up: Not Interested', icon: '❌', color: 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300' },
-  { id: 'closed', label: 'Follow-up: Closed', icon: '🔒', color: 'bg-dark-100 text-dark-700 border-dark-200 dark:bg-dark-800 dark:text-dark-300' },
+  { id: 'new', label: 'New Follow-up', Icon: Sparkles, color: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300' },
+  { id: 'contacted', label: 'Follow-up: Contacted', Icon: PhoneCall, color: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300' },
+  { id: 'interested', label: 'Follow-up: Interested', Icon: Star, color: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300' },
+  { id: 'meeting', label: 'Follow-up: Meeting Scheduled', Icon: Calendar, color: 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/40 dark:text-purple-300' },
+  { id: 'follow-up', label: 'Follow-up: In Progress', Icon: Clock, color: 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-300' },
+  { id: 'converted', label: 'Follow-up: Converted / Won', Icon: CheckCircle2, color: 'bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-950/40 dark:text-teal-300' },
+  { id: 'not-interested', label: 'Follow-up: Not Interested', Icon: XCircle, color: 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300' },
+  { id: 'closed', label: 'Follow-up: Closed', Icon: Lock, color: 'bg-dark-100 text-dark-700 border-dark-200 dark:bg-dark-800 dark:text-dark-300' },
 ];
 
 export default function Customer360Modal({ isOpen, onClose, customer, onStartCall, onUpdateContact }) {
@@ -786,7 +789,7 @@ export default function Customer360Modal({ isOpen, onClose, customer, onStartCal
                     className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border shadow-2xs hover:opacity-90 transition-all cursor-pointer ${currentStatusObj.color}`}
                     title="Click to change follow-up status"
                   >
-                    <span>{currentStatusObj.icon}</span>
+                    {currentStatusObj.Icon && <currentStatusObj.Icon size={12} className="shrink-0" />}
                     <span>{currentStatusObj.label}</span>
                     <ChevronDown size={12} className="opacity-70" />
                   </button>
@@ -817,7 +820,7 @@ export default function Customer360Modal({ isOpen, onClose, customer, onStartCal
                             }`}
                           >
                             <span className="flex items-center gap-2">
-                              <span>{opt.icon}</span>
+                              {opt.Icon && <opt.Icon size={13} className="shrink-0 text-dark-500" />}
                               <span>{opt.label}</span>
                             </span>
                             {profile.status === opt.id && <Check size={14} className="text-blue-600" />}
@@ -1315,10 +1318,10 @@ export default function Customer360Modal({ isOpen, onClose, customer, onStartCal
                         onChange={(e) => setNewTaskForm({ ...newTaskForm, type: e.target.value })}
                         className="w-full px-3 py-2 text-xs rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 text-dark-900 dark:text-white"
                       >
-                        <option value="CALL">📞 Phone Callback</option>
-                        <option value="REMINDER">⏰ Reminder</option>
-                        <option value="MEETING">📅 Demo / Meeting</option>
-                        <option value="WHATSAPP">💬 WhatsApp Follow-up</option>
+                        <option value="CALL">Phone Callback</option>
+                        <option value="REMINDER">Reminder</option>
+                        <option value="MEETING">Demo / Meeting</option>
+                        <option value="WHATSAPP">WhatsApp Follow-up</option>
                       </select>
                     </div>
 
@@ -1425,7 +1428,7 @@ export default function Customer360Modal({ isOpen, onClose, customer, onStartCal
                             </span>
                             {t.completed && (
                               <span className="text-[10px] font-bold text-emerald-600 bg-emerald-100 dark:bg-emerald-950/60 px-1.5 py-0.5 rounded-md">
-                                Completed ✓
+                                Completed
                               </span>
                             )}
                           </div>

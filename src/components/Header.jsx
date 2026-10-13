@@ -14,18 +14,54 @@ import {
   Menu,
   Shield,
   Phone,
+  Target,
+  PhoneCall,
+  Sparkles,
+  Gift,
+  AlertTriangle,
+  Pin,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useNotifications } from '../hooks/useNotifications';
 
 const getNotifIcon = (type) => {
   switch (type) {
-    case 'lead': return '🎯';
-    case 'followup': return '📞';
-    case 'conversion': return '🎉';
-    case 'event': return '🎂';
-    case 'whatsapp': return '⚠️';
-    default: return '📌';
+    case 'lead':
+      return (
+        <span className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-300 flex items-center justify-center shrink-0">
+          <Target size={14} />
+        </span>
+      );
+    case 'followup':
+      return (
+        <span className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-300 flex items-center justify-center shrink-0">
+          <PhoneCall size={14} />
+        </span>
+      );
+    case 'conversion':
+      return (
+        <span className="w-7 h-7 rounded-lg bg-teal-50 text-teal-600 dark:bg-teal-950/60 dark:text-teal-300 flex items-center justify-center shrink-0">
+          <Sparkles size={14} />
+        </span>
+      );
+    case 'event':
+      return (
+        <span className="w-7 h-7 rounded-lg bg-purple-50 text-purple-600 dark:bg-purple-950/60 dark:text-purple-300 flex items-center justify-center shrink-0">
+          <Gift size={14} />
+        </span>
+      );
+    case 'whatsapp':
+      return (
+        <span className="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 dark:bg-amber-950/60 dark:text-amber-300 flex items-center justify-center shrink-0">
+          <AlertTriangle size={14} />
+        </span>
+      );
+    default:
+      return (
+        <span className="w-7 h-7 rounded-lg bg-dark-100 text-dark-600 dark:bg-dark-800 dark:text-dark-300 flex items-center justify-center shrink-0">
+          <Pin size={14} />
+        </span>
+      );
   }
 };
 
@@ -217,7 +253,7 @@ export default function Header({
                         !notif.read ? 'bg-blue-50/40 dark:bg-blue-950/20' : ''
                       }`}
                     >
-                      <span className="text-base">{getNotifIcon(notif.type)}</span>
+                      <div className="shrink-0">{getNotifIcon(notif.type)}</div>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-semibold text-dark-900 dark:text-white truncate">
                           {notif.title}

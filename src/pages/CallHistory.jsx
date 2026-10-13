@@ -27,6 +27,10 @@ import {
   PhoneMissed,
   RotateCcw,
   Radio,
+  Star,
+  CheckCircle2,
+  XCircle,
+  Lock,
 } from 'lucide-react';
 import { useToast } from '../components/Toast';
 import { useAuth } from '../context/AuthContext';
@@ -38,14 +42,14 @@ import { audioEngine, formatSeconds, generateWaveform } from '../utils/audioPlay
 import { realCallRecorder } from '../utils/realCallRecorder';
 
 export const FOLLOW_UP_STATUSES = [
-  { id: 'new', label: 'New Follow-up', icon: '🌱', badge: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300' },
-  { id: 'contacted', label: 'Contacted', icon: '📞', badge: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300' },
-  { id: 'interested', label: 'Interested', icon: '⭐', badge: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300' },
-  { id: 'meeting', label: 'Meeting Scheduled', icon: '📅', badge: 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/40 dark:text-purple-300' },
-  { id: 'follow-up', label: 'In Progress', icon: '⏰', badge: 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-300' },
-  { id: 'converted', label: 'Won / Converted', icon: '🏆', badge: 'bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-950/40 dark:text-teal-300' },
-  { id: 'not-interested', label: 'Not Interested', icon: '❌', badge: 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300' },
-  { id: 'closed', label: 'Closed', icon: '🔒', badge: 'bg-dark-100 text-dark-700 border-dark-200 dark:bg-dark-800 dark:text-dark-300' },
+  { id: 'new', label: 'New Follow-up', Icon: Sparkles, badge: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300' },
+  { id: 'contacted', label: 'Contacted', Icon: PhoneCall, badge: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300' },
+  { id: 'interested', label: 'Interested', Icon: Star, badge: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300' },
+  { id: 'meeting', label: 'Meeting Scheduled', Icon: Calendar, badge: 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/40 dark:text-purple-300' },
+  { id: 'follow-up', label: 'In Progress', Icon: Clock, badge: 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-300' },
+  { id: 'converted', label: 'Won / Converted', Icon: CheckCircle2, badge: 'bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-950/40 dark:text-teal-300' },
+  { id: 'not-interested', label: 'Not Interested', Icon: XCircle, badge: 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300' },
+  { id: 'closed', label: 'Closed', Icon: Lock, badge: 'bg-dark-100 text-dark-700 border-dark-200 dark:bg-dark-800 dark:text-dark-300' },
 ];
 
 export default function CallHistory({ onNavigate, initialCallType = 'all' }) {
@@ -703,7 +707,7 @@ export default function CallHistory({ onNavigate, initialCallType = 'all' }) {
             <option value="">All Follow-ups</option>
             {FOLLOW_UP_STATUSES.map((st) => (
               <option key={st.id} value={st.id}>
-                {st.icon} {st.label}
+                {st.label}
               </option>
             ))}
           </select>
@@ -1228,7 +1232,7 @@ export default function CallHistory({ onNavigate, initialCallType = 'all' }) {
                                 className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border transition-all shadow-2xs hover:scale-[1.02] cursor-pointer ${currentStatusObj.badge}`}
                                 title="Click to change customer follow-up status"
                               >
-                                <span>{currentStatusObj.icon}</span>
+                                {currentStatusObj.Icon && <currentStatusObj.Icon size={12} className="shrink-0" />}
                                 <span className="whitespace-nowrap">{currentStatusObj.label}</span>
                                 <ChevronDown size={11} className="opacity-70" />
                               </button>
@@ -1253,7 +1257,7 @@ export default function CallHistory({ onNavigate, initialCallType = 'all' }) {
                                       }`}
                                     >
                                       <span className="flex items-center gap-2">
-                                        <span>{st.icon}</span>
+                                        {st.Icon && <st.Icon size={13} className="shrink-0 text-dark-500" />}
                                         <span>{st.label}</span>
                                       </span>
                                       {currentStatusKey === st.id && (

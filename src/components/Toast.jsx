@@ -1,5 +1,6 @@
 import { useCallback, useMemo } from 'react';
 import { toast } from 'react-hot-toast';
+import { AlertTriangle } from 'lucide-react';
 
 export function useToast() {
   const addToast = useCallback((message, type = 'success') => {
@@ -23,7 +24,7 @@ export function useToast() {
     switch (type) {
       case 'success': toast.success(message); break;
       case 'error': toast.error(message); break;
-      case 'warning': toast(message, { icon: '⚠️' }); break;
+      case 'warning': toast(message, { icon: <AlertTriangle size={16} className="text-amber-500" /> }); break;
       default: toast(message); break;
     }
   }, []);

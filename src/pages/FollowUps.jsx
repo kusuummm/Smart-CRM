@@ -188,11 +188,11 @@ export default function FollowUps({ onNavigate }) {
               }}
               className="px-3 py-2 border border-dark-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-dark-700 dark:bg-dark-800 dark:text-white"
             >
-              <option value="">👥 All Leads</option>
-              <option value="unassigned">⚠️ Unassigned Clients Only</option>
+              <option value="">All Leads</option>
+              <option value="unassigned">Unassigned Clients Only</option>
               {telecallers.map((tc) => (
                 <option key={tc._id} value={tc._id}>
-                  👤 {tc.name}
+                  {tc.name}
                 </option>
               ))}
             </select>
@@ -342,7 +342,7 @@ export default function FollowUps({ onNavigate }) {
                 <option value="">Default (Current Lead)</option>
                 {telecallers.map((tc) => (
                   <option key={tc._id} value={tc._id}>
-                    👤 {tc.name} ({tc.email})
+                    {tc.name} ({tc.email})
                   </option>
                 ))}
               </select>

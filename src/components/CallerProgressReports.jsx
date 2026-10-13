@@ -66,7 +66,7 @@ const CustomTooltip = ({ active, payload, label }) => {
           </div>
         ))}
         <div className="pt-1 text-[10px] text-primary-600 dark:text-primary-400 font-semibold italic text-center">
-          👉 Click to open detailed day report
+          Click to open detailed day report
         </div>
       </div>
     );

@@ -778,7 +778,7 @@ export default function ToDos({ onNavigate }) {
                                 : 'bg-blue-600 hover:bg-blue-700 text-white'
                             }`}
                           >
-                            {isCompleted ? 'Completed ✓' : 'Mark as Complete'}
+                            {isCompleted ? 'Completed' : 'Mark as Complete'}
                           </button>
                         </div>
                       </div>

@@ -204,7 +204,7 @@ export default function Reports({ onNavigate }) {
             </span>
           </p>
           <p className="text-[10px] text-blue-300 font-semibold flex items-center gap-1">
-            <span>👆 Click slice to view detailed report</span>
+            <span>Click slice to view detailed report</span>
           </p>
         </div>
       );

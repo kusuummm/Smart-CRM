@@ -201,12 +201,12 @@ export default function Dashboard({ onNavigate }) {
                 onChange={(e) => setSelectedAgent(e.target.value)}
                 className="bg-dark-800 text-white text-sm rounded-xl px-4 py-2 border border-dark-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
               >
-                <option value="all">🏢 Company Overview (All Leads)</option>
-                <option value="unassigned">⚠️ Unassigned Records Only</option>
+                <option value="all">Company Overview (All Leads)</option>
+                <option value="unassigned">Unassigned Records Only</option>
                 <optgroup label="Filter by Lead">
                   {telecallers.map((tc) => (
                     <option key={tc._id} value={tc._id}>
-                      👤 {tc.name} ({tc.email})
+                      {tc.name} ({tc.email})
                     </option>
                   ))}
                 </optgroup>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { Moon, Sun, Bell, Globe, Download, Save, Mic, Volume2, ShieldCheck, Waves } from 'lucide-react';
+import { Moon, Sun, Bell, Globe, Download, Save, Mic, Volume2, ShieldCheck, Waves, Mail, MessageCircle, Monitor, PhoneCall, Gift } from 'lucide-react';
 import { useToast } from '../components/Toast';
 
 export default function Settings() {
@@ -323,21 +323,22 @@ export default function Settings() {
             </div>
             <div className="p-4 space-y-2">
               {[
-                { key: 'email', label: '📧 Email Notifications', desc: 'Email for new activities' },
-                { key: 'whatsapp', label: '💬 WhatsApp Messages', desc: 'Updates via WhatsApp' },
-                { key: 'browser', label: '🌐 Browser Push', desc: 'Browser notifications' },
-                { key: 'followup', label: '📞 Follow-up Reminders', desc: 'Reminders for important follow-ups' },
-                { key: 'birthday', label: '🎂 Birthday Alerts', desc: 'Customer birthday notifications' },
+                { key: 'email', label: 'Email Notifications', desc: 'Email for new activities', Icon: Mail },
+                { key: 'whatsapp', label: 'WhatsApp Messages', desc: 'Updates via WhatsApp', Icon: MessageCircle },
+                { key: 'browser', label: 'Browser Push', desc: 'Browser notifications', Icon: Monitor },
+                { key: 'followup', label: 'Follow-up Reminders', desc: 'Reminders for important follow-ups', Icon: PhoneCall },
+                { key: 'birthday', label: 'Birthday Alerts', desc: 'Customer birthday notifications', Icon: Gift },
               ].map((item) => (
                 <div key={item.key} className="flex items-center justify-between p-3 rounded-lg hover:bg-dark-50 dark:hover:bg-dark-700/50 transition-colors">
                   <div className="flex items-center gap-3">
-                    <label className="flex items-center gap-2 cursor-pointer">
+                    <label className="flex items-center gap-3 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={notifications[item.key]}
                         onChange={(e) => setNotifications(prev => ({ ...prev, [item.key]: e.target.checked }))}
                         className="w-5 h-5 text-primary-600 rounded border-dark-300 focus:ring-primary-500 cursor-pointer"
                       />
+                      <item.Icon size={18} className="text-dark-500 shrink-0" />
                       <div>
                         <p className="font-medium text-dark-900 dark:text-white">{item.label}</p>
                         <p className="text-xs text-dark-500 dark:text-dark-400">{item.desc}</p>

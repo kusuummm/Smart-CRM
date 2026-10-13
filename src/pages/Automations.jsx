@@ -15,6 +15,8 @@ import {
   MessageSquare,
   ArrowRight,
   ShieldAlert,
+  Phone,
+  Mail,
 } from 'lucide-react';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../context/ConfirmContext';
@@ -482,8 +484,9 @@ export default function Automations({ onNavigate }) {
                 <label className="block font-semibold text-dark-700 dark:text-dark-300 mb-1">
                   Trigger Event
                 </label>
-                <div className="p-2.5 rounded-xl bg-dark-50 dark:bg-dark-900 border border-dark-200 dark:border-dark-700 font-medium">
-                  📞 Inbound call is missed or unanswered by agent
+                <div className="p-2.5 rounded-xl bg-dark-50 dark:bg-dark-900 border border-dark-200 dark:border-dark-700 font-medium flex items-center gap-2">
+                  <PhoneMissed size={14} className="text-rose-500 shrink-0" />
+                  <span>Inbound call is missed or unanswered by agent</span>
                 </div>
               </div>
 
@@ -557,8 +560,14 @@ export default function Automations({ onNavigate }) {
                 <p className="font-bold text-blue-900 dark:text-blue-200">
                   Customer Success Helpline:
                 </p>
-                <p>📞 1800-CRM-HELP (Toll-Free Mon-Sat 9 AM - 7 PM)</p>
-                <p>✉️ support@smartcrm.com</p>
+                <p className="flex items-center gap-2">
+                  <Phone size={13} className="text-blue-700 dark:text-blue-300 shrink-0" />
+                  <span>1800-CRM-HELP (Toll-Free Mon-Sat 9 AM - 7 PM)</span>
+                </p>
+                <p className="flex items-center gap-2">
+                  <Mail size={13} className="text-blue-700 dark:text-blue-300 shrink-0" />
+                  <span>support@smartcrm.com</span>
+                </p>
               </div>
             </div>
 
