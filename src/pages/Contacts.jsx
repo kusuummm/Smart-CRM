@@ -311,12 +311,19 @@ export default function Contacts({ onNavigate }) {
     setActiveCallState('connected');
     audioEngine.stopRingTone();
     setCallTimer(0);
-    setIsRecordingActive(true);
-    addToast('Call connected! Live talk time & real microphone voice recording active.', 'success');
-    try {
-      await realCallRecorder.start();
-    } catch (err) {
-      console.warn('Microphone recorder notice:', err);
+
+    const isRecEnabled = localStorage.getItem('smartcrm_call_recording_enabled') !== 'false';
+    if (isRecEnabled) {
+      setIsRecordingActive(true);
+      addToast('Call connected! Live talk time & real microphone voice recording active.', 'success');
+      try {
+        await realCallRecorder.start();
+      } catch (err) {
+        console.warn('Microphone recorder notice:', err);
+      }
+    } else {
+      setIsRecordingActive(false);
+      addToast('Call connected! Live talk time active (Call recording is toggled OFF in Settings).', 'info');
     }
   };
 

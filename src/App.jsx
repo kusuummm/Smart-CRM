@@ -144,28 +144,66 @@ const pageToPath = {
   'caller-view': '/home',
 };
 
+// Caller-only panel page IDs (Admin is strictly blocked from accessing these)
+const CALLER_PANEL_PAGES = new Set([
+  'home',
+  'contacts',
+  'customers',
+  'leads',
+  'todos',
+  'followups',
+  'call-history',
+  'calls',
+  'tc-calls',
+  'tc-followups',
+  'tc-customers',
+  'tc-leads',
+  'tc-whatsapp',
+  'tc-emails',
+  'tc-events',
+  'tc-search',
+  'reports',
+  'report-detail',
+  'report-details',
+  'insights',
+  'dashboard',
+  'whatsapp',
+  'emails',
+  'events',
+  'quick-message',
+  'notes',
+  'search',
+  'caller-view',
+]);
+
 function AppLayout() {
   const { user, logout } = useAuth();
   const isAdmin = user?.role === 'admin';
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Resolve current page from URL pathname
+  // Resolve current page from URL pathname with strict role boundaries
   const resolvePageFromPath = (pathname) => {
     const cleanPath = pathname.length > 1 && pathname.endsWith('/') ? pathname.slice(0, -1) : pathname;
 
-    if (cleanPath === '/' || !cleanPath) {
-      if (isAdmin && !sessionStorage.getItem('smartcrm_preview_caller')) {
+    if (isAdmin) {
+      // STRICT RULE: Admin cannot access any caller panel!
+      if (cleanPath === '/' || !cleanPath) {
         return 'admin-panel';
       }
-      return 'home';
+      if (cleanPath.startsWith('/admin')) {
+        return pathToPage[cleanPath] || 'admin-panel';
+      }
+      const pageId = pathToPage[cleanPath];
+      if (pageId && CALLER_PANEL_PAGES.has(pageId)) {
+        return 'admin-panel';
+      }
+      return pageId || 'admin-panel';
     }
 
-    if (cleanPath.startsWith('/admin')) {
-      if (!isAdmin) {
-        return 'home';
-      }
-      return pathToPage[cleanPath] || 'admin-panel';
+    // STRICT RULE: Callers cannot access admin panel or overview!
+    if (cleanPath === '/' || !cleanPath || cleanPath.startsWith('/admin')) {
+      return 'home';
     }
 
     return pathToPage[cleanPath] || 'home';
@@ -174,19 +212,24 @@ function AppLayout() {
   const [currentPage, setCurrentPage] = useState(() => resolvePageFromPath(location.pathname));
   const [collapsed, setCollapsed] = useState(false);
 
-  // Sync state whenever URL pathname changes (e.g. Back/Forward button, address bar, direct link)
+  // Sync state and enforce strict role boundaries on route transitions
   useEffect(() => {
     const targetPage = resolvePageFromPath(location.pathname);
     if (currentPage !== targetPage) {
       setCurrentPage(targetPage);
     }
 
-    // Role safety guard
-    if (location.pathname.startsWith('/admin') && !isAdmin) {
-      navigate('/home', { replace: true });
-    } else if (location.pathname === '/' || location.pathname === '') {
-      const defaultTarget = isAdmin && !sessionStorage.getItem('smartcrm_preview_caller') ? '/admin' : '/home';
-      navigate(defaultTarget, { replace: true });
+    if (isAdmin) {
+      // Admin cannot access any caller panel
+      const pageId = pathToPage[location.pathname] || targetPage;
+      if (CALLER_PANEL_PAGES.has(pageId) || location.pathname === '/' || location.pathname === '/home') {
+        navigate('/admin', { replace: true });
+      }
+    } else {
+      // Callers cannot access admin panel
+      if (location.pathname.startsWith('/admin') || location.pathname === '/') {
+        navigate('/home', { replace: true });
+      }
     }
   }, [location.pathname, isAdmin]);
 
@@ -252,6 +295,14 @@ function AppLayout() {
   }, []);
 
   const navigateWithCustomer = (page, value, type = 'customer') => {
+    // Admin cannot navigate to caller panels
+    if (isAdmin && CALLER_PANEL_PAGES.has(page)) {
+      page = 'admin-panel';
+    }
+    if (!isAdmin && page.startsWith('admin-')) {
+      page = 'home';
+    }
+
     if (type === 'status') {
       setSelectedLeadStatus(value || '');
       setSelectedCustomer('');
@@ -274,6 +325,15 @@ function AppLayout() {
   };
 
   const navigateToPage = (page, filter = null) => {
+    // Admin cannot navigate to caller panels
+    if (isAdmin && CALLER_PANEL_PAGES.has(page)) {
+      page = 'admin-panel';
+    }
+    // Callers cannot navigate to admin pages
+    if (!isAdmin && page.startsWith('admin-')) {
+      page = 'home';
+    }
+
     setSelectedCustomer('');
     setSelectedLeadStatus('');
     setSelectedReportId('');

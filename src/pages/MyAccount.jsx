@@ -516,19 +516,6 @@ export default function MyAccount({ onNavigate, onLogout }) {
           <div className="bg-white rounded-xl border border-dark-200 shadow-sm p-6 dark:bg-dark-800 dark:border-dark-700">
             <h3 className="text-lg font-semibold text-dark-900 mb-4 dark:text-white">Account Settings</h3>
             <div className="space-y-3">
-              <button onClick={() => setShowSwitcher(true)} className="w-full flex items-center justify-between p-3 hover:bg-dark-50 rounded-lg transition-colors group dark:hover:bg-dark-700">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
-                    <ChevronRight className="text-purple-600" size={18} />
-                  </div>
-                  <div className="text-left">
-                    <p className="text-sm font-medium text-dark-900 dark:text-white">Switch Account</p>
-                    <p className="text-xs text-dark-500 dark:text-dark-400">Log in as a different user</p>
-                  </div>
-                </div>
-                <ChevronRight size={16} className="text-dark-400 group-hover:text-dark-600 dark:text-dark-500" />
-              </button>
-
               <button onClick={handleLogout} className="w-full flex items-center justify-between p-3 hover:bg-red-50 rounded-lg transition-colors group">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
@@ -588,55 +575,6 @@ export default function MyAccount({ onNavigate, onLogout }) {
         confirmText="Sign Out"
         type="danger"
       />
-
-      {/* Switch Account Modal */}
-      <Modal isOpen={showSwitcher} onClose={() => setShowSwitcher(false)} title="Switch Account" size="md">
-        <div className="space-y-2">
-          {accounts.map((acc) => {
-            const isCurrent = acc.id === user?.id;
-            return (
-              <div
-                key={acc.id}
-                onClick={() => !isCurrent && handleSwitch(acc.id)}
-                className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
-                  isCurrent
-                    ? 'border-primary-300 bg-primary-50 dark:bg-primary-900/20 dark:border-primary-700'
-                    : 'border-dark-200 dark:border-dark-700 hover:bg-dark-50 dark:hover:bg-dark-700 cursor-pointer'
-                }`}
-              >
-                <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-600 rounded-full flex items-center justify-center flex-shrink-0">
-                  <span className="text-white text-sm font-bold">{acc.avatar}</span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-dark-900 dark:text-white truncate">{acc.name}</p>
-                  <p className="text-xs text-dark-500 dark:text-dark-400 truncate">{acc.email}</p>
-                </div>
-                {isCurrent ? (
-                  <span className="flex items-center gap-1 text-xs font-medium text-primary-600 dark:text-primary-400 flex-shrink-0">
-                    <Check size={14} /> Current
-                  </span>
-                ) : switchingId === acc.id ? (
-                  <Loader2 className="animate-spin text-dark-400" size={16} />
-                ) : (
-                  <button onClick={(e) => handleRemoveAccount(acc.id, e)} className="p-1.5 rounded-lg hover:bg-red-50 text-dark-400 hover:text-red-600 flex-shrink-0" title="Remove from this device">
-                    <Trash2 size={14} />
-                  </button>
-                )}
-              </div>
-            );
-          })}
-
-          <button
-            onClick={() => { setShowSwitcher(false); startAddAccount(); }}
-            className="w-full flex items-center gap-3 p-3 rounded-lg border border-dashed border-dark-300 dark:border-dark-600 hover:bg-dark-50 dark:hover:bg-dark-700 transition-colors text-dark-600 dark:text-dark-300"
-          >
-            <div className="w-10 h-10 rounded-full border border-dashed border-dark-300 dark:border-dark-600 flex items-center justify-center flex-shrink-0">
-              <Plus size={18} />
-            </div>
-            <span className="text-sm font-medium">Add another account</span>
-          </button>
-        </div>
-      </Modal>
 
       {/* Logout Confirmation Modal */}
       <LogoutModal

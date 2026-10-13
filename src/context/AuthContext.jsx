@@ -112,16 +112,15 @@ export function AuthProvider({ children }) {
     } catch {
       // Even if the server call fails (e.g. offline), still log out locally.
     }
-    // Logging out ends this remembered session entirely - it should no
-    // longer show up as a one-click "switch back to" option.
-    if (user) {
-      const next = loadAccounts().filter((a) => a.id !== user.id);
-      saveAccounts(next);
-      setAccounts(next);
-    }
     setUser(null);
     localStorage.removeItem('crm_token');
     localStorage.removeItem('crm_user');
+    localStorage.removeItem('crm_accounts');
+    localStorage.removeItem('smartcrm_contacts');
+    localStorage.removeItem('smartcrm_all_calls');
+    localStorage.removeItem('smartcrm_all_tasks');
+    sessionStorage.clear();
+    setAccounts([]);
   };
 
   // Updates the in-memory + persisted user after a successful profile edit,

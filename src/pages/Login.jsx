@@ -5,7 +5,6 @@ import {
   Eye,
   EyeOff,
   Building2,
-  Languages,
   ArrowLeft,
   Mail,
   Lock,
@@ -60,7 +59,7 @@ export default function Login({ isAddingAccount = false, onCancelAdd }) {
   const [errors, setErrors] = useState({});
 
   const { login, loginWithSession, user } = useAuth();
-  const { language, toggleLanguage, t } = useApp();
+  const { t } = useApp();
 
   // Cooldown countdown timer for OTP resend (Forgot Password)
   useEffect(() => {
@@ -259,14 +258,6 @@ export default function Login({ isAddingAccount = false, onCancelAdd }) {
                 </p>
               </div>
             </div>
-
-            <button
-              onClick={toggleLanguage}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-dark-600 dark:text-dark-300 bg-dark-100 dark:bg-dark-800 hover:bg-dark-200 dark:hover:bg-dark-700 rounded-lg transition-colors"
-            >
-              <Languages size={13} />
-              {language === 'en' ? 'हिंदी' : 'English'}
-            </button>
           </div>
 
           {/* ================= MODE 1: LOGIN ================= */}

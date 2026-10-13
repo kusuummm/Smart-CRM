@@ -311,11 +311,8 @@ export function AppProvider({ children }) {
     }
   });
 
-  // Language state
-  const [language, setLanguage] = useState(() => {
-    const saved = localStorage.getItem('language');
-    return saved || 'en';
-  });
+  // Language is strictly English across the system
+  const language = 'en';
 
   // Theme color state
   const [themeColor, setThemeColor] = useState(() => {
@@ -328,6 +325,11 @@ export function AppProvider({ children }) {
     const saved = localStorage.getItem('timezone');
     return saved || 'Asia/Kolkata';
   });
+
+  // Clean up any legacy language setting in localStorage
+  useEffect(() => {
+    localStorage.removeItem('language');
+  }, []);
 
   // Apply dark mode to document
   useEffect(() => {
@@ -355,22 +357,14 @@ export function AppProvider({ children }) {
     localStorage.setItem('themeColor', themeColor);
   }, [themeColor]);
 
-  // Persist language
-  useEffect(() => {
-    localStorage.setItem('language', language);
-  }, [language]);
-
   // Persist timezone
   useEffect(() => {
     localStorage.setItem('timezone', timezone);
   }, [timezone]);
 
-  // Translation function - translates a key to current language
+  // Translation function - translates a key to English
   const t = (key, params) => {
-    let value = translations[language]?.[key] || translations.en[key];
-    if (!value && import.meta.env.DEV) {
-      console.warn(`[i18n] Missing translation key: "${key}"`);
-    }
+    let value = translations.en[key];
     if (value && params && typeof params === 'object') {
       Object.entries(params).forEach(([pKey, pVal]) => {
         value = value.replace(new RegExp(`\\{${pKey}\\}`, 'g'), pVal ?? '');
@@ -379,10 +373,6 @@ export function AppProvider({ children }) {
     return value || key;
   };
 
-  // Translate a fixed-value/enum field (e.g. status: 'active' | 'inactive').
-  // Use ONLY for values from a known, limited set defined in `translations`.
-  // NEVER use this for user-entered data (names, remarks, emails, etc.) —
-  // that data should always be displayed exactly as entered, in any language.
   const tValue = (value) => t(value);
 
   // Toggle dark mode with instant zero-lag DOM class application
@@ -403,14 +393,9 @@ export function AppProvider({ children }) {
     });
   };
 
-  // Toggle language (switch between en and hi)
-  const toggleLanguage = () => {
-    setLanguage(prev => prev === 'en' ? 'hi' : 'en');
-  };
-
   // Format time based on timezone
   const formatTime = (date) => {
-    return new Date(date).toLocaleTimeString(language === 'hi' ? 'hi-IN' : 'en-US', {
+    return new Date(date).toLocaleTimeString('en-US', {
       timeZone: timezone,
       hour: '2-digit',
       minute: '2-digit',
@@ -419,7 +404,7 @@ export function AppProvider({ children }) {
 
   // Format date based on timezone
   const formatDate = (date) => {
-    return new Date(date).toLocaleDateString(language === 'hi' ? 'hi-IN' : 'en-US', {
+    return new Date(date).toLocaleDateString('en-US', {
       timeZone: timezone,
       year: 'numeric',
       month: 'short',
@@ -433,8 +418,6 @@ export function AppProvider({ children }) {
       setDarkMode,
       toggleDarkMode,
       language,
-      setLanguage,
-      toggleLanguage,
       themeColor,
       setThemeColor,
       timezone,

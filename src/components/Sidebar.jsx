@@ -34,11 +34,7 @@ export default function Sidebar({
 }) {
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
-  const isPreviewingCaller =
-    isAdmin &&
-    sessionStorage.getItem('smartcrm_preview_caller') === 'true' &&
-    !currentPage?.startsWith('admin-');
-  const showAdminMenu = isAdmin && !isPreviewingCaller;
+  const showAdminMenu = isAdmin;
 
   // Caller Panel Navigation items matching Reference Superfone CRM
   const callerMenuItems = [

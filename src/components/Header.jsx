@@ -8,14 +8,12 @@ import {
   LogOut,
   Users,
   ChevronDown,
-  Languages,
   Loader2,
   Wallet,
   Radio,
   Menu,
   Shield,
   Phone,
-  Eye,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useNotifications } from '../hooks/useNotifications';
@@ -60,7 +58,7 @@ export default function Header({
   const settingsRef = useRef(null);
   const profileRef = useRef(null);
 
-  const { darkMode, toggleDarkMode, language, toggleLanguage, t } = useApp();
+  const { darkMode, toggleDarkMode, t } = useApp();
 
   useEffect(() => {
     function handleClickOutside(e) {
@@ -106,7 +104,7 @@ export default function Header({
           <Menu size={18} />
         </button>
 
-        {/* Panel Role Badge & Mode Switcher */}
+        {/* Panel Role Badge */}
         {isAdmin ? (
           <div className="flex items-center gap-2">
             <span
@@ -117,33 +115,6 @@ export default function Header({
               <Shield size={13} className="text-rose-600 dark:text-rose-400" />
               ADMIN DESK
             </span>
-
-            {/* Quick Panel Switcher for Admin */}
-            {currentPage?.startsWith('admin-') || currentPage === 'admin-panel' ? (
-              <button
-                onClick={() => {
-                  sessionStorage.setItem('smartcrm_preview_caller', 'true');
-                  onNavigate?.('home');
-                }}
-                className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-dark-600 dark:text-dark-300 hover:text-dark-900 dark:hover:text-white bg-dark-100 hover:bg-dark-200 dark:bg-dark-800 dark:hover:bg-dark-700 border border-dark-200 dark:border-dark-700 transition-colors cursor-pointer"
-                title="Preview Caller Panel View"
-              >
-                <Eye size={13} />
-                <span>Preview Caller Panel</span>
-              </button>
-            ) : (
-              <button
-                onClick={() => {
-                  sessionStorage.removeItem('smartcrm_preview_caller');
-                  onNavigate?.('admin-panel');
-                }}
-                className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold text-white bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700 transition-all shadow-xs cursor-pointer animate-pulse"
-                title="Return to Admin Desk"
-              >
-                <Shield size={13} />
-                <span>Return to Admin Desk</span>
-              </button>
-            )}
           </div>
         ) : (
           <span
@@ -301,16 +272,6 @@ export default function Header({
                   <span>{darkMode ? 'Dark Mode' : 'Light Mode'}</span>
                 </div>
                 <span className="text-[10px] text-dark-400">{darkMode ? 'ON' : 'OFF'}</span>
-              </button>
-              <button
-                onClick={toggleLanguage}
-                className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs hover:bg-dark-100 dark:hover:bg-dark-700 transition-colors"
-              >
-                <div className="flex items-center gap-2 text-dark-700 dark:text-dark-200">
-                  <Languages size={16} />
-                  <span>Language</span>
-                </div>
-                <span className="text-[10px] text-dark-400 uppercase">{language}</span>
               </button>
               <div className="border-t border-dark-200 dark:border-dark-700 my-1"></div>
               <button
