@@ -5,6 +5,7 @@ import { DataTable } from '../components/DataTable';
 import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import ExcelLeadImportModal from '../components/ExcelLeadImportModal';
+import Customer360Modal from '../components/Customer360Modal';
 import { useToast } from '../components/Toast';
 import { leadSources, indianStates, statusColors } from '../data/mockData';
 import { useApp } from '../context/AppContext';
@@ -70,6 +71,10 @@ export default function Customers({ onNavigate }) {
   const { t: translate } = useApp();
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
+
+  // Customer 360 Detail Modal
+  const [customer360Customer, setCustomer360Customer] = useState(null);
+  const [isCustomer360Open, setIsCustomer360Open] = useState(false);
 
   // Admin Bulk Selection & Reassignment State
   const [selectedIds, setSelectedIds] = useState([]);
@@ -257,8 +262,12 @@ export default function Customers({ onNavigate }) {
       sortable: true,
       render: (val, row) => (
         <button
-          onClick={() => onNavigate?.('leads', val)}
-          className="text-primary-600 hover:text-primary-700 hover:underline font-semibold text-left"
+          onClick={() => {
+            setCustomer360Customer(row);
+            setIsCustomer360Open(true);
+          }}
+          className="text-primary-600 hover:text-primary-700 hover:underline font-bold text-left cursor-pointer"
+          title="Click to view complete customer profile, recordings, follow-ups & history"
         >
           {val}
         </button>
@@ -763,6 +772,20 @@ export default function Customers({ onNavigate }) {
           addToast('Leads successfully imported & assigned!', 'success');
         }}
       />
+
+      {/* Customer 360 Full History & Details Modal */}
+      {customer360Customer && (
+        <Customer360Modal
+          isOpen={isCustomer360Open}
+          onClose={() => {
+            setIsCustomer360Open(false);
+            setCustomer360Customer(null);
+          }}
+          customer={customer360Customer}
+          onStartCall={() => onNavigate?.('call-history')}
+          onUpdateContact={() => loadCustomers()}
+        />
+      )}
     </div>
   );
 }

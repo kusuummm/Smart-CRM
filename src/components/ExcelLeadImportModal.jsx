@@ -34,6 +34,7 @@ export default function ExcelLeadImportModal({ isOpen, onClose, onImportSuccess 
   const [step, setStep] = useState('upload');
   const [file, setFile] = useState(null);
   const [rawHeaders, setRawHeaders] = useState([]);
+  const [headerSampleMap, setHeaderSampleMap] = useState({});
   const [rawData, setRawData] = useState([]);
   const [isDragOver, setIsDragOver] = useState(false);
 
@@ -94,6 +95,7 @@ export default function ExcelLeadImportModal({ isOpen, onClose, onImportSuccess 
       setStep('upload');
       setFile(null);
       setRawHeaders([]);
+      setHeaderSampleMap({});
       setRawData([]);
       setBatchName('');
       setProgress({
@@ -111,7 +113,7 @@ export default function ExcelLeadImportModal({ isOpen, onClose, onImportSuccess 
     }
   }, [isOpen]);
 
-  // ================= 1. FILE PARSING =================
+  // ================= 1. FILE PARSING WITH SMART HEADER DETECTION =================
   const handleFileProcess = (selectedFile) => {
     if (!selectedFile) return;
     const validExts = ['.xlsx', '.xls', '.csv'];
@@ -133,14 +135,73 @@ export default function ExcelLeadImportModal({ isOpen, onClose, onImportSuccess 
         const workbook = XLSX.read(data, { type: 'array' });
         const firstSheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[firstSheetName];
-        const json = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
 
-        if (!json || json.length === 0) {
+        // 1. Scan raw rows (header: 1) to smartly find the row where table headers actually begin
+        // This solves sheets that have title banners or empty rows at the top (avoiding __EMPTY_...)
+        const rawRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+        if (!rawRows || rawRows.length === 0) {
           toast.error('The selected spreadsheet appears to be empty');
           return;
         }
 
-        const headers = Object.keys(json[0] || {});
+        const headerKeywords = [
+          'name', 'client', 'customer', 'mobile', 'phone', 'contact', 'number', 'cell',
+          'email', 'mail', 'company', 'org', 'firm', 'business', 'city', 'state', 'location',
+          'product', 'service', 'package', 'source', 'campaign', 'channel', 'status', 'remark',
+          'note', 'comment', 'description', 'call'
+        ];
+
+        let headerRowIndex = 0;
+        let highestScore = -1;
+
+        for (let r = 0; r < Math.min(rawRows.length, 10); r++) {
+          const row = rawRows[r];
+          if (!Array.isArray(row)) continue;
+          let score = 0;
+          let nonBlankCount = 0;
+          for (const cell of row) {
+            if (cell !== undefined && cell !== null && String(cell).trim() !== '') {
+              nonBlankCount++;
+              const str = String(cell).toLowerCase().trim();
+              if (headerKeywords.some((k) => str.includes(k))) {
+                score += 2;
+              }
+            }
+          }
+          if (score > highestScore && nonBlankCount >= 2) {
+            highestScore = score;
+            headerRowIndex = r;
+          }
+        }
+
+        // Re-parse sheet data starting from the detected header row
+        const json = XLSX.utils.sheet_to_json(worksheet, { range: headerRowIndex, defval: '' });
+
+        if (!json || json.length === 0) {
+          toast.error('No customer rows found below the header in this spreadsheet');
+          return;
+        }
+
+        const rawKeys = Object.keys(json[0] || {});
+        // Move friendly named headers first, __EMPTY last
+        const headers = [
+          ...rawKeys.filter((h) => h && !h.startsWith('__EMPTY')),
+          ...rawKeys.filter((h) => h && h.startsWith('__EMPTY')),
+        ];
+
+        // Extract first non-empty sample preview value for every column
+        const sampleMap = {};
+        headers.forEach((h) => {
+          for (let r = 0; r < Math.min(json.length, 10); r++) {
+            const val = json[r]?.[h];
+            if (val !== undefined && val !== null && String(val).trim() !== '') {
+              sampleMap[h] = String(val).trim();
+              break;
+            }
+          }
+        });
+
+        setHeaderSampleMap(sampleMap);
         setRawHeaders(headers);
         setRawData(json);
 
@@ -234,7 +295,29 @@ export default function ExcelLeadImportModal({ isOpen, onClose, onImportSuccess 
         'State': 'Delhi',
         'Interested Product': 'WhatsApp CRM Integration',
         'Lead Source': 'Referral',
-        'Remarks': 'High priority lead',
+        'Remarks': 'High priority lead for annual subscription',
+      },
+      {
+        'Full Name': 'Sneha Rao',
+        'Mobile Number': '9845012345',
+        'Email': 'sneha.rao@techcorp.in',
+        'Company Name': 'TechCorp Solutions',
+        'City': 'Bangalore',
+        'State': 'Karnataka',
+        'Interested Product': 'Auto Dialer & Call Recording',
+        'Lead Source': 'LinkedIn Campaign',
+        'Remarks': 'Looking to automate telecalling team',
+      },
+      {
+        'Full Name': 'Rohit Verma',
+        'Mobile Number': '9711223344',
+        'Email': 'rohit@vermatraders.com',
+        'Company Name': 'Verma Traders',
+        'City': 'Jaipur',
+        'State': 'Rajasthan',
+        'Interested Product': 'CRM Starter Plan',
+        'Lead Source': 'Cold Outreach',
+        'Remarks': 'Follow up next Monday morning',
       },
     ];
 
@@ -494,193 +577,227 @@ export default function ExcelLeadImportModal({ isOpen, onClose, onImportSuccess 
                 </div>
               </div>
 
-              {/* Sample Template & Help Box */}
-              <div className="p-4 rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-                <div className="flex items-start gap-2.5">
-                  <Info size={16} className="text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
-                  <div>
-                    <span className="font-bold text-blue-900 dark:text-blue-200">Need a template to test?</span>
-                    <p className="text-blue-700 dark:text-blue-300 mt-0.5">
-                      Download our ready-made Excel template with standard columns (Name, Mobile, City, Product).
-                    </p>
+              {/* Required Details Guidance Banner */}
+              <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-50/80 via-teal-50/60 to-blue-50/80 dark:from-emerald-950/40 dark:via-dark-800 dark:to-blue-950/40 border border-emerald-200 dark:border-emerald-800/60 space-y-2.5 text-xs">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                  <div className="flex items-center gap-2 font-bold text-emerald-900 dark:text-emerald-200">
+                    <Sparkles size={16} className="text-emerald-600 dark:text-emerald-400 shrink-0" />
+                    <span>What customer details should be in your Excel file?</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleDownloadTemplate}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-xs transition-colors shrink-0"
+                  >
+                    <Download size={13} />
+                    <span>Download Sample Excel Template (.xlsx)</span>
+                  </button>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-dark-700 dark:text-dark-300">
+                  <div className="p-2 rounded-xl bg-white/80 dark:bg-dark-800/80 border border-emerald-200/60 dark:border-emerald-900/60">
+                    <span className="font-bold text-emerald-700 dark:text-emerald-300 flex items-center gap-1">
+                      <CheckCircle2 size={13} /> Mandatory / Required Columns:
+                    </span>
+                    <ul className="mt-1 space-y-0.5 list-disc list-inside text-[11px] text-dark-600 dark:text-dark-400">
+                      <li><strong>Customer Name</strong> (e.g. Aarav Sharma)</li>
+                      <li><strong>Mobile Number</strong> (10-digit number for calling & deduplication)</li>
+                    </ul>
+                  </div>
+                  <div className="p-2 rounded-xl bg-white/80 dark:bg-dark-800/80 border border-blue-200/60 dark:border-blue-900/60">
+                    <span className="font-bold text-blue-700 dark:text-blue-300 flex items-center gap-1">
+                      <Info size={13} /> Optional (Recommended) Columns:
+                    </span>
+                    <ul className="mt-1 space-y-0.5 list-disc list-inside text-[11px] text-dark-600 dark:text-dark-400">
+                      <li>Email, Company Name, City, State</li>
+                      <li>Interested Product, Lead Source, Remarks / Notes</li>
+                    </ul>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleDownloadTemplate}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white dark:bg-dark-800 text-blue-700 dark:text-blue-300 border border-blue-300 dark:border-blue-700 font-semibold hover:bg-blue-50 shrink-0"
-                >
-                  <Download size={13} />
-                  <span>Download Template (.xlsx)</span>
-                </button>
               </div>
             </div>
           )}
 
           {/* ================= STEP 2: COLUMN MAPPING ================= */}
-          {step === 'mapping' && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-bold text-dark-900 dark:text-white">
-                    Map Columns from {file?.name}
-                  </h3>
-                  <p className="text-xs text-dark-500 dark:text-dark-400">
-                    Detected {rawData.length.toLocaleString()} total rows and {rawHeaders.length} columns.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setStep('upload')}
-                  className="text-xs text-dark-500 hover:text-dark-700 flex items-center gap-1"
-                >
-                  <ArrowLeft size={13} /> Change File
-                </button>
-              </div>
+          {step === 'mapping' && (() => {
+            const renderHeaderOptions = (includeSkip = false, skipLabel = '(None / Skip)') => (
+              <>
+                {includeSkip && <option value="">{skipLabel}</option>}
+                {!includeSkip && <option value="">Select column...</option>}
+                {rawHeaders.map((h) => {
+                  const sample = headerSampleMap[h];
+                  const isUnlabeled = h.startsWith('__EMPTY');
+                  const displayLabel = isUnlabeled ? `Column (Unlabeled)` : h;
+                  const preview = sample ? ` (e.g. "${sample.length > 20 ? sample.slice(0, 20) + '...' : sample}")` : '';
+                  return (
+                    <option key={h} value={h}>
+                      {displayLabel}{preview}
+                    </option>
+                  );
+                })}
+              </>
+            );
 
-              {/* Mapping Form Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 p-4 rounded-xl bg-dark-50/70 dark:bg-dark-800/40 border border-dark-200 dark:border-dark-700">
-                {/* Full Name */}
-                <div>
-                  <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1 flex items-center gap-1.5">
-                    <User size={13} className="text-emerald-600" />
-                    <span>Customer Name <strong className="text-red-500">*</strong></span>
-                  </label>
-                  <select
-                    value={mapping.name}
-                    onChange={(e) => setMapping({ ...mapping, name: e.target.value })}
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 text-dark-900 dark:text-white"
-                  >
-                    <option value="">Select column...</option>
-                    {rawHeaders.map((h) => (
-                      <option key={h} value={h}>{h}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Mobile */}
-                <div>
-                  <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1 flex items-center gap-1.5">
-                    <Phone size={13} className="text-emerald-600" />
-                    <span>Mobile Number <strong className="text-red-500">*</strong></span>
-                  </label>
-                  <select
-                    value={mapping.mobile}
-                    onChange={(e) => setMapping({ ...mapping, mobile: e.target.value })}
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 text-dark-900 dark:text-white"
-                  >
-                    <option value="">Select column...</option>
-                    {rawHeaders.map((h) => (
-                      <option key={h} value={h}>{h}</option>
-                    ))}
-                  </select>
+            return (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div>
+                    <h3 className="text-sm font-bold text-dark-900 dark:text-white">
+                      Map Columns from {file?.name}
+                    </h3>
+                    <p className="text-xs text-dark-500 dark:text-dark-400">
+                      Detected {rawData.length.toLocaleString()} total rows and {rawHeaders.length} columns.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleDownloadTemplate}
+                      className="text-xs text-emerald-600 hover:text-emerald-700 font-semibold flex items-center gap-1 border border-emerald-200 dark:border-emerald-800 rounded-lg px-2 py-1"
+                    >
+                      <Download size={12} /> Template
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setStep('upload')}
+                      className="text-xs text-dark-500 hover:text-dark-700 flex items-center gap-1"
+                    >
+                      <ArrowLeft size={13} /> Change File
+                    </button>
+                  </div>
                 </div>
 
-                {/* Email */}
-                <div>
-                  <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1 flex items-center gap-1.5">
-                    <span>Email Address</span>
-                  </label>
-                  <select
-                    value={mapping.email}
-                    onChange={(e) => setMapping({ ...mapping, email: e.target.value })}
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 text-dark-900 dark:text-white"
-                  >
-                    <option value="">(None / Skip)</option>
-                    {rawHeaders.map((h) => (
-                      <option key={h} value={h}>{h}</option>
-                    ))}
-                  </select>
+                {/* Clear Instruction Banner */}
+                <div className="p-3 rounded-xl bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/60 text-xs text-blue-900 dark:text-blue-200 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <Info size={15} className="text-blue-600 shrink-0" />
+                    <span>
+                      <strong>Required:</strong> Please select which spreadsheet column contains the <strong>Customer Name</strong> and <strong>Mobile Number</strong>. All other fields are optional.
+                    </span>
+                  </div>
                 </div>
 
-                {/* Company */}
-                <div>
-                  <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1 flex items-center gap-1.5">
-                    <Building size={13} />
-                    <span>Company / Business</span>
-                  </label>
-                  <select
-                    value={mapping.company}
-                    onChange={(e) => setMapping({ ...mapping, company: e.target.value })}
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 text-dark-900 dark:text-white"
-                  >
-                    <option value="">(None / Skip)</option>
-                    {rawHeaders.map((h) => (
-                      <option key={h} value={h}>{h}</option>
-                    ))}
-                  </select>
-                </div>
+                {/* Mapping Form Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 p-4 rounded-xl bg-dark-50/70 dark:bg-dark-800/40 border border-dark-200 dark:border-dark-700">
+                  {/* Full Name */}
+                  <div>
+                    <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1 flex items-center gap-1.5">
+                      <User size={13} className="text-emerald-600" />
+                      <span>Customer Name <strong className="text-red-500">* (Required)</strong></span>
+                    </label>
+                    <select
+                      value={mapping.name}
+                      onChange={(e) => setMapping({ ...mapping, name: e.target.value })}
+                      className="w-full px-3 py-2 text-xs rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 text-dark-900 dark:text-white"
+                    >
+                      {renderHeaderOptions(false)}
+                    </select>
+                  </div>
 
-                {/* City */}
-                <div>
-                  <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1 flex items-center gap-1.5">
-                    <MapPin size={13} />
-                    <span>City</span>
-                  </label>
-                  <select
-                    value={mapping.city}
-                    onChange={(e) => setMapping({ ...mapping, city: e.target.value })}
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 text-dark-900 dark:text-white"
-                  >
-                    <option value="">(None / Skip)</option>
-                    {rawHeaders.map((h) => (
-                      <option key={h} value={h}>{h}</option>
-                    ))}
-                  </select>
-                </div>
+                  {/* Mobile */}
+                  <div>
+                    <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1 flex items-center gap-1.5">
+                      <Phone size={13} className="text-emerald-600" />
+                      <span>Mobile Number <strong className="text-red-500">* (Required)</strong></span>
+                    </label>
+                    <select
+                      value={mapping.mobile}
+                      onChange={(e) => setMapping({ ...mapping, mobile: e.target.value })}
+                      className="w-full px-3 py-2 text-xs rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 text-dark-900 dark:text-white"
+                    >
+                      {renderHeaderOptions(false)}
+                    </select>
+                  </div>
 
-                {/* State */}
-                <div>
-                  <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1 flex items-center gap-1.5">
-                    <span>State / Region</span>
-                  </label>
-                  <select
-                    value={mapping.state}
-                    onChange={(e) => setMapping({ ...mapping, state: e.target.value })}
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 text-dark-900 dark:text-white"
-                  >
-                    <option value="">(None / Skip)</option>
-                    {rawHeaders.map((h) => (
-                      <option key={h} value={h}>{h}</option>
-                    ))}
-                  </select>
-                </div>
+                  {/* Email */}
+                  <div>
+                    <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1 flex items-center gap-1.5">
+                      <Mail size={13} className="text-dark-400" />
+                      <span>Email Address (Optional)</span>
+                    </label>
+                    <select
+                      value={mapping.email}
+                      onChange={(e) => setMapping({ ...mapping, email: e.target.value })}
+                      className="w-full px-3 py-2 text-xs rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 text-dark-900 dark:text-white"
+                    >
+                      {renderHeaderOptions(true, '(None / Skip)')}
+                    </select>
+                  </div>
 
-                {/* Product */}
-                <div>
-                  <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1 flex items-center gap-1.5">
-                    <Tag size={13} />
-                    <span>Interested Product</span>
-                  </label>
-                  <select
-                    value={mapping.interestedProduct}
-                    onChange={(e) => setMapping({ ...mapping, interestedProduct: e.target.value })}
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 text-dark-900 dark:text-white"
-                  >
-                    <option value="">(None / Skip)</option>
-                    {rawHeaders.map((h) => (
-                      <option key={h} value={h}>{h}</option>
-                    ))}
-                  </select>
-                </div>
+                  {/* Company */}
+                  <div>
+                    <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1 flex items-center gap-1.5">
+                      <Building size={13} className="text-dark-400" />
+                      <span>Company / Business (Optional)</span>
+                    </label>
+                    <select
+                      value={mapping.company}
+                      onChange={(e) => setMapping({ ...mapping, company: e.target.value })}
+                      className="w-full px-3 py-2 text-xs rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 text-dark-900 dark:text-white"
+                    >
+                      {renderHeaderOptions(true, '(None / Skip)')}
+                    </select>
+                  </div>
 
-                {/* Lead Source */}
-                <div>
-                  <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1 flex items-center gap-1.5">
-                    <span>Lead Source</span>
-                  </label>
-                  <select
-                    value={mapping.leadSource}
-                    onChange={(e) => setMapping({ ...mapping, leadSource: e.target.value })}
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 text-dark-900 dark:text-white"
-                  >
-                    <option value="">(None / Default: Other)</option>
-                    {rawHeaders.map((h) => (
-                      <option key={h} value={h}>{h}</option>
-                    ))}
-                  </select>
+                  {/* City */}
+                  <div>
+                    <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1 flex items-center gap-1.5">
+                      <MapPin size={13} className="text-dark-400" />
+                      <span>City (Optional)</span>
+                    </label>
+                    <select
+                      value={mapping.city}
+                      onChange={(e) => setMapping({ ...mapping, city: e.target.value })}
+                      className="w-full px-3 py-2 text-xs rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 text-dark-900 dark:text-white"
+                    >
+                      {renderHeaderOptions(true, '(None / Skip)')}
+                    </select>
+                  </div>
+
+                  {/* State */}
+                  <div>
+                    <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1 flex items-center gap-1.5">
+                      <MapPin size={13} className="text-dark-400" />
+                      <span>State / Region (Optional)</span>
+                    </label>
+                    <select
+                      value={mapping.state}
+                      onChange={(e) => setMapping({ ...mapping, state: e.target.value })}
+                      className="w-full px-3 py-2 text-xs rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 text-dark-900 dark:text-white"
+                    >
+                      {renderHeaderOptions(true, '(None / Skip)')}
+                    </select>
+                  </div>
+
+                  {/* Product */}
+                  <div>
+                    <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1 flex items-center gap-1.5">
+                      <Tag size={13} className="text-dark-400" />
+                      <span>Interested Product (Optional)</span>
+                    </label>
+                    <select
+                      value={mapping.interestedProduct}
+                      onChange={(e) => setMapping({ ...mapping, interestedProduct: e.target.value })}
+                      className="w-full px-3 py-2 text-xs rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 text-dark-900 dark:text-white"
+                    >
+                      {renderHeaderOptions(true, '(None / Skip)')}
+                    </select>
+                  </div>
+
+                  {/* Lead Source */}
+                  <div>
+                    <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1 flex items-center gap-1.5">
+                      <Sparkles size={13} className="text-dark-400" />
+                      <span>Lead Source (Optional)</span>
+                    </label>
+                    <select
+                      value={mapping.leadSource}
+                      onChange={(e) => setMapping({ ...mapping, leadSource: e.target.value })}
+                      className="w-full px-3 py-2 text-xs rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 text-dark-900 dark:text-white"
+                    >
+                      {renderHeaderOptions(true, '(None / Default: Other)')}
+                    </select>
+                  </div>
                 </div>
-              </div>
 
               {/* Live Preview Table */}
               <div>
@@ -726,7 +843,8 @@ export default function ExcelLeadImportModal({ isOpen, onClose, onImportSuccess 
                 </button>
               </div>
             </div>
-          )}
+          );
+        })()}
 
           {/* ================= STEP 3: ASSIGNMENT STRATEGY ================= */}
           {step === 'strategy' && (
@@ -813,18 +931,35 @@ export default function ExcelLeadImportModal({ isOpen, onClose, onImportSuccess 
 
               {/* Telecaller Selection for Round-Robin */}
               {assignmentStrategy === 'round-robin' && (
-                <div className="p-3.5 rounded-xl bg-dark-50/60 dark:bg-dark-800/40 border border-dark-200 dark:border-dark-700 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-semibold text-dark-700 dark:text-dark-300">
-                      Participating Leads ({selectedCallerIds.length} of {activeTelecallers.length} selected)
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedCallerIds(activeTelecallers.map((u) => u._id))}
-                      className="text-[11px] text-emerald-600 font-semibold hover:underline"
-                    >
-                      Select All
-                    </button>
+                <div className="p-3.5 rounded-xl bg-dark-50/60 dark:bg-dark-800/40 border border-dark-200 dark:border-dark-700 space-y-2.5">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div>
+                      <label className="text-xs font-semibold text-dark-700 dark:text-dark-300">
+                        Participating Leads ({selectedCallerIds.length} of {activeTelecallers.length} selected)
+                      </label>
+                      {selectedCallerIds.length > 0 && rawData.length > 0 && (
+                        <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
+                          Each lead will receive approx. ~{Math.ceil(rawData.length / selectedCallerIds.length)} contacts
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 text-[11px] font-semibold">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedCallerIds(activeTelecallers.map((u) => u._id))}
+                        className="text-emerald-600 hover:underline"
+                      >
+                        Select All
+                      </button>
+                      <span className="text-dark-300">|</span>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedCallerIds([])}
+                        className="text-dark-500 hover:underline"
+                      >
+                        Deselect All
+                      </button>
+                    </div>
                   </div>
 
                   {activeTelecallers.length === 0 ? (

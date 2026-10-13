@@ -536,20 +536,170 @@ export default function ContactDetailView({
         </button>
       </div>
 
-      {/* Sub-tab 2: Call History */}
+      {/* Sub-tab 2: Call History for this Contact */}
       {activeSubTab === 'call-history' && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-2">
             <button
               type="button"
               onClick={() => setActiveSubTab('contact')}
-              className="inline-flex items-center gap-1.5 text-xs font-normal text-blue-600 hover:underline cursor-pointer"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:underline cursor-pointer"
             >
               <ArrowLeft size={14} />
               <span>Back to {contactName}'s Overview</span>
             </button>
+
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-dark-500 font-medium">
+                {recentCalls.length} call{recentCalls.length === 1 ? '' : 's'} logged
+              </span>
+              <button
+                type="button"
+                onClick={handleTriggerCall}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
+              >
+                <PhoneCall size={13} />
+                <span>Call {contactName}</span>
+              </button>
+            </div>
           </div>
-          <TeamCallHistoryTable />
+
+          {/* Contact Call History Card */}
+          <div className="bg-white dark:bg-dark-800 rounded-xl border border-dark-200 dark:border-dark-700 p-4 space-y-4 shadow-2xs">
+            <div className="flex items-center justify-between border-b border-dark-100 dark:border-dark-700 pb-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold">
+                  <Phone size={18} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-dark-900 dark:text-white">
+                    Call Logs & Audio Recordings for {contactName}
+                  </h3>
+                  <p className="text-xs text-dark-500 dark:text-dark-400 font-mono">
+                    +91 {contactPhone}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {recentCalls.length === 0 ? (
+              <div className="py-12 text-center rounded-xl border border-dashed border-dark-200 dark:border-dark-700 p-8 space-y-3">
+                <Phone size={32} className="text-dark-300 mx-auto" />
+                <h4 className="text-sm font-semibold text-dark-700 dark:text-dark-300">
+                  No call logs recorded yet
+                </h4>
+                <p className="text-xs text-dark-400 max-w-sm mx-auto">
+                  Click the &quot;Call {contactName}&quot; button above to initiate a call and record the discussion in real time.
+                </p>
+                <button
+                  type="button"
+                  onClick={handleTriggerCall}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+                >
+                  <PhoneCall size={14} />
+                  <span>Place Call Now</span>
+                </button>
+              </div>
+            ) : (
+              <div className="divide-y divide-dark-100 dark:divide-dark-700/60 space-y-2">
+                {recentCalls.map((c) => {
+                  const isPlaying = playingCallId === c.id && isAudioPlaying;
+
+                  return (
+                    <div
+                      key={c.id}
+                      className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-dark-50/50 dark:hover:bg-dark-700/30 px-3 rounded-xl transition-colors"
+                    >
+                      {/* Left: Direction + Status + Time + Agent */}
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                            c.callType === 'missed'
+                              ? 'bg-rose-100 text-rose-600 dark:bg-rose-950/60 dark:text-rose-400'
+                              : 'bg-emerald-100 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400'
+                          }`}
+                        >
+                          <Phone size={15} />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-dark-900 dark:text-white capitalize">
+                              {c.callType || 'Outgoing'} Call
+                            </span>
+                            <span className="text-[11px] text-dark-500 font-mono">
+                              {c.time}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 text-[11px] text-dark-500 mt-0.5">
+                            <div className="w-4 h-4 rounded-full bg-blue-600 text-white flex items-center justify-center text-[9px] font-semibold">
+                              {c.agent ? c.agent.charAt(0).toUpperCase() : 'A'}
+                            </div>
+                            <span>Lead: {c.agent}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Right: Duration + Audio Player + AI Summary + Actions */}
+                      <div className="flex items-center gap-3">
+                        <span className="font-mono text-xs font-semibold text-dark-600 dark:text-dark-300">
+                          {c.duration}
+                        </span>
+
+                        {c.hasRecording ? (
+                          <button
+                            type="button"
+                            onClick={() => handleTogglePlayCall(c)}
+                            className={`p-1.5 rounded-full transition-all cursor-pointer shadow-2xs ${
+                              isPlaying
+                                ? 'text-white bg-rose-600 animate-pulse'
+                                : 'text-blue-600 bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100'
+                            }`}
+                            title={isPlaying ? 'Pause audio' : 'Play call recording'}
+                          >
+                            {isPlaying ? <Pause size={14} /> : <Play size={14} className="ml-0.5" />}
+                          </button>
+                        ) : (
+                          <span className="p-1.5 text-dark-300 dark:text-dark-600" title="No recording">
+                            <VolumeX size={14} />
+                          </span>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => handleOpenAiSummary(c)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-900 hover:bg-blue-100 transition-colors cursor-pointer"
+                        >
+                          <Sparkles size={12} className="text-amber-500" />
+                          <span>AI Summary</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard?.writeText(c.aiSummary?.summary || `Call record with ${c.agent || 'Agent'}`);
+                            addToast('Call details copied to clipboard', 'success');
+                          }}
+                          className="p-1.5 rounded-lg text-dark-400 hover:text-dark-700 hover:bg-dark-100 dark:hover:bg-dark-700 transition-colors cursor-pointer"
+                          title="Copy details"
+                        >
+                          <FileText size={14} />
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteCall(c.id)}
+                          className="p-1.5 rounded-lg text-dark-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-dark-700 transition-colors cursor-pointer"
+                          title="Delete call record"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
       )}
 

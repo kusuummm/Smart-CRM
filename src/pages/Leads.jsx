@@ -22,6 +22,7 @@ import { PageHeader } from '../components/Common';
 import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import ExcelLeadImportModal from '../components/ExcelLeadImportModal';
+import Customer360Modal from '../components/Customer360Modal';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../context/ConfirmContext';
@@ -58,6 +59,10 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
   const [editingLead, setEditingLead] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [expandedRow, setExpandedRow] = useState(null);
+
+  // Customer 360 History Modal
+  const [customer360Lead, setCustomer360Lead] = useState(null);
+  const [isCustomer360Open, setIsCustomer360Open] = useState(false);
   const [statusFilter, setStatusFilter] = useState(selectedLeadStatus || '');
   const [telecallerFilter, setTelecallerFilter] = useState(() => {
     const saved = sessionStorage.getItem('smartcrm_filter_telecaller');
@@ -476,12 +481,30 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
                       </td>
                       <td className="px-4 py-3 font-medium text-dark-900 dark:text-white">
                         <div>
-                          <p className="font-semibold">{lead.customerName || lead.customerId?.name || 'Customer'}</p>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCustomer360Lead(lead);
+                              setIsCustomer360Open(true);
+                            }}
+                            className="font-bold text-left text-primary-600 hover:text-primary-700 hover:underline cursor-pointer block"
+                            title="Click to view complete customer profile, recordings & follow-up"
+                          >
+                            {lead.customerName || lead.customerId?.name || 'Customer'}
+                          </button>
                           {(lead.customerId?.mobile || lead.customerId?.phone) && (
-                            <p className="text-xs text-dark-500 dark:text-dark-400 font-mono mt-0.5">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setCustomer360Lead(lead);
+                                setIsCustomer360Open(true);
+                              }}
+                              className="text-xs text-dark-500 dark:text-dark-400 font-mono mt-0.5 hover:underline cursor-pointer block text-left"
+                              title="Click to view details"
+                            >
                               {lead.customerId?.mobile || lead.customerId?.phone}
                               {lead.customerId?.company ? ` • ${lead.customerId.company}` : ''}
-                            </p>
+                            </button>
                           )}
                         </div>
                       </td>
@@ -1045,6 +1068,20 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
           addToast('Leads successfully imported & assigned!', 'success');
         }}
       />
+
+      {/* Customer 360 Full History & Details Modal */}
+      {customer360Lead && (
+        <Customer360Modal
+          isOpen={isCustomer360Open}
+          onClose={() => {
+            setIsCustomer360Open(false);
+            setCustomer360Lead(null);
+          }}
+          customer={customer360Lead}
+          onStartCall={(cust) => onNavigate?.('call-history')}
+          onUpdateContact={() => loadLeads()}
+        />
+      )}
     </div>
   );
 }

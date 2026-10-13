@@ -32,12 +32,17 @@ import { useToast } from '../components/Toast';
 import { useAuth } from '../context/AuthContext';
 import { getCalls, createCall } from '../api/callHistory';
 import CallRecordingModal from '../components/CallRecordingModal';
+import Customer360Modal from '../components/Customer360Modal';
 import { audioEngine, formatSeconds, generateWaveform } from '../utils/audioPlayer';
 import { realCallRecorder } from '../utils/realCallRecorder';
 
 export default function CallHistory({ onNavigate, initialCallType = 'all' }) {
   const { user } = useAuth();
   const { addToast } = useToast();
+
+  // Customer 360 Full History Modal State
+  const [selected360Customer, setSelected360Customer] = useState(null);
+  const [is360ModalOpen, setIs360ModalOpen] = useState(false);
 
   // Search & Filter states matching screenshots
   const [callTypeFilter, setCallTypeFilter] = useState(initialCallType || 'all');
@@ -945,18 +950,24 @@ export default function CallHistory({ onNavigate, initialCallType = 'all' }) {
                         <div>
                           <button
                             onClick={() => {
-                              if (hasRecording) handleOpenRecordingModal(c);
-                              else addToast(`Customer profile: ${c.customerNumber}`, 'info');
+                              setSelected360Customer(c);
+                              setIs360ModalOpen(true);
                             }}
-                            className="font-semibold text-blue-600 hover:underline font-mono text-xs block text-left"
+                            className="font-bold text-blue-600 hover:text-blue-700 hover:underline text-xs block text-left cursor-pointer transition-colors"
+                            title="Click to view complete customer profile, recordings, follow-ups & history"
+                          >
+                            {c.customerName || 'Customer'}
+                          </button>
+                          <button
+                            onClick={() => {
+                              setSelected360Customer(c);
+                              setIs360ModalOpen(true);
+                            }}
+                            className="font-mono text-[11px] text-dark-500 dark:text-dark-400 block hover:underline hover:text-blue-600 cursor-pointer mt-0.5 text-left"
+                            title="Click to view customer details"
                           >
                             {c.customerNumber}
                           </button>
-                          {c.customerName && (
-                            <span className="text-[11px] text-dark-500 dark:text-dark-400 font-sans block">
-                              {c.customerName}
-                            </span>
-                          )}
                         </div>
                       </td>
 
@@ -1099,20 +1110,34 @@ export default function CallHistory({ onNavigate, initialCallType = 'all' }) {
                       </td>
 
                       {/* CALL TYPE */}
-                      <td className="py-4 px-4 text-dark-700 dark:text-dark-200 font-semibold">
-                        {c.callType}
+                      <td className="py-4 px-4">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-dark-100 dark:bg-dark-800 text-dark-800 dark:text-dark-200">
+                          {c.callType?.toLowerCase() === 'outgoing' ? (
+                            <PhoneOutgoing size={12} className="text-blue-500" />
+                          ) : c.callType?.toLowerCase() === 'incoming' ? (
+                            <PhoneIncoming size={12} className="text-emerald-500" />
+                          ) : (
+                            <PhoneMissed size={12} className="text-rose-500" />
+                          )}
+                          <span>{c.callType}</span>
+                        </span>
                       </td>
 
                       {/* CALL STATUS */}
                       <td className="py-4 px-4">
                         <span
-                          className={`font-semibold ${
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
                             c.callStatus === 'Answered'
-                              ? 'text-dark-800 dark:text-dark-100'
-                              : 'text-dark-400'
+                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800'
+                              : 'bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-950/50 dark:text-rose-300 dark:border-rose-800'
                           }`}
                         >
-                          {c.callStatus}
+                          <span
+                            className={`w-1.5 h-1.5 rounded-full ${
+                              c.callStatus === 'Answered' ? 'bg-emerald-500' : 'bg-rose-500'
+                            }`}
+                          />
+                          <span>{c.callStatus}</span>
                         </span>
                       </td>
 
@@ -1479,6 +1504,19 @@ export default function CallHistory({ onNavigate, initialCallType = 'all' }) {
             setSelectedRecordingCall(null);
           }}
           call={selectedRecordingCall}
+        />
+      )}
+
+      {/* Customer 360 Full History & Details Modal */}
+      {selected360Customer && (
+        <Customer360Modal
+          isOpen={is360ModalOpen}
+          onClose={() => {
+            setIs360ModalOpen(false);
+            setSelected360Customer(null);
+          }}
+          customer={selected360Customer}
+          onStartCall={(cust) => startCall(cust)}
         />
       )}
     </div>
