@@ -48,6 +48,9 @@ import {
   CheckSquare,
   Plus,
   Tag,
+  DollarSign,
+  Link2,
+  ListPlus,
   X,
 } from 'lucide-react';
 import { PageHeader } from '../components/Common';
@@ -147,12 +150,22 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
     customerId: '',
     customerName: '',
     phone: '',
+    email: '',
+    company: '',
     type: 'call',
     date: new Date().toISOString().split('T')[0],
     time: '10:00 AM',
     priority: 'medium',
+    dealValue: '',
+    leadStatus: 'Follow Up Scheduled',
+    reminderBefore: '15_min',
+    meetingLink: '',
+    tags: [],
+    checklist: [],
     remarks: '',
   });
+  const [adminChecklistInput, setAdminChecklistInput] = useState('');
+  const [allCrmContacts, setAllCrmContacts] = useState([]);
   const [taskFilterAgent, setTaskFilterAgent] = useState('all');
   const [taskFilterStatus, setTaskFilterStatus] = useState('all'); // 'all' | 'pending' | 'completed'
   const [taskFilterPriority, setTaskFilterPriority] = useState('all'); // 'all' | 'high' | 'medium' | 'low'
@@ -420,13 +433,29 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
       customerId: '',
       customerName: '',
       phone: '',
+      email: '',
+      company: '',
       type: 'call',
       date: new Date().toISOString().split('T')[0],
       time: '10:00 AM',
       priority: 'medium',
+      dealValue: '',
+      leadStatus: 'Follow Up Scheduled',
+      reminderBefore: '15_min',
+      meetingLink: '',
+      tags: [],
+      checklist: [],
       remarks: '',
     });
+    setAdminChecklistInput('');
     setIsAssignTaskModalOpen(true);
+    if (allCrmContacts.length === 0) {
+      getCustomers({ limit: 500 })
+        .then((res) => {
+          if (res?.customers) setAllCrmContacts(res.customers);
+        })
+        .catch(() => {});
+    }
   };
 
   const handleCreateAssignTask = async (e) => {
@@ -447,12 +476,20 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
         customerId: assignTaskForm.customerId || undefined,
         customerName: assignTaskForm.customerName.trim() || 'General Client Task',
         phone: assignTaskForm.phone.trim() || '',
+        email: assignTaskForm.email.trim() || '',
+        company: assignTaskForm.company.trim() || '',
         assignedTo: assignTaskForm.assignedTo,
         assignedToName: assignedAgent?.name || '',
         type: assignTaskForm.type || 'call',
         date: assignTaskForm.date || new Date().toISOString().split('T')[0],
         time: assignTaskForm.time || '10:00 AM',
         priority: assignTaskForm.priority || 'medium',
+        dealValue: assignTaskForm.dealValue ? Number(assignTaskForm.dealValue) : undefined,
+        leadStatus: assignTaskForm.leadStatus || 'Follow Up Scheduled',
+        reminderBefore: assignTaskForm.reminderBefore || '15_min',
+        meetingLink: assignTaskForm.meetingLink?.trim() || '',
+        tags: assignTaskForm.tags || [],
+        checklist: assignTaskForm.checklist || [],
         remarks: assignTaskForm.remarks.trim(),
         status: 'pending',
       };
@@ -4599,12 +4636,41 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                           {/* Customer / Contact */}
                           <td className="py-3.5 px-4 font-semibold text-dark-900 dark:text-white">
                             <div>
-                              <p className="font-bold text-xs">{task.customerName || task.customerId?.name || 'Customer'}</p>
-                              {(task.phone || task.customerId?.mobile) && (
-                                <p className="text-[11px] text-dark-500 font-normal flex items-center gap-1 mt-0.5">
-                                  <Phone size={10} className="opacity-70" />
-                                  <span>{task.phone || task.customerId?.mobile}</span>
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <p className="font-bold text-xs">{task.customerName || task.customerId?.name || 'Customer'}</p>
+                                {task.company && (
+                                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-dark-100 dark:bg-dark-700 text-dark-600 dark:text-dark-300 font-medium">
+                                    {task.company}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2 flex-wrap text-[11px] text-dark-500 font-normal mt-0.5">
+                                {(task.phone || task.customerId?.mobile) && (
+                                  <span className="flex items-center gap-1">
+                                    <Phone size={10} className="opacity-70" />
+                                    <span>{task.phone || task.customerId?.mobile}</span>
+                                  </span>
+                                )}
+                                {(task.email || task.customerId?.email) && (
+                                  <span className="flex items-center gap-1">
+                                    <Mail size={10} className="opacity-70" />
+                                    <span className="truncate max-w-[130px]">{task.email || task.customerId?.email}</span>
+                                  </span>
+                                )}
+                              </div>
+                              {task.dealValue && (
+                                <p className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">
+                                  ₹{Number(task.dealValue).toLocaleString('en-IN')}
                                 </p>
+                              )}
+                              {task.tags?.length > 0 && (
+                                <div className="flex flex-wrap gap-1 mt-1">
+                                  {task.tags.map((t, i) => (
+                                    <span key={i} className="text-[9px] px-1.5 py-0.2 rounded-full bg-primary-50 dark:bg-primary-950/50 text-primary-600 dark:text-primary-400 border border-primary-200 dark:border-primary-800">
+                                      #{t}
+                                    </span>
+                                  ))}
+                                </div>
                               )}
                             </div>
                           </td>
@@ -4673,6 +4739,25 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                             <p className="text-xs text-dark-700 dark:text-dark-300 line-clamp-2 leading-relaxed">
                               {task.remarks || 'No specific agenda or instructions provided.'}
                             </p>
+                            <div className="flex items-center gap-2 flex-wrap mt-1">
+                              {task.meetingLink && (
+                                <a
+                                  href={task.meetingLink.startsWith('http') ? task.meetingLink : `https://${task.meetingLink}`}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="inline-flex items-center gap-1 text-[11px] text-primary-600 dark:text-primary-400 hover:underline font-semibold"
+                                >
+                                  <Link2 size={10} />
+                                  <span>Meeting Link</span>
+                                </a>
+                              )}
+                              {task.checklist?.length > 0 && (
+                                <span className="inline-flex items-center gap-1 text-[10px] text-dark-500 bg-dark-100 dark:bg-dark-750 px-1.5 py-0.5 rounded">
+                                  <ListPlus size={10} />
+                                  {task.checklist.filter((c) => c.completed).length}/{task.checklist.length} checklist
+                                </span>
+                              )}
+                            </div>
                           </td>
 
                           {/* Actions */}
@@ -4979,13 +5064,13 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
         isOpen={isAssignTaskModalOpen}
         onClose={() => setIsAssignTaskModalOpen(false)}
         title="Assign Task & Follow-up Schedule"
-        size="md"
+        size="lg"
       >
         <form onSubmit={handleCreateAssignTask} className="space-y-4">
           {/* Target Telecaller Selector */}
           <div>
             <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1.5">
-              Assign Task To (Caller / Lead) <span className="text-red-500">*</span>
+              Assign Task To (Caller / Team Member) <span className="text-red-500">*</span>
             </label>
             <select
               value={assignTaskForm.assignedTo}
@@ -5004,15 +5089,54 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
             </select>
           </div>
 
+          {/* Quick Autofill from Existing CRM Leads / Clients */}
+          <div className="p-3 rounded-xl bg-primary-50/60 dark:bg-primary-950/30 border border-primary-200/70 dark:border-primary-800/60">
+            <label className="block text-xs font-bold text-primary-900 dark:text-primary-300 mb-1">
+              Quick Autofill from Existing CRM Contact (Optional)
+            </label>
+            <p className="text-[11px] text-dark-500 dark:text-dark-400 mb-2">
+              Select an existing client or lead to automatically populate contact information.
+            </p>
+            <select
+              value={assignTaskForm.customerId || ''}
+              onChange={(e) => {
+                const cId = e.target.value;
+                if (!cId) {
+                  setAssignTaskForm((prev) => ({ ...prev, customerId: '' }));
+                  return;
+                }
+                const found = allCrmContacts.find((c) => c._id === cId);
+                if (found) {
+                  setAssignTaskForm((prev) => ({
+                    ...prev,
+                    customerId: found._id,
+                    customerName: found.name || prev.customerName,
+                    phone: found.mobile || found.phone || prev.phone,
+                    email: found.email || prev.email,
+                    company: found.company || prev.company,
+                  }));
+                }
+              }}
+              className="w-full px-3 py-2 text-xs rounded-lg border border-primary-300 dark:border-primary-700 bg-white dark:bg-dark-900 text-dark-900 dark:text-white focus:outline-none focus:border-primary-500 font-medium"
+            >
+              <option value="">-- Manual Entry / Type New Contact Details Below --</option>
+              {allCrmContacts.map((c) => (
+                <option key={c._id} value={c._id}>
+                  {c.name} {c.company ? `(${c.company})` : ''} — {c.mobile || c.phone || 'No Phone'}
+                </option>
+              ))}
+            </select>
+          </div>
+
           {/* Customer / Contact Details */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1.5">
+              <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1">
                 Customer / Contact Name <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
-                placeholder="e.g. Ramesh Patel or Acme Corp"
+                placeholder="e.g. Ramesh Patel"
                 value={assignTaskForm.customerName}
                 onChange={(e) => setAssignTaskForm({ ...assignTaskForm, customerName: e.target.value })}
                 className="w-full px-3 py-2 text-xs rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-900 text-dark-900 dark:text-white focus:outline-none focus:border-primary-500"
@@ -5020,7 +5144,23 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1.5">
+              <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1">
+                Company / Organization
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. Apex Enterprises Ltd."
+                value={assignTaskForm.company}
+                onChange={(e) => setAssignTaskForm({ ...assignTaskForm, company: e.target.value })}
+                className="w-full px-3 py-2 text-xs rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-900 text-dark-900 dark:text-white focus:outline-none focus:border-primary-500"
+              />
+            </div>
+          </div>
+
+          {/* Contact Phone & Email */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1">
                 Contact Phone / Mobile
               </label>
               <input
@@ -5031,12 +5171,24 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                 className="w-full px-3 py-2 text-xs rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-900 text-dark-900 dark:text-white focus:outline-none focus:border-primary-500"
               />
             </div>
+            <div>
+              <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1">
+                Email Address
+              </label>
+              <input
+                type="email"
+                placeholder="e.g. contact@domain.com"
+                value={assignTaskForm.email}
+                onChange={(e) => setAssignTaskForm({ ...assignTaskForm, email: e.target.value })}
+                className="w-full px-3 py-2 text-xs rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-900 text-dark-900 dark:text-white focus:outline-none focus:border-primary-500"
+              />
+            </div>
           </div>
 
-          {/* Task Type / Category & Priority */}
+          {/* Task Category & Pipeline Stage */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1.5">
+              <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1">
                 Task Category
               </label>
               <select
@@ -5045,35 +5197,103 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                 className="w-full px-3 py-2 text-xs rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-900 text-dark-900 dark:text-white font-medium focus:outline-none focus:border-primary-500"
               >
                 <option value="call">Follow-up Call</option>
-                <option value="meeting">Scheduled Meeting</option>
-                <option value="followup">General Follow-up</option>
-                <option value="task">Action Item / Task</option>
+                <option value="meeting">In-Person Meeting</option>
+                <option value="demo">Online Video Demo</option>
+                <option value="followup">Follow-Up Touchpoint</option>
+                <option value="task">Action Task / To-Do</option>
                 <option value="email">Email Outreach</option>
                 <option value="whatsapp">WhatsApp Outreach</option>
-                <option value="demo">Product Demo</option>
+                <option value="quotation">Quotation / Proposal Prep</option>
+                <option value="negotiation">Contract Negotiation</option>
               </select>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1">
+                Lead / Pipeline Stage
+              </label>
+              <select
+                value={assignTaskForm.leadStatus}
+                onChange={(e) => setAssignTaskForm({ ...assignTaskForm, leadStatus: e.target.value })}
+                className="w-full px-3 py-2 text-xs rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-900 text-dark-900 dark:text-white font-medium focus:outline-none focus:border-primary-500"
+              >
+                <option value="New Lead">New Lead</option>
+                <option value="Contacted">Contacted</option>
+                <option value="Interested">Interested / Qualified</option>
+                <option value="Follow Up Scheduled">Follow Up Scheduled</option>
+                <option value="Demo Scheduled">Demo Scheduled</option>
+                <option value="Quotation Sent">Quotation Sent</option>
+                <option value="Negotiation">Negotiation / Proposal Review</option>
+                <option value="Closed Won">Closed Won</option>
+                <option value="Closed Lost">Closed Lost</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Priority & Deal Value */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1">
+                Task Priority
+              </label>
+              <div className="grid grid-cols-4 gap-1.5">
+                {[
+                  { id: 'low', label: 'Low', color: 'text-blue-700 bg-blue-50 border-blue-200 dark:bg-blue-950/40 dark:border-blue-800' },
+                  { id: 'medium', label: 'Medium', color: 'text-amber-700 bg-amber-50 border-amber-200 dark:bg-amber-950/40 dark:border-amber-800' },
+                  { id: 'high', label: 'High', color: 'text-orange-700 bg-orange-50 border-orange-200 dark:bg-orange-950/40 dark:border-orange-800' },
+                  { id: 'urgent', label: 'Urgent', color: 'text-red-700 bg-red-50 border-red-200 dark:bg-red-950/40 dark:border-red-800' },
+                ].map((p) => {
+                  const active = assignTaskForm.priority === p.id;
+                  return (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => setAssignTaskForm({ ...assignTaskForm, priority: p.id })}
+                      className={`py-1.5 text-center text-xs font-bold rounded-lg border transition-all cursor-pointer ${
+                        active
+                          ? `${p.color} ring-2 ring-primary-500`
+                          : 'bg-white dark:bg-dark-900 border-dark-200 dark:border-dark-700 text-dark-600 dark:text-dark-400 opacity-60'
+                      }`}
+                    >
+                      {p.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1.5">
-                Task Priority
+              <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1">
+                Deal / Potential Value (₹)
               </label>
-              <select
-                value={assignTaskForm.priority}
-                onChange={(e) => setAssignTaskForm({ ...assignTaskForm, priority: e.target.value })}
-                className="w-full px-3 py-2 text-xs rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-900 text-dark-900 dark:text-white font-medium focus:outline-none focus:border-primary-500"
-              >
-                <option value="high">High Priority (Urgent)</option>
-                <option value="medium">Medium Priority (Standard)</option>
-                <option value="low">Low Priority (Flexible)</option>
-              </select>
+              <div className="relative">
+                <span className="absolute left-3 top-2 text-xs font-bold text-dark-400">₹</span>
+                <input
+                  type="number"
+                  placeholder="e.g. 50000"
+                  value={assignTaskForm.dealValue}
+                  onChange={(e) => setAssignTaskForm({ ...assignTaskForm, dealValue: e.target.value })}
+                  className="w-full pl-7 pr-3 py-2 text-xs rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-900 text-dark-900 dark:text-white focus:outline-none focus:border-primary-500 font-semibold"
+                />
+              </div>
+              <div className="flex items-center gap-1.5 mt-1 overflow-x-auto pb-0.5">
+                {[10000, 25000, 50000, 100000, 250000].map((v) => (
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => setAssignTaskForm({ ...assignTaskForm, dealValue: v })}
+                    className="text-[10px] px-1.5 py-0.5 rounded bg-dark-100 dark:bg-dark-700 text-dark-600 dark:text-dark-300 font-semibold hover:bg-dark-200 cursor-pointer whitespace-nowrap"
+                  >
+                    ₹{(v / 1000).toFixed(0)}k
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
           {/* Schedule Date & Time */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1.5">
+              <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1">
                 Due Date
               </label>
               <input
@@ -5082,19 +5302,204 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                 onChange={(e) => setAssignTaskForm({ ...assignTaskForm, date: e.target.value })}
                 className="w-full px-3 py-2 text-xs rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-900 text-dark-900 dark:text-white focus:outline-none focus:border-primary-500"
               />
+              <div className="flex items-center gap-1 mt-1">
+                <button
+                  type="button"
+                  onClick={() => setAssignTaskForm({ ...assignTaskForm, date: new Date().toISOString().split('T')[0] })}
+                  className="text-[10px] px-2 py-0.5 rounded bg-dark-100 dark:bg-dark-700 text-dark-600 dark:text-dark-300 hover:bg-dark-200 font-medium cursor-pointer"
+                >
+                  Today
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const tmrw = new Date();
+                    tmrw.setDate(tmrw.getDate() + 1);
+                    setAssignTaskForm({ ...assignTaskForm, date: tmrw.toISOString().split('T')[0] });
+                  }}
+                  className="text-[10px] px-2 py-0.5 rounded bg-dark-100 dark:bg-dark-700 text-dark-600 dark:text-dark-300 hover:bg-dark-200 font-medium cursor-pointer"
+                >
+                  Tomorrow
+                </button>
+              </div>
             </div>
+
             <div>
-              <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1.5">
+              <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1">
                 Due Time
               </label>
               <input
-                type="text"
-                placeholder="e.g. 10:00 AM or 04:30 PM"
-                value={assignTaskForm.time}
+                type="time"
+                value={assignTaskForm.time?.includes(':') ? assignTaskForm.time.split(' ')[0] : '10:00'}
                 onChange={(e) => setAssignTaskForm({ ...assignTaskForm, time: e.target.value })}
                 className="w-full px-3 py-2 text-xs rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-900 text-dark-900 dark:text-white focus:outline-none focus:border-primary-500"
               />
+              <div className="flex items-center gap-1 mt-1 overflow-x-auto pb-0.5">
+                {['10:00 AM', '11:30 AM', '02:00 PM', '04:30 PM', '06:00 PM'].map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setAssignTaskForm({ ...assignTaskForm, time: t })}
+                    className="text-[10px] px-1.5 py-0.5 rounded bg-dark-100 dark:bg-dark-700 text-dark-600 dark:text-dark-300 hover:bg-dark-200 font-medium cursor-pointer whitespace-nowrap"
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
             </div>
+          </div>
+
+          {/* Reminder & Meeting Link */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1">
+                Reminder Notification Alert
+              </label>
+              <select
+                value={assignTaskForm.reminderBefore}
+                onChange={(e) => setAssignTaskForm({ ...assignTaskForm, reminderBefore: e.target.value })}
+                className="w-full px-3 py-2 text-xs rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-900 text-dark-900 dark:text-white font-medium focus:outline-none focus:border-primary-500"
+              >
+                <option value="at_time">At time of event</option>
+                <option value="15_min">15 minutes before</option>
+                <option value="30_min">30 minutes before</option>
+                <option value="1_hour">1 hour before</option>
+                <option value="2_hours">2 hours before</option>
+                <option value="1_day">1 day before</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1">
+                Meeting Link / Doc Link (Optional)
+              </label>
+              <input
+                type="url"
+                placeholder="https://meet.google.com/xyz or Zoom / PDF url"
+                value={assignTaskForm.meetingLink}
+                onChange={(e) => setAssignTaskForm({ ...assignTaskForm, meetingLink: e.target.value })}
+                className="w-full px-3 py-2 text-xs rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-900 text-dark-900 dark:text-white focus:outline-none focus:border-primary-500"
+              />
+            </div>
+          </div>
+
+          {/* Tags & Badges */}
+          <div>
+            <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1.5">
+              Quick Tags & Deal Badges
+            </label>
+            <div className="flex flex-wrap gap-1.5">
+              {[
+                'Hot Lead',
+                'High Value',
+                'Decision Maker',
+                'Follow-up Required',
+                'Demo Needed',
+                'VIP Client',
+                'Payment Pending',
+                'Enterprise',
+              ].map((tag) => {
+                const isSelected = assignTaskForm.tags.includes(tag);
+                return (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => {
+                      if (isSelected) {
+                        setAssignTaskForm({
+                          ...assignTaskForm,
+                          tags: assignTaskForm.tags.filter((t) => t !== tag),
+                        });
+                      } else {
+                        setAssignTaskForm({
+                          ...assignTaskForm,
+                          tags: [...assignTaskForm.tags, tag],
+                        });
+                      }
+                    }}
+                    className={`px-2.5 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer ${
+                      isSelected
+                        ? 'bg-primary-600 text-white border-primary-600 shadow-2xs'
+                        : 'bg-dark-50 dark:bg-dark-900 text-dark-600 dark:text-dark-400 border-dark-200 dark:border-dark-700 hover:border-dark-300'
+                    }`}
+                  >
+                    #{tag}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Action Checklist / Sub-Tasks */}
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-xs font-semibold text-dark-700 dark:text-dark-300">
+                Action Checklist / Sub-Tasks
+              </label>
+              <span className="text-[11px] text-dark-500">
+                {assignTaskForm.checklist?.length || 0} sub-tasks
+              </span>
+            </div>
+            <div className="flex items-center gap-2 mb-2">
+              <input
+                type="text"
+                placeholder="e.g. Confirm product pitch deck, Send quotation PDF..."
+                value={adminChecklistInput}
+                onChange={(e) => setAdminChecklistInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (adminChecklistInput.trim()) {
+                      setAssignTaskForm({
+                        ...assignTaskForm,
+                        checklist: [...assignTaskForm.checklist, { text: adminChecklistInput.trim(), completed: false }],
+                      });
+                      setAdminChecklistInput('');
+                    }
+                  }
+                }}
+                className="flex-1 px-3 py-1.5 text-xs rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-900 text-dark-900 dark:text-white focus:outline-none focus:border-primary-500"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  if (adminChecklistInput.trim()) {
+                    setAssignTaskForm({
+                      ...assignTaskForm,
+                      checklist: [...assignTaskForm.checklist, { text: adminChecklistInput.trim(), completed: false }],
+                    });
+                    setAdminChecklistInput('');
+                  }
+                }}
+                className="px-3 py-1.5 bg-dark-100 hover:bg-dark-200 dark:bg-dark-700 dark:hover:bg-dark-600 text-dark-800 dark:text-dark-200 text-xs font-bold rounded-xl transition-colors cursor-pointer"
+              >
+                + Add
+              </button>
+            </div>
+            {assignTaskForm.checklist.length > 0 && (
+              <div className="space-y-1.5 max-h-32 overflow-y-auto pr-1">
+                {assignTaskForm.checklist.map((item, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center justify-between gap-2 p-2 rounded-lg bg-dark-50 dark:bg-dark-900/60 border border-dark-200/60 dark:border-dark-700/60 text-xs"
+                  >
+                    <span className="text-dark-800 dark:text-dark-200">{item.text}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAssignTaskForm({
+                          ...assignTaskForm,
+                          checklist: assignTaskForm.checklist.filter((_, i) => i !== idx),
+                        });
+                      }}
+                      className="text-dark-400 hover:text-red-500 transition-colors cursor-pointer"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Remarks / Instructions */}
@@ -5117,7 +5522,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
             <button
               type="button"
               onClick={() => setIsAssignTaskModalOpen(false)}
-              className="px-4 py-2 text-xs font-semibold text-dark-600 dark:text-dark-300 hover:bg-dark-100 dark:hover:bg-dark-700 rounded-xl transition-colors"
+              className="px-4 py-2 text-xs font-semibold text-dark-600 dark:text-dark-300 hover:bg-dark-100 dark:hover:bg-dark-700 rounded-xl transition-colors cursor-pointer"
             >
               Cancel
             </button>
