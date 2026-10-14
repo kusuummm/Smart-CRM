@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter, useLocation, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { AppProvider, useApp } from './context/AppContext';
@@ -7,35 +7,48 @@ import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import { Toaster } from 'react-hot-toast';
 
-// Page components
+// Core synchronous pages for instant initial paint
 import Login from './pages/Login';
 import HomeDashboard from './pages/HomeDashboard';
-import Teams from './pages/Teams';
-import Insights from './pages/Insights';
-import Dashboard from './pages/Dashboard';
-import Customers from './pages/Customers';
-import Contacts from './pages/Contacts';
-import Leads from './pages/Leads';
-import ToDos from './pages/ToDos';
-import FollowUps from './pages/FollowUps';
-import CallHistory from './pages/CallHistory';
-import WhatsApp from './pages/WhatsApp';
-import Broadcast from './pages/Broadcast';
-import WalletPage from './pages/WalletPage';
-import PlansBilling from './pages/PlansBilling';
-import Automations from './pages/Automations';
-import TeamMembers from './pages/TeamMembers';
-import Notes from './pages/Notes';
-import QuickMessage from './pages/QuickMessage';
-import Emails from './pages/Emails';
-import Events from './pages/Events';
-import Reports from './pages/Reports';
-import ReportDetails from './pages/ReportDetails';
-import AdminPanel from './pages/AdminPanel';
-import UserPanel from './pages/UserPanel';
-import SearchPage from './pages/SearchPage';
-import MyAccount from './pages/MyAccount';
-import Settings from './pages/Settings';
+
+// Dynamic code-split pages (loaded on demand)
+const Teams = lazy(() => import('./pages/Teams'));
+const Insights = lazy(() => import('./pages/Insights'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Customers = lazy(() => import('./pages/Customers'));
+const Contacts = lazy(() => import('./pages/Contacts'));
+const Leads = lazy(() => import('./pages/Leads'));
+const ToDos = lazy(() => import('./pages/ToDos'));
+const FollowUps = lazy(() => import('./pages/FollowUps'));
+const CallHistory = lazy(() => import('./pages/CallHistory'));
+const WhatsApp = lazy(() => import('./pages/WhatsApp'));
+const Broadcast = lazy(() => import('./pages/Broadcast'));
+const WalletPage = lazy(() => import('./pages/WalletPage'));
+const PlansBilling = lazy(() => import('./pages/PlansBilling'));
+const Automations = lazy(() => import('./pages/Automations'));
+const TeamMembers = lazy(() => import('./pages/TeamMembers'));
+const Notes = lazy(() => import('./pages/Notes'));
+const QuickMessage = lazy(() => import('./pages/QuickMessage'));
+const Emails = lazy(() => import('./pages/Emails'));
+const Events = lazy(() => import('./pages/Events'));
+const Reports = lazy(() => import('./pages/Reports'));
+const ReportDetails = lazy(() => import('./pages/ReportDetails'));
+const AdminPanel = lazy(() => import('./pages/AdminPanel'));
+const UserPanel = lazy(() => import('./pages/UserPanel'));
+const SearchPage = lazy(() => import('./pages/SearchPage'));
+const MyAccount = lazy(() => import('./pages/MyAccount'));
+const Settings = lazy(() => import('./pages/Settings'));
+
+function PageLoadingFallback() {
+  return (
+    <div className="flex items-center justify-center min-h-[420px] w-full">
+      <div className="flex flex-col items-center gap-3 text-dark-500 dark:text-dark-400">
+        <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin" />
+        <span className="text-xs font-semibold animate-pulse text-dark-600 dark:text-dark-300">Loading view...</span>
+      </div>
+    </div>
+  );
+}
 
 // Interactive Modals matching reference UI
 import BuyNumberModal from './components/BuyNumberModal';
@@ -525,7 +538,9 @@ function AppLayout() {
             collapsed ? 'ml-[72px]' : 'ml-[230px]'
           }`}
         >
-          {pageContent}
+          <Suspense fallback={<PageLoadingFallback />}>
+            {pageContent}
+          </Suspense>
         </main>
       </div>
 
