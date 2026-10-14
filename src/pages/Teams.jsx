@@ -54,9 +54,23 @@ export default function Teams({ onNavigate, onOpenBuyNumber }) {
   });
 
   // Create Team Modal State
+  const defaultNewTeam = {
+    name: '',
+    department: 'Sales & Outbound Telecalling',
+    number: '',
+    backupNumber: '',
+    teamLead: '',
+    selectedMemberIds: [],
+    leadsQuota: 5000,
+    dailyCallTarget: 50,
+    shift: 'General Day Shift (09:30 AM – 06:30 PM)',
+    workingDays: 'Monday to Saturday (6 days)',
+    callRecording: true,
+    status: 'Active',
+    description: '',
+  };
   const [isCreateTeamModalOpen, setIsCreateTeamModalOpen] = useState(false);
-  const [newTeamName, setNewTeamName] = useState('');
-  const [newTeamNumber, setNewTeamNumber] = useState('');
+  const [newTeamForm, setNewTeamForm] = useState(defaultNewTeam);
 
   // Selected Team for Detail View (matching 5 screenshots)
   const [selectedTeamForDetails, setSelectedTeamForDetails] = useState(null);
@@ -169,20 +183,42 @@ export default function Teams({ onNavigate, onOpenBuyNumber }) {
 
   const handleCreateTeam = (e) => {
     e.preventDefault();
-    if (!newTeamName.trim()) {
+    if (!newTeamForm.name.trim()) {
       addToast('Please enter a team name', 'error');
       return;
     }
+
+    const assignedStaff = staffList.filter((s) => newTeamForm.selectedMemberIds.includes(s.id));
+    const randomTeamId = `TM-${Math.floor(1000 + Math.random() * 9000)}`;
+    const nextId = teams.length > 0 ? Math.max(...teams.map((t) => Number(t.id) || 0)) + 1 : 1;
+
+    const expiryDate = new Date();
+    expiryDate.setFullYear(expiryDate.getFullYear() + 1);
+    const expStr = `${expiryDate.getDate().toString().padStart(2, '0')}/${(expiryDate.getMonth() + 1).toString().padStart(2, '0')}/${expiryDate.getFullYear()}`;
+
     const created = {
-      id: teams.length > 0 ? Math.max(...teams.map((t) => Number(t.id) || 0)) + 1 : 1,
-      name: newTeamName.trim(),
-      number: newTeamNumber.trim() || 'No number assigned',
-      status: 'Active',
-      staffActive: 0,
-      staffTotal: 0,
+      id: nextId,
+      teamId: randomTeamId,
+      name: newTeamForm.name.trim(),
+      department: newTeamForm.department,
+      number: newTeamForm.number.trim() || 'Virtual Line Pending',
+      backupNumber: newTeamForm.backupNumber.trim() || '-',
+      teamLead: newTeamForm.teamLead || (assignedStaff[0]?.name || 'Unassigned'),
+      status: newTeamForm.status || 'Active',
+      staffActive: assignedStaff.length,
+      staffTotal: Math.max(assignedStaff.length, 5),
+      staffMembers: assignedStaff,
       leadsUsed: 0,
-      leadsTotal: 1000,
+      leadsTotal: Number(newTeamForm.leadsQuota) || 5000,
+      dailyCallTarget: Number(newTeamForm.dailyCallTarget) || 50,
+      shift: newTeamForm.shift,
+      workingDays: newTeamForm.workingDays,
+      callRecording: Boolean(newTeamForm.callRecording),
+      description: newTeamForm.description.trim(),
+      expiryDate: expStr,
+      plan: 'Unlimited All-in-One Pro',
     };
+
     const updated = [...teams, created];
     setTeams(updated);
     try {
@@ -190,9 +226,8 @@ export default function Teams({ onNavigate, onOpenBuyNumber }) {
       window.dispatchEvent(new Event('storage'));
     } catch {}
     setIsCreateTeamModalOpen(false);
-    setNewTeamName('');
-    setNewTeamNumber('');
-    addToast(`Team "${created.name}" created successfully!`, 'success');
+    setNewTeamForm(defaultNewTeam);
+    addToast(`Team "${created.name}" created successfully with ${assignedStaff.length} member(s)!`, 'success');
   };
 
   const handleRenewSuccess = () => {
@@ -455,9 +490,72 @@ export default function Teams({ onNavigate, onOpenBuyNumber }) {
 
                 <div className="space-y-1">
                   <p className="text-dark-900 dark:text-white font-bold">
-                    Status:{' '}
-                    <span className="font-semibold text-emerald-600 dark:text-emerald-400">
-                      {currentTeam.status}
+                    Department:{' '}
+                    <span className="font-normal text-dark-700 dark:text-dark-300">
+                      {currentTeam.department || 'Sales & Telecalling'}
+                    </span>
+                  </p>
+                </div>
+
+                <div className="space-y-1">
+                  <p className="text-dark-900 dark:text-white font-bold">
+                    Team Leader:{' '}
+                    <span className="font-normal text-dark-700 dark:text-dark-300">
+                      {currentTeam.teamLead || 'Unassigned'}
+                    </span>
+                  </p>
+                </div>
+
+                <div className="space-y-1">
+                  <p className="text-dark-900 dark:text-white font-bold">
+                    Backup Number:{' '}
+                    <span className="font-normal font-mono text-dark-700 dark:text-dark-300">
+                      {currentTeam.backupNumber || '-'}
+                    </span>
+                  </p>
+                </div>
+
+                <div className="space-y-1">
+                  <p className="text-dark-900 dark:text-white font-bold">
+                    Operating Shift:{' '}
+                    <span className="font-normal text-dark-700 dark:text-dark-300">
+                      {currentTeam.shift || '09:30 AM – 06:30 PM'}
+                    </span>
+                  </p>
+                </div>
+
+                <div className="space-y-1">
+                  <p className="text-dark-900 dark:text-white font-bold">
+                    Working Days:{' '}
+                    <span className="font-normal text-dark-700 dark:text-dark-300">
+                      {currentTeam.workingDays || 'Monday to Saturday'}
+                    </span>
+                  </p>
+                </div>
+
+                <div className="space-y-1">
+                  <p className="text-dark-900 dark:text-white font-bold">
+                    Call Recording:{' '}
+                    <span className="font-semibold text-blue-600 dark:text-blue-400">
+                      {currentTeam.callRecording !== false ? 'Enabled (100% Audio Transcripts)' : 'Disabled'}
+                    </span>
+                  </p>
+                </div>
+
+                <div className="space-y-1">
+                  <p className="text-dark-900 dark:text-white font-bold">
+                    Daily Call Target:{' '}
+                    <span className="font-normal text-dark-700 dark:text-dark-300">
+                      {currentTeam.dailyCallTarget ? `${currentTeam.dailyCallTarget} calls / agent` : '50 calls / agent'}
+                    </span>
+                  </p>
+                </div>
+
+                <div className="space-y-1">
+                  <p className="text-dark-900 dark:text-white font-bold">
+                    Leads Allocation:{' '}
+                    <span className="font-normal text-dark-700 dark:text-dark-300">
+                      {currentTeam.leadsUsed || 0} / {currentTeam.leadsTotal || 5000} leads
                     </span>
                   </p>
                 </div>
@@ -466,10 +564,21 @@ export default function Teams({ onNavigate, onOpenBuyNumber }) {
                   <p className="text-dark-900 dark:text-white font-bold">
                     Expiry Date:{' '}
                     <span className="font-normal text-dark-700 dark:text-dark-300">
-                      {currentTeam.expiryDate}
+                      {currentTeam.expiryDate || '14/10/2027'}
                     </span>
                   </p>
                 </div>
+
+                {currentTeam.description && (
+                  <div className="space-y-1 md:col-span-2">
+                    <p className="text-dark-900 dark:text-white font-bold">
+                      Team Objective / Description:{' '}
+                      <span className="font-normal text-dark-700 dark:text-dark-300">
+                        {currentTeam.description}
+                      </span>
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -2009,60 +2118,387 @@ export default function Teams({ onNavigate, onOpenBuyNumber }) {
 
       {/* Create Team Modal */}
       {isCreateTeamModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
-          <div className="bg-white dark:bg-dark-800 rounded-2xl max-w-sm w-full border border-dark-200 dark:border-dark-700 p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-base font-bold text-dark-900 dark:text-white">Create New Team</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-white dark:bg-dark-900 rounded-2xl max-w-2xl w-full max-h-[92vh] border border-dark-200 dark:border-dark-700 shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95">
+            {/* Header */}
+            <div className="p-4 sm:p-5 border-b border-dark-200 dark:border-dark-700 flex items-center justify-between bg-dark-50/50 dark:bg-dark-800/40">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center flex-shrink-0 shadow-2xs">
+                  <Building2 size={18} />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-dark-900 dark:text-white">
+                    Create New Team
+                  </h3>
+                  <p className="text-xs text-dark-500">
+                    Configure team parameters, cloud telephony routing, member allocations, and operational targets.
+                  </p>
+                </div>
+              </div>
               <button
+                type="button"
                 onClick={() => setIsCreateTeamModalOpen(false)}
-                className="p-1 rounded-lg text-dark-400 hover:text-dark-700 transition-colors"
+                className="p-1.5 rounded-lg text-dark-400 hover:text-dark-700 hover:bg-dark-100 dark:hover:bg-dark-700 transition-colors cursor-pointer"
               >
-                <X size={16} />
+                <X size={18} />
               </button>
             </div>
-            <p className="text-xs text-dark-500">
-              Create a dedicated team to manage staff, allocate numbers, and filter call insights.
-            </p>
-            <form onSubmit={handleCreateTeam} className="space-y-3 pt-1">
-              <div>
-                <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1">
-                  Team Name *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={newTeamName}
-                  onChange={(e) => setNewTeamName(e.target.value)}
-                  placeholder="e.g. Sales Team, Delhi Branch"
-                  className="w-full px-3 py-2 text-xs rounded-xl bg-dark-50 dark:bg-dark-900 border border-dark-200 dark:border-dark-700 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+
+            {/* Scrollable Form Body */}
+            <form onSubmit={handleCreateTeam} className="flex-1 flex flex-col min-h-0">
+              <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
+                {/* 1. Basic Information */}
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-dark-400 mb-3 flex items-center gap-1.5">
+                    <Building2 size={13} className="text-blue-600" />
+                    <span>1. Team Identity & Leadership</span>
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    <div>
+                      <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1">
+                        Team Name *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={newTeamForm.name}
+                        onChange={(e) =>
+                          setNewTeamForm({ ...newTeamForm, name: e.target.value })
+                        }
+                        placeholder="e.g. Inbound Sales - North Zone"
+                        className="w-full px-3 py-2 text-xs rounded-xl bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1">
+                        Department / Function
+                      </label>
+                      <select
+                        value={newTeamForm.department}
+                        onChange={(e) =>
+                          setNewTeamForm({ ...newTeamForm, department: e.target.value })
+                        }
+                        className="w-full px-3 py-2 text-xs rounded-xl bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="Sales & Outbound Telecalling">Sales & Outbound Telecalling</option>
+                        <option value="Lead Qualification & Pipeline">Lead Qualification & Pipeline</option>
+                        <option value="Customer Support & Inbound Care">Customer Support & Inbound Care</option>
+                        <option value="Client Retention & Renewals">Client Retention & Renewals</option>
+                        <option value="VIP & Enterprise Client Service">VIP & Enterprise Client Service</option>
+                        <option value="General Operations & Escalations">General Operations & Escalations</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1">
+                        Team Leader / Manager
+                      </label>
+                      <select
+                        value={newTeamForm.teamLead}
+                        onChange={(e) =>
+                          setNewTeamForm({ ...newTeamForm, teamLead: e.target.value })
+                        }
+                        className="w-full px-3 py-2 text-xs rounded-xl bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="">-- Select Team Leader (Optional) --</option>
+                        {staffList.map((s) => (
+                          <option key={s.id} value={s.name}>
+                            {s.name} ({s.role})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1">
+                        Initial Team Status
+                      </label>
+                      <select
+                        value={newTeamForm.status}
+                        onChange={(e) =>
+                          setNewTeamForm({ ...newTeamForm, status: e.target.value })
+                        }
+                        className="w-full px-3 py-2 text-xs rounded-xl bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="Active">Active (Ready for calls & leads)</option>
+                        <option value="Draft / Onboarding">Draft / Onboarding (Setting up)</option>
+                        <option value="Paused">Paused / Inactive</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. Cloud Telephony & Number Routing */}
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-dark-400 mb-3 flex items-center gap-1.5">
+                    <Phone size={13} className="text-emerald-600" />
+                    <span>2. Cloud Telephony & Call Configuration</span>
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    <div>
+                      <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1">
+                        Assigned Virtual Phone Number / Extension
+                      </label>
+                      <input
+                        type="text"
+                        value={newTeamForm.number}
+                        onChange={(e) =>
+                          setNewTeamForm({ ...newTeamForm, number: e.target.value })
+                        }
+                        placeholder="e.g. +91 11 4982 5501 or Ext 101"
+                        className="w-full px-3 py-2 text-xs rounded-xl bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1">
+                        Backup / Fallback Forwarding Phone
+                      </label>
+                      <input
+                        type="text"
+                        value={newTeamForm.backupNumber}
+                        onChange={(e) =>
+                          setNewTeamForm({ ...newTeamForm, backupNumber: e.target.value })
+                        }
+                        placeholder="e.g. +91 98765 43210 (Agents offline)"
+                        className="w-full px-3 py-2 text-xs rounded-xl bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mt-3 p-3 rounded-xl bg-blue-50/60 dark:bg-blue-950/30 border border-blue-200/60 dark:border-blue-900/60 flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <ShieldCheck size={18} className="text-blue-600" />
+                      <div>
+                        <p className="text-xs font-bold text-dark-900 dark:text-white">
+                          Enable Auto Call Recording
+                        </p>
+                        <p className="text-[11px] text-dark-500">
+                          Automatically capture 100% two-way audio recordings and AI summary for this team.
+                        </p>
+                      </div>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={newTeamForm.callRecording}
+                        onChange={(e) =>
+                          setNewTeamForm({ ...newTeamForm, callRecording: e.target.checked })
+                        }
+                        className="sr-only peer"
+                      />
+                      <div className="w-9 h-5 bg-dark-200 peer-focus:outline-none rounded-full peer dark:bg-dark-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-dark-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600" />
+                    </label>
+                  </div>
+                </div>
+
+                {/* 3. Assign Staff Members */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-dark-400 flex items-center gap-1.5">
+                      <Users size={13} className="text-purple-600" />
+                      <span>
+                        3. Allocate Staff Members ({newTeamForm.selectedMemberIds.length} of {staffList.length} selected)
+                      </span>
+                    </h4>
+                    {staffList.length > 0 && (
+                      <div className="flex items-center gap-2 text-xs">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setNewTeamForm({
+                              ...newTeamForm,
+                              selectedMemberIds: staffList.map((s) => s.id),
+                            })
+                          }
+                          className="text-blue-600 hover:underline font-semibold"
+                        >
+                          Select All
+                        </button>
+                        <span className="text-dark-300">•</span>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setNewTeamForm({ ...newTeamForm, selectedMemberIds: [] })
+                          }
+                          className="text-dark-500 hover:underline"
+                        >
+                          Clear
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {staffList.length === 0 ? (
+                    <p className="text-xs text-dark-400 p-3 bg-dark-50 dark:bg-dark-800 rounded-xl text-center">
+                      No staff members currently in system. You can invite staff in Team Members anytime.
+                    </p>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-36 overflow-y-auto p-1 border border-dark-200 dark:border-dark-700 rounded-xl bg-dark-50/40 dark:bg-dark-800/30">
+                      {staffList.map((member) => {
+                        const isSelected = newTeamForm.selectedMemberIds.includes(member.id);
+                        return (
+                          <div
+                            key={member.id}
+                            onClick={() => {
+                              const next = isSelected
+                                ? newTeamForm.selectedMemberIds.filter((id) => id !== member.id)
+                                : [...newTeamForm.selectedMemberIds, member.id];
+                              setNewTeamForm({ ...newTeamForm, selectedMemberIds: next });
+                            }}
+                            className={`p-2.5 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${
+                              isSelected
+                                ? 'bg-blue-50/80 border-blue-400 dark:bg-blue-950/40 dark:border-blue-700'
+                                : 'bg-white dark:bg-dark-800 border-dark-200 dark:border-dark-700 hover:border-dark-300'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2 truncate">
+                              <div className="w-6 h-6 rounded-lg bg-blue-600 text-white font-bold text-[10px] flex items-center justify-center flex-shrink-0">
+                                {member.name.substring(0, 2).toUpperCase()}
+                              </div>
+                              <div className="truncate">
+                                <p className="text-xs font-bold text-dark-900 dark:text-white truncate">
+                                  {member.name}
+                                </p>
+                                <p className="text-[10px] text-dark-400 truncate">
+                                  {member.role} • {member.phone}
+                                </p>
+                              </div>
+                            </div>
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => {}}
+                              className="rounded text-blue-600 ml-2"
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* 4. Quota & Operational Targets */}
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-dark-400 mb-3 flex items-center gap-1.5">
+                    <Clock size={13} className="text-amber-600" />
+                    <span>4. Capacity, Quota & Work Schedule</span>
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    <div>
+                      <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1">
+                        Monthly Leads Allocation
+                      </label>
+                      <select
+                        value={newTeamForm.leadsQuota}
+                        onChange={(e) =>
+                          setNewTeamForm({ ...newTeamForm, leadsQuota: Number(e.target.value) })
+                        }
+                        className="w-full px-3 py-2 text-xs rounded-xl bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value={1000}>1,000 Leads / month</option>
+                        <option value={2500}>2,500 Leads / month</option>
+                        <option value={5000}>5,000 Leads / month (Recommended)</option>
+                        <option value={10000}>10,000 Leads / month</option>
+                        <option value={25000}>25,000 Leads / month</option>
+                        <option value={50000}>Unlimited (50,000 Leads)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1">
+                        Daily Call Target per Agent
+                      </label>
+                      <select
+                        value={newTeamForm.dailyCallTarget}
+                        onChange={(e) =>
+                          setNewTeamForm({ ...newTeamForm, dailyCallTarget: Number(e.target.value) })
+                        }
+                        className="w-full px-3 py-2 text-xs rounded-xl bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value={30}>30 calls / day</option>
+                        <option value={50}>50 calls / day (Standard)</option>
+                        <option value={75}>75 calls / day (High Velocity)</option>
+                        <option value={100}>100 calls / day (Dialer Sprint)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1">
+                        Working Shift Schedule
+                      </label>
+                      <select
+                        value={newTeamForm.shift}
+                        onChange={(e) =>
+                          setNewTeamForm({ ...newTeamForm, shift: e.target.value })
+                        }
+                        className="w-full px-3 py-2 text-xs rounded-xl bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="General Day Shift (09:30 AM – 06:30 PM)">General Day Shift (09:30 AM – 06:30 PM)</option>
+                        <option value="Morning Shift (08:00 AM – 05:00 PM)">Morning Shift (08:00 AM – 05:00 PM)</option>
+                        <option value="Late Evening Shift (01:00 PM – 10:00 PM)">Late Evening Shift (01:00 PM – 10:00 PM)</option>
+                        <option value="24/7 Rotational Support">24/7 Rotational Support</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1">
+                        Operating Days
+                      </label>
+                      <select
+                        value={newTeamForm.workingDays}
+                        onChange={(e) =>
+                          setNewTeamForm({ ...newTeamForm, workingDays: e.target.value })
+                        }
+                        className="w-full px-3 py-2 text-xs rounded-xl bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="Monday to Saturday (6 days)">Monday to Saturday (6 days)</option>
+                        <option value="Monday to Friday (5 days)">Monday to Friday (5 days)</option>
+                        <option value="All 7 Days (Everyday)">All 7 Days (Everyday)</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 5. Team Objective & Notes */}
+                <div>
+                  <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1">
+                    Team Objective / Internal Notes (Optional)
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={newTeamForm.description}
+                    onChange={(e) =>
+                      setNewTeamForm({ ...newTeamForm, description: e.target.value })
+                    }
+                    placeholder="e.g. Primary squad responsible for outbound cold leads, follow-ups, and demo bookings."
+                    className="w-full px-3 py-2 text-xs rounded-xl bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
               </div>
-              <div>
-                <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1">
-                  Assigned Phone / Extension (Optional)
-                </label>
-                <input
-                  type="text"
-                  value={newTeamNumber}
-                  onChange={(e) => setNewTeamNumber(e.target.value)}
-                  placeholder="e.g. +91 11 4982 5501"
-                  className="w-full px-3 py-2 text-xs rounded-xl bg-dark-50 dark:bg-dark-900 border border-dark-200 dark:border-dark-700 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div className="flex justify-end gap-2 pt-3">
-                <button
-                  type="button"
-                  onClick={() => setIsCreateTeamModalOpen(false)}
-                  className="px-3.5 py-2 text-xs rounded-xl hover:bg-dark-100 dark:hover:bg-dark-700 text-dark-600 dark:text-dark-300"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-xs"
-                >
-                  Create Team
-                </button>
+
+              {/* Fixed Footer */}
+              <div className="p-4 bg-dark-50/70 dark:bg-dark-800/60 border-t border-dark-200 dark:border-dark-700 flex flex-col sm:flex-row items-center justify-between gap-3">
+                <span className="text-[11px] text-dark-500 text-center sm:text-left">
+                  * Team Name is required. Settings and member allocations can be updated anytime in Team Settings.
+                </span>
+                <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setIsCreateTeamModalOpen(false)}
+                    className="px-4 py-2 text-xs font-semibold rounded-xl hover:bg-dark-100 dark:hover:bg-dark-700 text-dark-600 dark:text-dark-300 transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Plus size={14} />
+                    <span>Create Team</span>
+                  </button>
+                </div>
               </div>
             </form>
           </div>
