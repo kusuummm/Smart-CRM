@@ -156,10 +156,10 @@ export default function Header({
           <span
             onClick={() => onNavigate?.('home')}
             className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold tracking-wider uppercase bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-900/60 shadow-2xs cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
-            title="Go to Caller Panel Home"
+            title="Go to Lead Panel Home"
           >
             <Phone size={13} className="text-blue-600 dark:text-blue-400" />
-            CALLER PANEL
+            LEAD PANEL
           </span>
         )}
       </div>
