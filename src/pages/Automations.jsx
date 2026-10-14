@@ -604,7 +604,7 @@ export default function Automations({ onNavigate }) {
             <div className="space-y-3 text-xs text-dark-600 dark:text-dark-300 leading-relaxed">
               <p>
                 • <strong>Missed Call Responder</strong>: Automatically sends a WhatsApp message or
-                SMS to callers when your team is busy or unavailable.
+                SMS to leads when your team is busy or unavailable.
               </p>
               <p>
                 • <strong>Lead Follow-up Triggers</strong>: Automatically creates reminder tasks and

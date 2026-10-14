@@ -402,7 +402,7 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
           title={isAdmin ? 'Company Follow-up & Lead Pipeline' : 'My Follow-up & Lead Pipeline'}
           subtitle={
             isAdmin
-              ? 'Oversee all customer follow-up statuses, caller assignments, and automated email notifications'
+              ? 'Oversee all customer follow-up statuses, lead assignments, and automated email notifications'
               : 'Manage customer follow-up statuses through the pipeline with automated email notifications'
           }
         />
@@ -878,7 +878,7 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
             <div className="p-3.5 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/60 text-xs text-blue-900 dark:text-blue-200">
               <p className="font-bold text-sm">Admin Control: Customer Lead Assignment</p>
               <p className="mt-0.5 text-blue-800 dark:text-blue-300 leading-relaxed">
-                Only administrators are authorized to assign customer accounts to the lead pipeline. An automated email notification will be sent to both the customer and the assigned caller.
+                Only administrators are authorized to assign customer accounts to the lead pipeline. An automated email notification will be sent to both the customer and the assigned lead.
               </p>
             </div>
 
@@ -989,7 +989,7 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
             <div>
               <p className="font-bold text-sm">Automated 1-Hour Prior Email Reminder Guarantee</p>
               <p className="mt-0.5 text-indigo-800 dark:text-indigo-300 leading-relaxed">
-                An invitation confirmation email will be dispatched to both client and caller immediately. Smart CRM&apos;s background scheduler will automatically send an email reminder to both parties <strong>1 hour before the meeting starts</strong> with the agenda and joining link.
+                An invitation confirmation email will be dispatched to both client and lead immediately. Smart CRM&apos;s background scheduler will automatically send an email reminder to both parties <strong>1 hour before the meeting starts</strong> with the agenda and joining link.
               </p>
             </div>
           </div>

@@ -1124,7 +1124,7 @@ export default function ToDos({ onNavigate }) {
               {/* 2. Assign Task To (Caller / Lead) */}
               <div>
                 <label className="block font-bold text-dark-700 dark:text-dark-300 mb-1">
-                  Assign Task To (Caller / Lead)
+                  Assign Task To (Lead)
                 </label>
                 <select
                   value={newTaskForm.assignedTo}
@@ -1499,7 +1499,7 @@ export default function ToDos({ onNavigate }) {
                   rows={3}
                   value={newTaskForm.remarks}
                   onChange={(e) => setNewTaskForm({ ...newTaskForm, remarks: e.target.value })}
-                  placeholder="Provide talking points, context, follow-up objective, or deliverables for the telecaller..."
+                  placeholder="Provide talking points, context, follow-up objective, or deliverables for the lead..."
                   className="w-full px-3 py-2 text-xs rounded-xl bg-white dark:bg-dark-900 border border-dark-200 dark:border-dark-700 text-dark-900 dark:text-white focus:outline-none focus:border-blue-500 resize-none leading-relaxed"
                 />
               </div>
@@ -1513,7 +1513,7 @@ export default function ToDos({ onNavigate }) {
                     onChange={(e) => setNewTaskForm({ ...newTaskForm, sendCallerNotice: e.target.checked })}
                     className="rounded text-blue-600 focus:ring-0 cursor-pointer"
                   />
-                  <span>Notify assigned telecaller</span>
+                  <span>Notify assigned lead</span>
                 </label>
 
                 <label className="flex items-center gap-2 cursor-pointer text-dark-700 dark:text-dark-300 select-none">

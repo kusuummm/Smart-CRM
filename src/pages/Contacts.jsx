@@ -2116,7 +2116,7 @@ export default function Contacts({ onNavigate }) {
                         </p>
                       </div>
                       <div className="col-span-2">
-                        <span className="text-dark-400 block">Assigned Telecaller</span>
+                        <span className="text-dark-400 block">Assigned Lead</span>
                         <p className="font-semibold text-dark-900 dark:text-white mt-0.5">
                           {user?.name || 'Unassigned'}
                         </p>

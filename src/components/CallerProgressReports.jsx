@@ -123,7 +123,7 @@ export default function CallerProgressReports({ onNavigate }) {
       const data = await getCallersProgressReport(params);
       setReportData(data);
     } catch (err) {
-      addToast(err.response?.data?.message || 'Failed to load callers progress report', 'error');
+      addToast(err.response?.data?.message || 'Failed to load lead progress report', 'error');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -171,7 +171,7 @@ export default function CallerProgressReports({ onNavigate }) {
       return;
     }
 
-    const headers = ['Time', 'Type', 'Caller', 'Customer Name', 'Phone', 'Company', 'Status', 'Duration', 'Remarks'];
+    const headers = ['Time', 'Type', 'Lead', 'Customer Name', 'Phone', 'Company', 'Status', 'Duration', 'Remarks'];
     const rows = selectedDayDetail.logs.map((log) => [
       `"${log.time || ''}"`,
       `"${log.type || ''}"`,
@@ -189,7 +189,7 @@ export default function CallerProgressReports({ onNavigate }) {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', `Caller_Detailed_Report_${selectedDayDetail.date}.csv`);
+    link.setAttribute('download', `Lead_Detailed_Report_${selectedDayDetail.date}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -430,7 +430,7 @@ export default function CallerProgressReports({ onNavigate }) {
           title="Click to view active leads in Lead Presence"
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-dark-500 uppercase tracking-wider">Active Callers</span>
+            <span className="text-xs font-semibold text-dark-500 uppercase tracking-wider">Active Leads</span>
             <div className="flex items-center gap-1.5">
               <span className="text-[10px] text-purple-600 dark:text-purple-400 font-semibold opacity-0 group-hover:opacity-100 flex items-center gap-0.5 transition-opacity">
                 View <ArrowUpRight size={12} />
@@ -455,7 +455,7 @@ export default function CallerProgressReports({ onNavigate }) {
         <div className="flex items-center gap-2">
           <Sparkles size={16} className="text-primary-600 dark:text-primary-400 flex-shrink-0" />
           <span>
-            <strong>Interactive Graphs:</strong> Click on any day or point on the charts below to open the complete <strong>Detailed Activity Report</strong> with call logs, customer info, and individual caller breakdowns for that date.
+            <strong>Interactive Graphs:</strong> Click on any day or point on the charts below to open the complete <strong>Detailed Activity Report</strong> with call logs, customer info, and individual lead breakdowns for that date.
           </span>
         </div>
         <span className="text-[11px] font-bold text-primary-700 dark:text-primary-300 uppercase tracking-wider hidden sm:inline">
@@ -473,7 +473,7 @@ export default function CallerProgressReports({ onNavigate }) {
                 Overall Team Calling &amp; Follow-up Activity Trend
               </h3>
               <p className="text-xs text-dark-500">
-                Daily volume of calls made, calls connected, and follow-ups progressed by callers
+                Daily volume of calls made, calls connected, and follow-ups progressed by leads
               </p>
             </div>
             <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-dark-100 dark:bg-dark-700 text-dark-600 dark:text-dark-300">
@@ -600,10 +600,10 @@ export default function CallerProgressReports({ onNavigate }) {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="font-bold text-dark-900 dark:text-white text-sm">
-                Daily Caller Talking Time (Minutes Logged)
+                Daily Lead Talking Time (Minutes Logged)
               </h3>
               <p className="text-xs text-dark-500">
-                Total hours and minutes spent by callers on customer phone conversations
+                Total hours and minutes spent by leads on customer phone conversations
               </p>
             </div>
           </div>
@@ -642,7 +642,7 @@ export default function CallerProgressReports({ onNavigate }) {
                 Follow-up Pipeline Progression Distribution
               </h3>
               <p className="text-xs text-dark-500">
-                Current stages of all leads progressed by callers across the CRM
+                Current stages of all follow-ups progressed by leads across the CRM
               </p>
             </div>
           </div>
@@ -678,11 +678,11 @@ export default function CallerProgressReports({ onNavigate }) {
               Contributing Leads Overview
             </h4>
             <p className="text-xs text-dark-500">
-              Breakdown of total calls, talk time, and conversions logged by each caller in this period
+              Breakdown of total calls, talk time, and conversions logged by each lead in this period
             </p>
           </div>
           <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-dark-100 dark:bg-dark-700 text-dark-600 dark:text-dark-300">
-            {callersBreakdown.length} Callers
+            {callersBreakdown.length} Leads
           </span>
         </div>
 
@@ -690,7 +690,7 @@ export default function CallerProgressReports({ onNavigate }) {
           <table className="w-full text-xs">
             <thead>
               <tr className="bg-dark-50 dark:bg-dark-700/60 text-dark-500 font-semibold uppercase tracking-wider text-[11px]">
-                <th className="px-4 py-3 text-left">Caller</th>
+                <th className="px-4 py-3 text-left">Lead</th>
                 <th className="px-4 py-3 text-center">Total Calls</th>
                 <th className="px-4 py-3 text-center">Connected</th>
                 <th className="px-4 py-3 text-center">Talk Time</th>
@@ -704,7 +704,7 @@ export default function CallerProgressReports({ onNavigate }) {
               {callersBreakdown.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="px-4 py-8 text-center text-dark-400">
-                    No caller activity records found in this time period.
+                    No lead activity records found in this time period.
                   </td>
                 </tr>
               ) : (
@@ -846,7 +846,7 @@ export default function CallerProgressReports({ onNavigate }) {
               </p>
             </div>
             <div className="p-3 rounded-xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-900/60 text-center">
-              <span className="text-[10px] font-bold text-purple-600 uppercase">Active Callers</span>
+              <span className="text-[10px] font-bold text-purple-600 uppercase">Active Leads</span>
               <p className="text-xl font-black text-purple-700 dark:text-purple-300 font-mono mt-0.5">
                 {selectedDayDetail?.activeCallersThisDay?.length || 0}
               </p>
@@ -863,7 +863,7 @@ export default function CallerProgressReports({ onNavigate }) {
           {selectedDayDetail?.activeCallersThisDay?.length > 0 && (
             <div className="p-3.5 rounded-xl bg-dark-50 dark:bg-dark-900/60 border border-dark-200 dark:border-dark-700">
               <h5 className="font-bold text-xs text-dark-800 dark:text-dark-200 mb-2">
-                Callers Contributing on {selectedDayDetail?.date}:
+                Leads Contributing on {selectedDayDetail?.date}:
               </h5>
               <div className="flex flex-wrap gap-2">
                 {selectedDayDetail.activeCallersThisDay.map((c) => (
@@ -948,7 +948,7 @@ export default function CallerProgressReports({ onNavigate }) {
               <thead className="sticky top-0 bg-dark-100 dark:bg-dark-700/90 text-dark-600 dark:text-dark-300 text-[11px] font-semibold uppercase">
                 <tr>
                   <th className="px-3 py-2.5 text-left">Time</th>
-                  <th className="px-3 py-2.5 text-left">Caller</th>
+                  <th className="px-3 py-2.5 text-left">Lead</th>
                   <th className="px-3 py-2.5 text-left">Customer</th>
                   <th className="px-3 py-2.5 text-left">Type &amp; Status</th>
                   <th className="px-3 py-2.5 text-left">Duration</th>

@@ -461,7 +461,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
   const handleCreateAssignTask = async (e) => {
     e?.preventDefault?.();
     if (!assignTaskForm.assignedTo) {
-      addToast('Please select a telecaller to assign this task to.', 'error');
+      addToast('Please select a lead to assign this task to.', 'error');
       return;
     }
     if (!assignTaskForm.customerName.trim() && !assignTaskForm.remarks.trim()) {
@@ -495,7 +495,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
       };
 
       await createFollowUp(payload);
-      addToast(`Task assigned to ${assignedAgent?.name || 'telecaller'} successfully!`, 'success');
+      addToast(`Task assigned to ${assignedAgent?.name || 'lead'} successfully!`, 'success');
       setIsAssignTaskModalOpen(false);
       // Refresh tasks
       const res = await getFollowUps({ limit: 1000 }).catch(() => ({ followUps: [] }));
@@ -609,11 +609,11 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
     }
     const currentRole = targetUser.role;
     const nextRole = currentRole === 'admin' ? 'telecaller' : 'admin';
-    const nextRoleName = nextRole === 'admin' ? 'Administrator' : 'Telecaller';
+    const nextRoleName = nextRole === 'admin' ? 'Administrator' : 'Lead';
 
     const ok = await confirm({
       title: 'Update User Role',
-      message: `Do you want to change "${targetUser.name}" from ${currentRole === 'admin' ? 'Administrator' : 'Telecaller'} to ${nextRoleName}?`,
+      message: `Do you want to change "${targetUser.name}" from ${currentRole === 'admin' ? 'Administrator' : 'Lead'} to ${nextRoleName}?`,
       confirmText: `Switch to ${nextRoleName}`,
       cancelText: 'Cancel',
       type: 'primary',
@@ -635,7 +635,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
   const handlePendingStatusClick = async (targetUser) => {
     const ok = await confirm({
       title: 'Review Registration',
-      message: `Review registration for "${targetUser.name}" (${targetUser.email}). Approve their account so they can access the telecaller panel?`,
+      message: `Review registration for "${targetUser.name}" (${targetUser.email}). Approve their account so they can access the lead panel?`,
       confirmText: 'Approve Account',
       cancelText: 'Reject Account',
       type: 'primary',
@@ -670,7 +670,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
   const handleApproveCaller = async (userId, userName) => {
     try {
       await approveUser(userId);
-      addToast(`${userName || 'Telecaller'} approved successfully! They can now access the system.`, 'success');
+      addToast(`${userName || 'Lead'} approved successfully! They can now access the system.`, 'success');
       setInspectorUser((prev) =>
         prev && String(prev._id) === String(userId)
           ? { ...prev, status: 'active', isApproved: true }
@@ -678,7 +678,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
       );
       loadData(true);
     } catch (err) {
-      addToast(err.response?.data?.message || 'Failed to approve telecaller', 'error');
+      addToast(err.response?.data?.message || 'Failed to approve lead', 'error');
     }
   };
 
@@ -694,7 +694,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
 
     try {
       await rejectUser(userId);
-      addToast(`${userName || 'Telecaller'} registration rejected.`, 'info');
+      addToast(`${userName || 'Lead'} registration rejected.`, 'info');
       setInspectorUser((prev) =>
         prev && String(prev._id) === String(userId)
           ? { ...prev, status: 'rejected', isApproved: false }
@@ -702,20 +702,20 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
       );
       loadData(true);
     } catch (err) {
-      addToast(err.response?.data?.message || 'Failed to reject telecaller', 'error');
+      addToast(err.response?.data?.message || 'Failed to reject lead', 'error');
     }
   };
 
   // Handlers for Unassigned Queue
   const handleAssignAllUnassigned = async () => {
     if (!unassignedBatchAgentId) {
-      addToast('Please select a target telecaller', 'error');
+      addToast('Please select a target lead', 'error');
       return;
     }
     const targetTc = telecallers.find((t) => t._id === unassignedBatchAgentId);
     const ok = await confirm({
       title: 'Distribute Unassigned Customers',
-      message: `Are you sure you want to assign all ${unassignedList.length} unassigned accounts to ${targetTc?.name || 'selected telecaller'}?`,
+      message: `Are you sure you want to assign all ${unassignedList.length} unassigned accounts to ${targetTc?.name || 'selected lead'}?`,
       confirmText: 'Assign All',
       cancelText: 'Cancel',
       type: 'primary',
@@ -797,7 +797,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
           data.message ||
             (form.role === 'admin'
               ? 'New admin account created successfully!'
-              : 'New telecaller account created! Pending admin approval before caller can log in.'),
+              : 'New lead account created! Pending admin approval before lead can log in.'),
           'success',
           5000
         );
@@ -891,12 +891,12 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
 
   const handleExecuteTransfer = async () => {
     if (!transferForm.fromUserId || !transferForm.toUserId) {
-      addToast('Please select both source and target telecallers', 'error');
+      addToast('Please select both source and target leads', 'error');
       return;
     }
 
     if (transferForm.fromUserId === transferForm.toUserId) {
-      addToast('Source and target telecallers must be different', 'error');
+      addToast('Source and target leads must be different', 'error');
       return;
     }
 
@@ -985,7 +985,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
         <div className="space-y-6">
           <PageHeader
             title="Admin Control Center"
-            subtitle="Executive command center, operational metrics, and telecaller team oversight."
+            subtitle="Executive command center, operational metrics, and lead team oversight."
             action={
               <div className="flex items-center gap-2.5">
                 <button
@@ -1075,7 +1075,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
             <div
               onClick={() => onNavigate?.('admin-agents')}
               className="bg-white dark:bg-dark-800 p-5 rounded-2xl border border-dark-200 dark:border-dark-700 shadow-xs cursor-pointer hover:border-dark-300 dark:hover:border-dark-600 transition-colors"
-              title="Click to open Telecaller Live Presence page"
+              title="Click to open Lead Live Presence page"
             >
               <div className="flex items-center justify-between">
                 <div className="w-10 h-10 rounded-xl bg-dark-100 dark:bg-dark-700/60 text-dark-700 dark:text-dark-300 flex items-center justify-center">
@@ -1104,7 +1104,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                   ? 'border-amber-400 dark:border-amber-500 ring-2 ring-amber-400/20'
                   : 'border-dark-200 dark:border-dark-700'
               } shadow-xs cursor-pointer hover:border-dark-300 dark:hover:border-dark-600 transition-colors`}
-              title="Click to review pending caller approvals"
+              title="Click to review pending lead approvals"
             >
               <div className="flex items-center justify-between">
                 <div
@@ -1131,7 +1131,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                   {pendingUsers.length}
                 </p>
                 <p className="text-xs text-dark-500 dark:text-dark-400 mt-0.5">
-                  Pending Caller Approvals
+                  Pending Lead Approvals
                 </p>
               </div>
             </div>
@@ -1146,7 +1146,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                 </div>
                 <div>
                   <h4 className="font-bold text-dark-900 dark:text-white text-base">
-                    {pendingUsers.length} Caller Registration(s) Awaiting Your Approval
+                    {pendingUsers.length} Lead Registration(s) Awaiting Your Approval
                   </h4>
                   <p className="text-xs text-amber-800 dark:text-amber-300 mt-0.5">
                     New applicants cannot log in until approved. Review each applicant now.
@@ -1264,7 +1264,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                   <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">Team Analytics</span>
                 </div>
                 <div className="mt-4">
-                  <h4 className="font-bold text-base text-dark-900 dark:text-white">Caller Progress Reports</h4>
+                  <h4 className="font-bold text-base text-dark-900 dark:text-white">Lead Progress Reports</h4>
                   <p className="text-xs text-dark-500 dark:text-dark-400 mt-1">Aggregate calling charts, time-window trends, talk time, and interactive drilldown logs.</p>
                 </div>
                 <div className="mt-4 pt-3 border-t border-dark-100 dark:border-dark-700/60 flex items-center justify-between text-xs font-semibold text-primary-600 dark:text-primary-400">
@@ -1774,7 +1774,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                                     <button
                                       onClick={() => openAssignTaskModal(u._id, u.name)}
                                       className="p-2 rounded-lg hover:bg-dark-100 dark:hover:bg-dark-700 text-emerald-600 dark:text-emerald-400 transition-colors"
-                                      title="Assign Task to this caller"
+                                      title="Assign Task to this lead"
                                     >
                                       <CheckSquare size={16} />
                                     </button>
@@ -2021,7 +2021,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                             type="button"
                             onClick={() => setAgentGridFilter(agent.isOnline ? 'online' : 'offline')}
                             className="cursor-pointer active:scale-95 transition-transform"
-                            title={`Click to filter ${agent.isOnline ? 'Online' : 'Offline'} callers`}
+                            title={`Click to filter ${agent.isOnline ? 'Online' : 'Offline'} leads`}
                           >
                             {agent.isOnline ? (
                               <span
@@ -2321,7 +2321,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                     <button
                       onClick={() => openAssignTaskModal(tc._id, tc.name)}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-emerald-200 dark:border-emerald-800/60 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 text-xs font-semibold transition-colors"
-                      title="Assign task to this telecaller"
+                      title="Assign task to this lead"
                     >
                       <CheckSquare size={13} />
                       Assign Task
@@ -3098,7 +3098,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                     type="button"
                     onClick={() => openAssignTaskModal(inspectorUser._id, inspectorUser.name)}
                     className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95"
-                    title="Assign task to this telecaller"
+                    title="Assign task to this lead"
                   >
                     <Plus size={14} />
                     <span>Assign Task</span>
@@ -3310,7 +3310,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
 
                           {!hasAnyActivity && (
                             <div className="mt-4 p-3.5 rounded-xl bg-dark-50 dark:bg-dark-900/50 border border-dark-100 dark:border-dark-700/60 text-center text-xs text-dark-500 dark:text-dark-400">
-                              No calls or follow-ups logged by <strong>{inspectorUser.name}</strong> over the past 7 days yet. Daily outreach volume will graph here automatically in real time as the caller works.
+                              No calls or follow-ups logged by <strong>{inspectorUser.name}</strong> over the past 7 days yet. Daily outreach volume will graph here automatically in real time as the lead works.
                             </div>
                           )}
                         </div>
@@ -3405,7 +3405,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                     <div>
                       <p className="font-bold">Customer & Client Privacy Isolation Policy Active</p>
                       <p className="mt-0.5 text-blue-800 dark:text-blue-300 leading-relaxed">
-                        Administrators have full executive visibility into productivity timelines, outreach graphs, and conversion analytics. In accordance with strict caller isolation, individual customer/client contact records, phone numbers, and call logs assigned to <strong>{inspectorUser.name}</strong> remain strictly private and accessible only within the lead portal.
+                        Administrators have full executive visibility into productivity timelines, outreach graphs, and conversion analytics. In accordance with strict lead isolation, individual customer/client contact records, phone numbers, and call logs assigned to <strong>{inspectorUser.name}</strong> remain strictly private and accessible only within the lead portal.
                       </p>
                     </div>
                   </div>
@@ -3650,7 +3650,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                         Tasks Assigned to {inspectorUser.name}
                       </h4>
                       <p className="text-xs text-dark-500 dark:text-dark-400 mt-0.5">
-                        Follow-up schedules, calls, client meetings, and pending action items for this telecaller.
+                        Follow-up schedules, calls, client meetings, and pending action items for this lead.
                       </p>
                     </div>
                     <button
@@ -3676,7 +3676,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                           <CheckSquare size={28} className="text-dark-400 mx-auto mb-2 opacity-50" />
                           <h5 className="font-bold text-dark-900 dark:text-white text-sm">No tasks assigned yet</h5>
                           <p className="text-xs text-dark-500 dark:text-dark-400 mt-1 max-w-sm mx-auto">
-                            This telecaller currently has zero assigned tasks. Assign a task or follow-up schedule to keep them productive.
+                            This lead currently has zero assigned tasks. Assign a task or follow-up schedule to keep them productive.
                           </p>
                           <button
                             type="button"
@@ -4345,7 +4345,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                   {[
                     { label: 'Customer Accounts', count: systemOverview?.metrics?.totalCustomers || 0, target: 'contacts', desc: 'Managed contacts & client profiles' },
                     { label: 'Sales Leads', count: systemOverview?.metrics?.totalLeads || 0, target: 'leads', desc: 'Prospect pipeline & sales opportunities' },
-                    { label: 'Follow-up Tasks', count: systemOverview?.metrics?.totalFollowUps || 0, target: 'todos', desc: 'Pending & scheduled caller actions' },
+                    { label: 'Follow-up Tasks', count: systemOverview?.metrics?.totalFollowUps || 0, target: 'todos', desc: 'Pending & scheduled lead actions' },
                     { label: 'Event Reminders', count: systemOverview?.metrics?.totalEvents || 0, target: 'events', desc: 'Calendar meetings & demos scheduled' },
                     { label: 'Call History Logs', count: systemOverview?.metrics?.totalCalls || 0, target: 'call-history', desc: 'Lead outbound & inbound call records' },
                     { label: 'WhatsApp Logs', count: systemOverview?.metrics?.totalWhatsApp || 0, target: 'whatsapp', desc: 'Direct message threads & template logs' },
@@ -4389,8 +4389,8 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
       {(currentView === 'admin-tasks' || currentView === 'tasks') && (
         <div className="space-y-6">
           <PageHeader
-            title="Caller Tasks & Schedules"
-            subtitle="Supervise, assign, and track follow-up tasks, calls, meetings, and outreach schedules across all telecallers."
+            title="Lead Tasks & Schedules"
+            subtitle="Supervise, assign, and track follow-up tasks, calls, meetings, and outreach schedules across all leads."
             action={
               <div className="flex items-center gap-2.5">
                 <button
@@ -4408,7 +4408,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                   className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-sm font-semibold transition-colors shadow-sm cursor-pointer"
                 >
                   <Plus size={16} />
-                  <span>Assign Task to Caller</span>
+                  <span>Assign Task to Lead</span>
                 </button>
               </div>
             }
@@ -4435,7 +4435,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                 </div>
               </div>
               <p className="text-2xl font-bold text-amber-600 dark:text-amber-400 mt-2">{taskMetrics.pending}</p>
-              <span className="text-[11px] text-amber-600/80 mt-0.5 block">Awaiting caller action</span>
+              <span className="text-[11px] text-amber-600/80 mt-0.5 block">Awaiting lead action</span>
             </div>
 
             <div className="p-4 rounded-2xl bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 shadow-2xs">
@@ -4493,7 +4493,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                 onChange={(e) => setTaskFilterAgent(e.target.value)}
                 className="px-3 py-2 text-xs rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-900 text-dark-800 dark:text-dark-200 font-medium focus:outline-none focus:border-primary-500"
               >
-                <option value="all">All Telecallers ({users.filter((u) => u.role === 'telecaller').length})</option>
+                <option value="all">All Leads ({users.filter((u) => u.role === 'telecaller').length})</option>
                 {users
                   .filter((u) => u.role === 'telecaller' || u.role === 'admin')
                   .map((u) => (
@@ -4567,7 +4567,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                 <p className="text-xs text-dark-500 dark:text-dark-400 mt-1 max-w-sm mx-auto">
                   {taskSearchQuery || taskFilterAgent !== 'all' || taskFilterStatus !== 'all'
                     ? 'No tasks matched your current filter criteria. Try resetting filters.'
-                    : 'No caller tasks or follow-ups have been created yet. Assign your first task!'}
+                    : 'No lead tasks or follow-ups have been created yet. Assign your first task!'}
                 </p>
                 <button
                   type="button"
@@ -4585,7 +4585,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                     <tr className="border-b border-dark-100 dark:border-dark-700/60 bg-dark-50/60 dark:bg-dark-900/40 text-dark-500 dark:text-dark-400 uppercase tracking-wider text-[11px] font-semibold">
                       <th className="py-3 px-4">Status</th>
                       <th className="py-3 px-4">Customer / Contact</th>
-                      <th className="py-3 px-4">Assigned Telecaller</th>
+                      <th className="py-3 px-4">Assigned Lead</th>
                       <th className="py-3 px-4">Category</th>
                       <th className="py-3 px-4">Priority</th>
                       <th className="py-3 px-4">Due Schedule</th>
@@ -4690,7 +4690,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                                   value={assignedUserObj?._id || ''}
                                   onChange={(e) => handleReassignTaskCaller(task, e.target.value)}
                                   className="text-[10px] text-dark-500 dark:text-dark-400 bg-transparent border-0 underline hover:text-primary-600 cursor-pointer p-0 focus:outline-none"
-                                  title="Click to reassign to another caller"
+                                  title="Click to reassign to another lead"
                                 >
                                   <option value="" disabled>Change Lead</option>
                                   {users
@@ -5070,7 +5070,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
           {/* Target Telecaller Selector */}
           <div>
             <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1.5">
-              Assign Task To (Caller / Team Member) <span className="text-red-500">*</span>
+              Assign Task To (Lead / Team Member) <span className="text-red-500">*</span>
             </label>
             <select
               value={assignTaskForm.assignedTo}
@@ -5078,7 +5078,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
               className="w-full px-3 py-2 text-xs rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-900 text-dark-900 dark:text-white font-medium focus:outline-none focus:border-primary-500"
               required
             >
-              <option value="" disabled>Select telecaller / team member...</option>
+              <option value="" disabled>Select lead / team member...</option>
               {users
                 .filter((u) => u.role === 'telecaller' || u.role === 'admin')
                 .map((u) => (
@@ -5509,7 +5509,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
             </label>
             <textarea
               rows={3}
-              placeholder="Provide clear instructions, talking points, deal stage context, or expected outcome for the telecaller..."
+              placeholder="Provide clear instructions, talking points, deal stage context, or expected outcome for the lead..."
               value={assignTaskForm.remarks}
               onChange={(e) => setAssignTaskForm({ ...assignTaskForm, remarks: e.target.value })}
               className="w-full px-3 py-2 text-xs rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-900 text-dark-900 dark:text-white focus:outline-none focus:border-primary-500"

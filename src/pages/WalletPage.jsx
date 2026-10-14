@@ -210,7 +210,7 @@ export default function WalletPage({ onNavigate }) {
                 </span>
                 <button
                   type="button"
-                  title="Free promotional credits for AI caller notes and call transcription"
+                  title="Free promotional credits for AI lead notes and call transcription"
                   onClick={() =>
                     addToast(
                       `You have ${freeAiMinutes} complimentary AI Call Summary minutes remaining.`,

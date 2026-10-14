@@ -440,7 +440,7 @@ export default function Login({ isAddingAccount = false, onCancelAdd }) {
                     autoComplete="username email"
                     value={regForm.email}
                     onChange={(e) => setRegForm({ ...regForm, email: e.target.value })}
-                    placeholder="caller@example.com"
+                    placeholder="lead@example.com"
                     className={`w-full pl-10 pr-4 py-2 border rounded-xl text-xs sm:text-sm bg-white dark:bg-dark-800 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 ${
                       errors.email ? 'border-red-300 bg-red-50/50' : 'border-dark-200 dark:border-dark-700'
                     }`}

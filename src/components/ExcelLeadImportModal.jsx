@@ -524,7 +524,7 @@ export default function ExcelLeadImportModal({ isOpen, onClose, onImportSuccess 
             }`}
           >
             <span className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px]">3</span>
-            <span>Assign Callers</span>
+            <span>Assign Leads</span>
           </div>
           <ArrowRight size={14} className="text-dark-300" />
           <div
@@ -838,7 +838,7 @@ export default function ExcelLeadImportModal({ isOpen, onClose, onImportSuccess 
                   onClick={handleProceedToStrategy}
                   className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs flex items-center gap-1.5 shadow-sm"
                 >
-                  <span>Continue to Caller Assignment</span>
+                  <span>Continue to Lead Assignment</span>
                   <ArrowRight size={14} />
                 </button>
               </div>
@@ -1140,7 +1140,7 @@ export default function ExcelLeadImportModal({ isOpen, onClose, onImportSuccess 
                   Import & Assignment Complete!
                 </h3>
                 <p className="text-xs text-dark-500 dark:text-dark-400 mt-1">
-                  All valid records have been saved into MongoDB and assigned into the caller pipeline.
+                  All valid records have been saved into MongoDB and assigned into the lead pipeline.
                 </p>
               </div>
 

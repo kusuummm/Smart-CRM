@@ -296,7 +296,7 @@ export default function LiveCallModal({ isOpen, onClose, user }) {
                 Queue is clear
               </p>
               <p className="text-xs text-dark-500 mt-1">
-                No callers currently waiting in the IVR hold queue.
+                No leads currently waiting in the IVR hold queue.
               </p>
             </div>
           )}

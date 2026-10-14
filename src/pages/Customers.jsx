@@ -212,7 +212,7 @@ export default function Customers({ onNavigate }) {
     }
 
     const targetTc = telecallers.find((t) => t._id === bulkTargetTelecallerId);
-    const targetLabel = bulkTargetTelecallerId === 'unassigned' ? 'Unassigned' : (targetTc?.name || 'selected telecaller');
+    const targetLabel = bulkTargetTelecallerId === 'unassigned' ? 'Unassigned' : (targetTc?.name || 'selected lead');
     const ok = await confirm({
       title: 'Bulk Reassign Customers',
       message: `Are you sure you want to reassign ${selectedIds.length} customer(s) to "${targetLabel}"?`,

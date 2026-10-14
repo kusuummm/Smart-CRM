@@ -1668,7 +1668,7 @@ export default function Customer360Modal({ isOpen, onClose, customer, onStartCal
                   <div className="p-4 rounded-xl border border-dark-200 dark:border-dark-700 bg-dark-50/50 dark:bg-dark-800/40 space-y-1">
                     <div className="flex items-center justify-between">
                       <span className="text-[11px] font-bold uppercase tracking-wider text-dark-400">
-                        Assigned Lead (Caller)
+                        Assigned Lead
                       </span>
                       <button
                         type="button"
