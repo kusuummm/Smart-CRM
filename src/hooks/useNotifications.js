@@ -38,7 +38,7 @@ export function useNotifications() {
       const [followUpData, eventData, leadData, waData] = await Promise.all([
         getTodayFollowUps(),
         getUpcomingEvents(3),
-        getLeads({ limit: 200 }),
+        getLeads({ limit: 25 }),
         getWhatsAppLogs({ status: 'failed', limit: 10 }),
       ]);
 

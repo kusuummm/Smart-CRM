@@ -280,7 +280,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
         getSystemOverview().catch(() => ({ overview: null })),
         getAuditLogs().catch(() => ({ activities: [] })),
         getCustomers({ unassigned: 'true', limit: 100 }).catch(() => ({ customers: [] })),
-        getFollowUps({ limit: 1000 }).catch(() => ({ followUps: [] })),
+        getFollowUps({ limit: 100 }).catch(() => ({ followUps: [] })),
       ]);
 
       setUsers(usersData.users || []);
@@ -301,7 +301,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
     loadData();
     const liveTimer = setInterval(() => {
       loadData(true);
-    }, 15000);
+    }, 60000);
     return () => clearInterval(liveTimer);
   }, [loadData]);
 
