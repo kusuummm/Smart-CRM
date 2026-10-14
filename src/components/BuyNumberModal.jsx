@@ -30,6 +30,22 @@ export default function BuyNumberModal({ isOpen, onClose }) {
 
   const handleBuy = () => {
     if (!selectedNumber) return;
+    try {
+      const existing = JSON.parse(localStorage.getItem('smartcrm_teams') || '[]');
+      const cityName = selectedCity.charAt(0).toUpperCase() + selectedCity.slice(1);
+      const newTeam = {
+        id: existing.length > 0 ? Math.max(...existing.map((t) => Number(t.id) || 0)) + 1 : 1,
+        name: `${cityName} Team`,
+        status: 'Active',
+        number: selectedNumber.number,
+        staffActive: 1,
+        staffTotal: 5,
+        leadsUsed: 0,
+        leadsTotal: 10000,
+      };
+      localStorage.setItem('smartcrm_teams', JSON.stringify([...existing, newTeam]));
+      window.dispatchEvent(new Event('storage'));
+    } catch {}
     setPurchased(true);
     setTimeout(() => {
       setPurchased(false);

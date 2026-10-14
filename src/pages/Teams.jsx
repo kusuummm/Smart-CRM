@@ -45,7 +45,18 @@ export default function Teams({ onNavigate, onOpenBuyNumber }) {
   const { confirm } = useConfirm();
 
   // Organizations list
-  const [teams, setTeams] = useState([]);
+  const [teams, setTeams] = useState(() => {
+    try {
+      const saved = localStorage.getItem('smartcrm_teams');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return [];
+  });
+
+  // Create Team Modal State
+  const [isCreateTeamModalOpen, setIsCreateTeamModalOpen] = useState(false);
+  const [newTeamName, setNewTeamName] = useState('');
+  const [newTeamNumber, setNewTeamNumber] = useState('');
 
   // Selected Team for Detail View (matching 5 screenshots)
   const [selectedTeamForDetails, setSelectedTeamForDetails] = useState(null);
@@ -155,6 +166,34 @@ export default function Teams({ onNavigate, onOpenBuyNumber }) {
       return sortAsc ? valA - valB : valB - valA;
     });
   }, [teams, selectedOrgs, sortField, sortAsc]);
+
+  const handleCreateTeam = (e) => {
+    e.preventDefault();
+    if (!newTeamName.trim()) {
+      addToast('Please enter a team name', 'error');
+      return;
+    }
+    const created = {
+      id: teams.length > 0 ? Math.max(...teams.map((t) => Number(t.id) || 0)) + 1 : 1,
+      name: newTeamName.trim(),
+      number: newTeamNumber.trim() || 'No number assigned',
+      status: 'Active',
+      staffActive: 0,
+      staffTotal: 0,
+      leadsUsed: 0,
+      leadsTotal: 1000,
+    };
+    const updated = [...teams, created];
+    setTeams(updated);
+    try {
+      localStorage.setItem('smartcrm_teams', JSON.stringify(updated));
+      window.dispatchEvent(new Event('storage'));
+    } catch {}
+    setIsCreateTeamModalOpen(false);
+    setNewTeamName('');
+    setNewTeamNumber('');
+    addToast(`Team "${created.name}" created successfully!`, 'success');
+  };
 
   const handleRenewSuccess = () => {
     const target = renewingTeam || selectedTeamForDetails;
@@ -1567,7 +1606,12 @@ export default function Teams({ onNavigate, onOpenBuyNumber }) {
                   onClick={() => {
                     if (editTeamName.trim()) {
                       currentTeam.name = editTeamName.trim();
-                      setTeams([...teams]);
+                      const updated = [...teams];
+                      setTeams(updated);
+                      try {
+                        localStorage.setItem('smartcrm_teams', JSON.stringify(updated));
+                        window.dispatchEvent(new Event('storage'));
+                      } catch {}
                       setIsEditTeamModalOpen(false);
                       addToast('Team name updated!', 'success');
                     }
@@ -1698,6 +1742,15 @@ export default function Teams({ onNavigate, onOpenBuyNumber }) {
               </div>
             )}
           </div>
+
+          {/* Create Team Button */}
+          <button
+            onClick={() => setIsCreateTeamModalOpen(true)}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold text-dark-700 dark:text-dark-200 bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 hover:bg-dark-50 dark:hover:bg-dark-700 transition-colors shadow-xs cursor-pointer"
+          >
+            <Plus size={15} className="text-blue-600" />
+            <span>Create Team</span>
+          </button>
 
           {/* Buy a new Number Solid Blue Button */}
           <button
@@ -1891,6 +1944,30 @@ export default function Teams({ onNavigate, onOpenBuyNumber }) {
                       >
                         Renew Plan
                       </button>
+
+                      {/* Delete Team Button */}
+                      <button
+                        onClick={async () => {
+                          const ok = await confirm({
+                            title: 'Delete Team',
+                            message: `Are you sure you want to delete team "${team.name}"?`,
+                            confirmText: 'Delete',
+                            type: 'danger',
+                          });
+                          if (!ok) return;
+                          const updated = teams.filter((t) => t.id !== team.id);
+                          setTeams(updated);
+                          try {
+                            localStorage.setItem('smartcrm_teams', JSON.stringify(updated));
+                            window.dispatchEvent(new Event('storage'));
+                          } catch {}
+                          addToast(`Team "${team.name}" removed`, 'info');
+                        }}
+                        className="p-1.5 rounded-lg text-dark-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                        title="Delete Team"
+                      >
+                        <Trash2 size={13} />
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -1926,6 +2003,68 @@ export default function Teams({ onNavigate, onOpenBuyNumber }) {
                 Confirm Renewal
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create Team Modal */}
+      {isCreateTeamModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-white dark:bg-dark-800 rounded-2xl max-w-sm w-full border border-dark-200 dark:border-dark-700 p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-bold text-dark-900 dark:text-white">Create New Team</h3>
+              <button
+                onClick={() => setIsCreateTeamModalOpen(false)}
+                className="p-1 rounded-lg text-dark-400 hover:text-dark-700 transition-colors"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <p className="text-xs text-dark-500">
+              Create a dedicated team to manage staff, allocate numbers, and filter call insights.
+            </p>
+            <form onSubmit={handleCreateTeam} className="space-y-3 pt-1">
+              <div>
+                <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1">
+                  Team Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={newTeamName}
+                  onChange={(e) => setNewTeamName(e.target.value)}
+                  placeholder="e.g. Sales Team, Delhi Branch"
+                  className="w-full px-3 py-2 text-xs rounded-xl bg-dark-50 dark:bg-dark-900 border border-dark-200 dark:border-dark-700 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1">
+                  Assigned Phone / Extension (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={newTeamNumber}
+                  onChange={(e) => setNewTeamNumber(e.target.value)}
+                  placeholder="e.g. +91 11 4982 5501"
+                  className="w-full px-3 py-2 text-xs rounded-xl bg-dark-50 dark:bg-dark-900 border border-dark-200 dark:border-dark-700 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-3">
+                <button
+                  type="button"
+                  onClick={() => setIsCreateTeamModalOpen(false)}
+                  className="px-3.5 py-2 text-xs rounded-xl hover:bg-dark-100 dark:hover:bg-dark-700 text-dark-600 dark:text-dark-300"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-xs"
+                >
+                  Create Team
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

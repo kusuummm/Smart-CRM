@@ -46,6 +46,32 @@ export default function HomeDashboard({
   const [selectedTeam, setSelectedTeam] = useState('All Teams');
   const [dateRangeText, setDateRangeText] = useState('Today');
 
+  // Dynamic teams loaded from CRM state / localStorage
+  const [teams, setTeams] = useState(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem('smartcrm_teams') || '[]');
+      return Array.isArray(stored) ? stored : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    const syncTeams = () => {
+      try {
+        const stored = JSON.parse(localStorage.getItem('smartcrm_teams') || '[]');
+        if (Array.isArray(stored)) {
+          setTeams(stored);
+        }
+      } catch {
+        setTeams([]);
+      }
+    };
+    syncTeams();
+    window.addEventListener('storage', syncTeams);
+    return () => window.removeEventListener('storage', syncTeams);
+  }, []);
+
   // Collapsible staff level insights
   const [showStaffInsights, setShowStaffInsights] = useState(false);
 
@@ -244,9 +270,15 @@ export default function HomeDashboard({
               className="px-3.5 py-2 bg-white dark:bg-dark-800 border border-dark-200/90 dark:border-dark-700 rounded-xl font-medium text-dark-700 dark:text-dark-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 shadow-2xs hover:border-dark-300 transition-colors cursor-pointer"
             >
               <option value="All Teams">Select team</option>
-              <option value="Lead Team">Lead Team</option>
-              <option value="Sales Line">Sales Line</option>
-              <option value="Support Line">Support Line</option>
+              {teams && teams.length > 0 &&
+                teams.map((t) => {
+                  const tName = typeof t === 'string' ? t : t.name;
+                  return (
+                    <option key={t.id || tName} value={tName}>
+                      {tName}
+                    </option>
+                  );
+                })}
               <option value="__manage__">Manage Teams →</option>
             </select>
 

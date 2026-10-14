@@ -175,7 +175,15 @@ export default function CallHistory({ onNavigate, initialCallType = 'all' }) {
   }, []);
 
   // Teams list
-  const teamsList = ['Main Team'];
+  const teamsList = useMemo(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('smartcrm_teams') || '[]');
+      if (Array.isArray(saved) && saved.length > 0) {
+        return saved.map((t) => (typeof t === 'string' ? t : t.name)).filter(Boolean);
+      }
+    } catch {}
+    return [];
+  }, []);
 
   // Staff members
   const staffList = user?.name ? [user.name] : ['All Staff'];
@@ -764,9 +772,12 @@ export default function CallHistory({ onNavigate, initialCallType = 'all' }) {
               </div>
 
               <div className="space-y-1 max-h-[160px] overflow-y-auto">
-                {teamsList
-                  .filter((t) => t.toLowerCase().includes(teamSearch.toLowerCase()))
-                  .map((tName) => {
+                {teamsList.length === 0 ? (
+                  <p className="px-2 py-3 text-xs text-dark-400 text-center">No teams found</p>
+                ) : (
+                  teamsList
+                    .filter((t) => t.toLowerCase().includes(teamSearch.toLowerCase()))
+                    .map((tName) => {
                     const isSelected = selectedTeam === tName;
                     return (
                       <div
@@ -788,7 +799,8 @@ export default function CallHistory({ onNavigate, initialCallType = 'all' }) {
                         </span>
                       </div>
                     );
-                  })}
+                  })
+                )}
               </div>
             </div>
           )}

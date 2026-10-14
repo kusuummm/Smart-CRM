@@ -74,7 +74,15 @@ export default function ToDos({ onNavigate }) {
 
   // Teams & Staff lists
   const [telecallers, setTelecallers] = useState([]);
-  const teamsList = ['Main Team'];
+  const teamsList = useMemo(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('smartcrm_teams') || '[]');
+      if (Array.isArray(saved) && saved.length > 0) {
+        return saved.map((t) => (typeof t === 'string' ? t : t.name)).filter(Boolean);
+      }
+    } catch {}
+    return [];
+  }, []);
   const staffList = useMemo(() => [
     'Select assigned to',
     ...telecallers.map((t) => t.name),
@@ -524,18 +532,22 @@ export default function ToDos({ onNavigate }) {
 
             {showTeamDropdown && (
               <div className="absolute left-0 mt-2 w-full rounded-2xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 p-2 shadow-2xl z-30 space-y-1">
-                {teamsList.map((tm) => (
-                  <div
-                    key={tm}
-                    onClick={() => {
-                      setTeamName(tm);
-                      setShowTeamDropdown(false);
-                    }}
-                    className="p-2 rounded-lg hover:bg-dark-50 dark:hover:bg-dark-700 cursor-pointer font-medium text-dark-800 dark:text-dark-200 text-xs"
-                  >
-                    {tm}
-                  </div>
-                ))}
+                {teamsList.length === 0 ? (
+                  <div className="p-2 text-xs text-dark-400 text-center">No teams found</div>
+                ) : (
+                  teamsList.map((tm) => (
+                    <div
+                      key={tm}
+                      onClick={() => {
+                        setTeamName(tm);
+                        setShowTeamDropdown(false);
+                      }}
+                      className="p-2 rounded-lg hover:bg-dark-50 dark:hover:bg-dark-700 cursor-pointer font-medium text-dark-800 dark:text-dark-200 text-xs"
+                    >
+                      {tm}
+                    </div>
+                  ))
+                )}
               </div>
             )}
           </div>

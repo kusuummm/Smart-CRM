@@ -37,7 +37,15 @@ export default function Insights({ onNavigate }) {
   // Accordion state for Staff Level Insights
   const [showStaffLevelInsights, setShowStaffLevelInsights] = useState(false);
 
-  const teamsList = ['Select team', 'Main Team'];
+  const teamsList = useMemo(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('smartcrm_teams') || '[]');
+      if (Array.isArray(saved) && saved.length > 0) {
+        return ['Select team', ...saved.map((t) => (typeof t === 'string' ? t : t.name)).filter(Boolean)];
+      }
+    } catch {}
+    return ['Select team'];
+  }, []);
   const [staffList, setStaffList] = useState(['Select staff']);
   const [staffRows, setStaffRows] = useState([]);
 
