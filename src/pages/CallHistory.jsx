@@ -163,11 +163,24 @@ export default function CallHistory({ onNavigate, initialCallType = 'all' }) {
 
   const teamRef = useRef(null);
   const staffRef = useRef(null);
+  const filterDropdownRef = useRef(null);
+  const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
+
+  const activeFiltersCount = useMemo(() => {
+    let count = 0;
+    if (customerSearch) count++;
+    if (followUpFilter) count++;
+    if (selectedTeam) count++;
+    if (selectedStaff && selectedStaff !== 'All staff') count++;
+    if (callTypeFilter && callTypeFilter !== 'all') count++;
+    return count;
+  }, [customerSearch, followUpFilter, selectedTeam, selectedStaff, callTypeFilter]);
 
   useEffect(() => {
     function handleClickOutside(e) {
       if (teamRef.current && !teamRef.current.contains(e.target)) setShowTeamDropdown(false);
       if (staffRef.current && !staffRef.current.contains(e.target)) setShowStaffDropdown(false);
+      if (filterDropdownRef.current && !filterDropdownRef.current.contains(e.target)) setIsFilterDropdownOpen(false);
       setOpenStatusDropdownCallId(null);
     }
     document.addEventListener('mousedown', handleClickOutside);
@@ -662,16 +675,104 @@ export default function CallHistory({ onNavigate, initialCallType = 'all' }) {
             <span>Dial Number</span>
           </button>
 
-          <button
-            className="flex items-center gap-2 px-3.5 py-2 rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 text-xs font-semibold text-dark-700 dark:text-dark-200 hover:bg-dark-50 shadow-2xs transition-colors"
-          >
-            <SlidersHorizontal size={14} className="text-dark-500" />
-            <span>Filters</span>
-            <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300">
-              1
-            </span>
-            <ChevronDown size={14} className="text-dark-400" />
-          </button>
+          <div className="relative" ref={filterDropdownRef}>
+            <button
+              type="button"
+              onClick={() => setIsFilterDropdownOpen((prev) => !prev)}
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl border text-xs font-semibold shadow-2xs transition-colors cursor-pointer ${
+                activeFiltersCount > 0 || isFilterDropdownOpen
+                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300'
+                  : 'border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 text-dark-700 dark:text-dark-200 hover:bg-dark-50'
+              }`}
+            >
+              <SlidersHorizontal size={14} className={activeFiltersCount > 0 ? 'text-blue-600' : 'text-dark-500'} />
+              <span>Filters</span>
+              {activeFiltersCount > 0 && (
+                <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-blue-600 text-white">
+                  {activeFiltersCount}
+                </span>
+              )}
+              <ChevronDown size={14} className={`text-dark-400 transition-transform ${isFilterDropdownOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {isFilterDropdownOpen && (
+              <div className="absolute right-0 mt-2 w-72 rounded-2xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 p-3.5 shadow-2xl z-40 space-y-3">
+                <div className="flex items-center justify-between border-b border-dark-100 dark:border-dark-700 pb-2">
+                  <span className="text-xs font-bold text-dark-900 dark:text-white flex items-center gap-1.5">
+                    <SlidersHorizontal size={13} className="text-blue-600" />
+                    <span>Call Filters</span>
+                  </span>
+                  {activeFiltersCount > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCustomerSearch('');
+                        setFollowUpFilter('');
+                        setSelectedTeam('');
+                        setSelectedStaff('All staff');
+                        setCallTypeFilter('all');
+                      }}
+                      className="text-[11px] text-rose-600 hover:underline font-semibold cursor-pointer"
+                    >
+                      Reset all
+                    </button>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-dark-400 mb-1">
+                    Quick Presets
+                  </label>
+                  <div className="flex flex-wrap gap-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCustomerSearch('');
+                        setFollowUpFilter('');
+                        setSelectedTeam('');
+                        setSelectedStaff('All staff');
+                        setCallTypeFilter('all');
+                        setIsFilterDropdownOpen(false);
+                      }}
+                      className="px-2 py-1 rounded-lg text-xs bg-dark-100 dark:bg-dark-700 hover:bg-dark-200 text-dark-700 dark:text-dark-300 font-medium cursor-pointer"
+                    >
+                      All Calls
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCallTypeFilter('missed');
+                        setIsFilterDropdownOpen(false);
+                      }}
+                      className="px-2 py-1 rounded-lg text-xs bg-rose-50 text-rose-600 hover:bg-rose-100 font-medium cursor-pointer"
+                    >
+                      Missed Calls
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFollowUpFilter('pending');
+                        setIsFilterDropdownOpen(false);
+                      }}
+                      className="px-2 py-1 rounded-lg text-xs bg-amber-50 text-amber-700 hover:bg-amber-100 font-medium cursor-pointer"
+                    >
+                      Follow-up Pending
+                    </button>
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-dark-100 dark:border-dark-700 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setIsFilterDropdownOpen(false)}
+                    className="px-3.5 py-1.5 rounded-xl bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 cursor-pointer"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
 
           <button
             onClick={handleDownload}

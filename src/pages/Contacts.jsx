@@ -36,6 +36,7 @@ import { useToast } from '../components/Toast';
 import { useConfirm } from '../context/ConfirmContext';
 import { useAuth } from '../context/AuthContext';
 import { getCustomers, createCustomer, updateCustomer, deleteCustomer, bulkDeleteCustomers } from '../api/customers';
+import { getUsers } from '../api/users';
 import { getCalls, createCall } from '../api/callHistory';
 import CallRecordingModal from '../components/CallRecordingModal';
 import { audioEngine, formatSeconds, generateWaveform } from '../utils/audioPlayer';
@@ -59,11 +60,34 @@ export default function Contacts({ onNavigate }) {
   const [selectedLeadGroup, setSelectedLeadGroup] = useState('Select Lead groups');
   const [selectedCreatedBy, setSelectedCreatedBy] = useState('Select Created by');
   const [createdDate, setCreatedDate] = useState('');
-  const [teamFilter, setTeamFilter] = useState('Main Team');
+  const [teamFilter, setTeamFilter] = useState('');
+  const [leadStageFilter, setLeadStageFilter] = useState('All Stages');
+  const [sourceFilter, setSourceFilter] = useState('All Sources');
+  const [cityFilter, setCityFilter] = useState('');
+  const [tagsFilter, setTagsFilter] = useState('');
 
-  // Dropdown toggles
+  // Dropdown and panel toggles
+  const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [showFilterBar, setShowFilterBar] = useState(true);
   const [showLeadGroupDropdown, setShowLeadGroupDropdown] = useState(false);
   const [showCreatedByDropdown, setShowCreatedByDropdown] = useState(false);
+
+  // Teams & Staff data
+  const [teams, setTeams] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('smartcrm_teams') || '[]');
+      return Array.isArray(saved) ? saved : [];
+    } catch {
+      return [];
+    }
+  });
+  const [staffList, setStaffList] = useState([]);
+
+  // Outside click references
+  const filterDropdownRef = useRef(null);
+  const leadGroupRef = useRef(null);
+  const createdByRef = useRef(null);
 
   // Table selection
   const [selectedContactIds, setSelectedContactIds] = useState([]);
@@ -124,8 +148,15 @@ export default function Contacts({ onNavigate }) {
   };
   const [form, setForm] = useState(initialForm);
 
-  // Contact records loaded from backend API
-  const [contacts, setContacts] = useState([]);
+  // Contact records loaded from backend API & cached locally
+  const [contacts, setContacts] = useState(() => {
+    try {
+      const saved = localStorage.getItem('smartcrm_contacts');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
 
   // Fetch real customers from database
   useEffect(() => {
@@ -144,6 +175,11 @@ export default function Contacts({ onNavigate }) {
             source: c.leadSource?.toLowerCase() || 'call',
             city: c.city || '-',
             assignedTelecaller: c.assignedTelecaller || 'Unassigned',
+            team: c.team || '',
+            createdAt: c.createdAt || '',
+            leadGroup: c.leadGroup || c.group || '',
+            createdBy: c.createdBy || '',
+            rawCustomer: c,
           }));
           setContacts(mapped);
           try {
@@ -154,16 +190,201 @@ export default function Contacts({ onNavigate }) {
       .catch(() => {});
   }, []);
 
-  // Filtered contacts
+  // Fetch real staff for Created By filter
+  useEffect(() => {
+    getUsers({ limit: 100 })
+      .then((res) => {
+        if (res.users) {
+          setStaffList(res.users);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  // Sync teams from localStorage with other pages
+  useEffect(() => {
+    const syncTeams = () => {
+      try {
+        const saved = JSON.parse(localStorage.getItem('smartcrm_teams') || '[]');
+        if (Array.isArray(saved)) setTeams(saved);
+      } catch {}
+    };
+    window.addEventListener('storage', syncTeams);
+    return () => window.removeEventListener('storage', syncTeams);
+  }, []);
+
+  // Click-outside listener for dropdowns
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (filterDropdownRef.current && !filterDropdownRef.current.contains(e.target)) {
+        setIsFilterDropdownOpen(false);
+      }
+      if (leadGroupRef.current && !leadGroupRef.current.contains(e.target)) {
+        setShowLeadGroupDropdown(false);
+      }
+      if (createdByRef.current && !createdByRef.current.contains(e.target)) {
+        setShowCreatedByDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Active filters count calculation
+  const activeFiltersCount = useMemo(() => {
+    let count = 0;
+    if (customerSearch.trim()) count++;
+    if (selectedLeadGroup && selectedLeadGroup !== 'Select Lead groups' && selectedLeadGroup !== 'All Groups') count++;
+    if (selectedCreatedBy && selectedCreatedBy !== 'Select Created by' && selectedCreatedBy !== 'All Staff') count++;
+    if (createdDate) count++;
+    if (teamFilter) count++;
+    if (leadStageFilter && leadStageFilter !== 'All Stages') count++;
+    if (sourceFilter && sourceFilter !== 'All Sources') count++;
+    if (cityFilter.trim()) count++;
+    if (tagsFilter.trim()) count++;
+    return count;
+  }, [
+    customerSearch,
+    selectedLeadGroup,
+    selectedCreatedBy,
+    createdDate,
+    teamFilter,
+    leadStageFilter,
+    sourceFilter,
+    cityFilter,
+    tagsFilter,
+  ]);
+
+  // Reset all filters helper
+  const handleClearAllFilters = () => {
+    setCustomerSearch('');
+    setSelectedLeadGroup('Select Lead groups');
+    setSelectedCreatedBy('Select Created by');
+    setCreatedDate('');
+    setTeamFilter('');
+    setLeadStageFilter('All Stages');
+    setSourceFilter('All Sources');
+    setCityFilter('');
+    setTagsFilter('');
+  };
+
+  // Comprehensive Filtered contacts engine
   const filteredContacts = useMemo(() => {
     return contacts.filter((c) => {
-      const matchSearch =
-        !customerSearch ||
-        c.name.toLowerCase().includes(customerSearch.toLowerCase()) ||
-        c.phone.includes(customerSearch);
-      return matchSearch;
+      // 1. Text Search across name, phone, email, info, city
+      if (customerSearch.trim()) {
+        const q = customerSearch.toLowerCase().trim();
+        const nameMatch = c.name && c.name.toLowerCase().includes(q);
+        const phoneMatch = c.phone && c.phone.includes(q);
+        const emailMatch = c.email && c.email.toLowerCase().includes(q);
+        const infoMatch = c.additionalInfo && c.additionalInfo.toLowerCase().includes(q);
+        const cityMatch = c.city && c.city.toLowerCase().includes(q);
+        if (!nameMatch && !phoneMatch && !emailMatch && !infoMatch && !cityMatch) return false;
+      }
+
+      // 2. Lead Group filter
+      if (selectedLeadGroup && selectedLeadGroup !== 'Select Lead groups' && selectedLeadGroup !== 'All Groups') {
+        const grp = selectedLeadGroup.toLowerCase();
+        const cTag = (c.tags || '').toLowerCase();
+        const cGrp = (c.leadGroup || '').toLowerCase();
+        if (!cTag.includes(grp) && !cGrp.includes(grp)) return false;
+      }
+
+      // 3. Created By / Telecaller filter
+      if (selectedCreatedBy && selectedCreatedBy !== 'Select Created by' && selectedCreatedBy !== 'All Staff') {
+        const author = (c.assignedTelecaller || c.createdBy || '').toLowerCase();
+        if (!author.includes(selectedCreatedBy.toLowerCase())) return false;
+      }
+
+      // 4. Team Filter (matches contact's assigned team or team members)
+      if (teamFilter) {
+        const tf = teamFilter.toLowerCase();
+        const directTeam = (c.team || '').toLowerCase();
+        if (directTeam === tf || directTeam.includes(tf)) {
+          // direct team match
+        } else {
+          const matchingTeam = teams.find(
+            (t) => (t.name || '').toLowerCase() === tf || (t.teamId || '').toLowerCase() === tf
+          );
+          if (matchingTeam && Array.isArray(matchingTeam.members) && matchingTeam.members.length > 0) {
+            const contactCaller = (c.assignedTelecaller || '').toLowerCase();
+            const memberHit = matchingTeam.members.some((m) => {
+              const mName = (typeof m === 'string' ? m : m.name || '').toLowerCase();
+              return mName && (mName.includes(contactCaller) || contactCaller.includes(mName));
+            });
+            if (!memberHit) return false;
+          } else {
+            return false;
+          }
+        }
+      }
+
+      // 5. Lead Stage filter
+      if (leadStageFilter && leadStageFilter !== 'All Stages') {
+        const st = (c.leadStage || c.status || '').toLowerCase();
+        if (!st.includes(leadStageFilter.toLowerCase())) return false;
+      }
+
+      // 6. Source filter
+      if (sourceFilter && sourceFilter !== 'All Sources') {
+        const src = (c.source || '').toLowerCase();
+        if (!src.includes(sourceFilter.toLowerCase())) return false;
+      }
+
+      // 7. City filter
+      if (cityFilter.trim()) {
+        const city = (c.city || '').toLowerCase();
+        if (!city.includes(cityFilter.toLowerCase().trim())) return false;
+      }
+
+      // 8. Tags filter
+      if (tagsFilter.trim()) {
+        const tag = (c.tags || '').toLowerCase();
+        if (!tag.includes(tagsFilter.toLowerCase().trim())) return false;
+      }
+
+      // 9. Created Date filter
+      if (createdDate) {
+        if (createdDate.toLowerCase() === 'today') {
+          const today = new Date().toDateString();
+          const cDate = c.createdAt ? new Date(c.createdAt).toDateString() : '';
+          if (cDate !== today) return false;
+        } else if (createdDate.toLowerCase() === 'yesterday') {
+          const y = new Date();
+          y.setDate(y.getDate() - 1);
+          const yStr = y.toDateString();
+          const cDate = c.createdAt ? new Date(c.createdAt).toDateString() : '';
+          if (cDate !== yStr) return false;
+        } else if (createdDate.toLowerCase() === 'last 7 days' || createdDate === 'last7') {
+          const cutoff = new Date();
+          cutoff.setDate(cutoff.getDate() - 7);
+          const cDate = c.createdAt ? new Date(c.createdAt) : null;
+          if (!cDate || cDate < cutoff) return false;
+        } else if (createdDate.toLowerCase() === 'this month') {
+          const now = new Date();
+          const cDate = c.createdAt ? new Date(c.createdAt) : null;
+          if (!cDate || cDate.getMonth() !== now.getMonth() || cDate.getFullYear() !== now.getFullYear()) return false;
+        } else if (c.createdAt) {
+          const cDateStr = new Date(c.createdAt).toISOString().slice(0, 10);
+          if (cDateStr !== createdDate && !c.createdAt.includes(createdDate)) return false;
+        }
+      }
+
+      return true;
     });
-  }, [contacts, customerSearch]);
+  }, [
+    contacts,
+    customerSearch,
+    selectedLeadGroup,
+    selectedCreatedBy,
+    teamFilter,
+    leadStageFilter,
+    sourceFilter,
+    cityFilter,
+    tagsFilter,
+    createdDate,
+    teams,
+  ]);
 
   const displayedContacts = filteredContacts.slice(0, visibleCount);
 
@@ -677,18 +898,233 @@ export default function Contacts({ onNavigate }) {
 
         {/* Right Action Buttons */}
         <div className="flex items-center gap-2.5">
-          <button className="flex items-center gap-2 px-3.5 py-2 rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 text-xs font-semibold text-dark-700 dark:text-dark-200 hover:bg-dark-50 shadow-2xs transition-colors">
-            <SlidersHorizontal size={14} className="text-dark-500" />
-            <span>Filters</span>
-            <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300">
-              1
-            </span>
-            <ChevronDown size={14} className="text-dark-400" />
-          </button>
+          <div className="relative" ref={filterDropdownRef}>
+            <button
+              type="button"
+              onClick={() => setIsFilterDropdownOpen((prev) => !prev)}
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl border text-xs font-semibold shadow-2xs transition-all cursor-pointer ${
+                activeFiltersCount > 0 || isFilterDropdownOpen
+                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 ring-2 ring-blue-500/20'
+                  : 'border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 text-dark-700 dark:text-dark-200 hover:bg-dark-50 dark:hover:bg-dark-750'
+              }`}
+            >
+              <SlidersHorizontal size={14} className={activeFiltersCount > 0 ? 'text-blue-600' : 'text-dark-500'} />
+              <span>Filters</span>
+              {activeFiltersCount > 0 && (
+                <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-blue-600 text-white">
+                  {activeFiltersCount}
+                </span>
+              )}
+              <ChevronDown
+                size={14}
+                className={`transition-transform text-dark-400 ${isFilterDropdownOpen ? 'rotate-180' : ''}`}
+              />
+            </button>
+
+            {/* Filter Dropdown Popover */}
+            {isFilterDropdownOpen && (
+              <div className="absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 p-4 shadow-2xl z-40 space-y-4 animate-in fade-in slide-in-from-top-2 duration-150">
+                <div className="flex items-center justify-between border-b border-dark-100 dark:border-dark-700 pb-2.5">
+                  <div className="flex items-center gap-2">
+                    <SlidersHorizontal size={15} className="text-blue-600" />
+                    <span className="text-sm font-bold text-dark-900 dark:text-white">Filter Contacts</span>
+                    {activeFiltersCount > 0 && (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400">
+                        {activeFiltersCount} active
+                      </span>
+                    )}
+                  </div>
+                  {activeFiltersCount > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleClearAllFilters}
+                      className="text-xs text-rose-600 hover:text-rose-700 font-semibold cursor-pointer"
+                    >
+                      Reset all
+                    </button>
+                  )}
+                </div>
+
+                {/* Quick Presets */}
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-dark-400 mb-1.5">
+                    Quick Presets
+                  </label>
+                  <div className="flex flex-wrap gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => handleClearAllFilters()}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+                        activeFiltersCount === 0
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-dark-100 dark:bg-dark-700 text-dark-700 dark:text-dark-300 hover:bg-dark-200'
+                      }`}
+                    >
+                      All Contacts
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setLeadStageFilter('follow-up')}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+                        leadStageFilter.toLowerCase() === 'follow-up'
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-dark-100 dark:bg-dark-700 text-dark-700 dark:text-dark-300 hover:bg-dark-200'
+                      }`}
+                    >
+                      Follow-ups
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedLeadGroup('Hot Leads')}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+                        selectedLeadGroup === 'Hot Leads'
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-dark-100 dark:bg-dark-700 text-dark-700 dark:text-dark-300 hover:bg-dark-200'
+                      }`}
+                    >
+                      Hot Leads
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedLeadGroup('VIP Clients')}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+                        selectedLeadGroup === 'VIP Clients'
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-dark-100 dark:bg-dark-700 text-dark-700 dark:text-dark-300 hover:bg-dark-200'
+                      }`}
+                    >
+                      VIP Clients
+                    </button>
+                    {user?.name && (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedCreatedBy(user.name)}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+                          selectedCreatedBy === user.name
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-dark-100 dark:bg-dark-700 text-dark-700 dark:text-dark-300 hover:bg-dark-200'
+                        }`}
+                      >
+                        Assigned to Me
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Filter by Team */}
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-dark-400 mb-1">
+                    Team
+                  </label>
+                  <select
+                    value={teamFilter}
+                    onChange={(e) => setTeamFilter(e.target.value)}
+                    className="w-full px-3 py-1.5 text-xs rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 text-dark-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
+                  >
+                    <option value="">All Teams (Show all contacts)</option>
+                    {teams.map((t) => {
+                      const name = typeof t === 'string' ? t : t.name;
+                      return (
+                        <option key={name} value={name}>
+                          {name}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+
+                {/* Filter by Stage & Source */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-dark-400 mb-1">
+                      Lead Stage
+                    </label>
+                    <select
+                      value={leadStageFilter}
+                      onChange={(e) => setLeadStageFilter(e.target.value)}
+                      className="w-full px-2.5 py-1.5 text-xs rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 text-dark-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
+                    >
+                      <option value="All Stages">All Stages</option>
+                      <option value="new">New</option>
+                      <option value="follow-up">Follow-up</option>
+                      <option value="interested">Interested</option>
+                      <option value="opportunity">Opportunity</option>
+                      <option value="customer">Customer / Converted</option>
+                      <option value="lost">Lost</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-dark-400 mb-1">
+                      Source
+                    </label>
+                    <select
+                      value={sourceFilter}
+                      onChange={(e) => setSourceFilter(e.target.value)}
+                      className="w-full px-2.5 py-1.5 text-xs rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 text-dark-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
+                    >
+                      <option value="All Sources">All Sources</option>
+                      <option value="call">Call</option>
+                      <option value="whatsapp">WhatsApp</option>
+                      <option value="website">Website</option>
+                      <option value="referral">Referral</option>
+                      <option value="excel">Excel Import</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Date presets */}
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-dark-400 mb-1">
+                    Date Created
+                  </label>
+                  <div className="grid grid-cols-4 gap-1 text-[11px]">
+                    {[
+                      { label: 'All Time', val: '' },
+                      { label: 'Today', val: 'today' },
+                      { label: 'Yesterday', val: 'yesterday' },
+                      { label: 'Last 7D', val: 'last 7 days' },
+                    ].map((item) => (
+                      <button
+                        key={item.label}
+                        type="button"
+                        onClick={() => setCreatedDate(item.val)}
+                        className={`py-1 rounded-lg font-medium transition-colors cursor-pointer text-center ${
+                          createdDate === item.val
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-dark-50 dark:bg-dark-700 text-dark-600 dark:text-dark-300 hover:bg-dark-100'
+                        }`}
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Toggle Filter Bar & Close */}
+                <div className="pt-2 border-t border-dark-100 dark:border-dark-700 flex items-center justify-between">
+                  <button
+                    type="button"
+                    onClick={() => setShowFilterBar((prev) => !prev)}
+                    className="text-xs text-dark-600 dark:text-dark-400 hover:text-dark-900 dark:hover:text-white flex items-center gap-1.5 cursor-pointer font-medium"
+                  >
+                    <span>{showFilterBar ? 'Hide Filter Bar' : 'Show Filter Bar'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsFilterDropdownOpen(false)}
+                    className="px-4 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition-colors cursor-pointer"
+                  >
+                    Apply & Close
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
 
           <button
             onClick={() => setIsManualDialOpen(true)}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 transition-colors shadow-xs"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 transition-colors shadow-xs cursor-pointer"
           >
             <PhoneCall size={15} />
             <span>Dial Number</span>
@@ -696,7 +1132,7 @@ export default function Contacts({ onNavigate }) {
 
           <button
             onClick={() => setIsCreateModalOpen(true)}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 transition-colors shadow-xs"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 transition-colors shadow-xs cursor-pointer"
           >
             <Plus size={16} />
             <span>Create Contact</span>
@@ -709,143 +1145,379 @@ export default function Contacts({ onNavigate }) {
       </div>
 
       {/* 2. Filter Row matching screenshot */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs">
-        {/* CUSTOMER */}
-        <div>
-          <label className="block text-dark-400 font-bold uppercase tracking-wider text-[10px] mb-1.5">
-            CUSTOMER
-          </label>
-          <div className="relative">
-            <input
-              type="text"
-              value={customerSearch}
-              onChange={(e) => setCustomerSearch(e.target.value)}
-              placeholder="Search by name ..."
-              className="w-full pr-8 pl-3 py-2 rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 placeholder:text-dark-400 focus:outline-none focus:ring-1 focus:ring-blue-500 shadow-2xs"
-            />
-            <Search size={14} className="absolute right-3 top-2.5 text-dark-400" />
-          </div>
-        </div>
-
-        {/* LEAD GROUPS */}
-        <div className="relative">
-          <label className="block text-dark-400 font-bold uppercase tracking-wider text-[10px] mb-1.5">
-            LEAD GROUPS
-          </label>
-          <div
-            onClick={() => setShowLeadGroupDropdown(!showLeadGroupDropdown)}
-            className="flex items-center justify-between px-3 py-2 rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 cursor-pointer shadow-2xs text-dark-700 dark:text-dark-200"
-          >
-            <span className="truncate">{selectedLeadGroup}</span>
-            <ChevronDown size={14} className="text-dark-400" />
+      {showFilterBar && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs">
+          {/* CUSTOMER */}
+          <div>
+            <label className="block text-dark-400 font-bold uppercase tracking-wider text-[10px] mb-1.5">
+              CUSTOMER
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                value={customerSearch}
+                onChange={(e) => setCustomerSearch(e.target.value)}
+                placeholder="Search by name ..."
+                className="w-full pr-8 pl-3 py-2 rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 placeholder:text-dark-400 text-dark-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 shadow-2xs"
+              />
+              <Search size={14} className="absolute right-3 top-2.5 text-dark-400" />
+            </div>
           </div>
 
-          {showLeadGroupDropdown && (
-            <div className="absolute left-0 mt-2 w-full rounded-2xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 p-2 shadow-2xl z-30 space-y-1">
-              {['Select Lead groups', 'VIP Clients', 'Hot Leads', 'Cold Leads', 'Retail', 'Enterprise'].map(
-                (grp) => (
+          {/* LEAD GROUPS */}
+          <div className="relative" ref={leadGroupRef}>
+            <label className="block text-dark-400 font-bold uppercase tracking-wider text-[10px] mb-1.5">
+              LEAD GROUPS
+            </label>
+            <div
+              onClick={() => setShowLeadGroupDropdown(!showLeadGroupDropdown)}
+              className="flex items-center justify-between px-3 py-2 rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 cursor-pointer shadow-2xs text-dark-700 dark:text-dark-200"
+            >
+              <span className="truncate">{selectedLeadGroup}</span>
+              <ChevronDown size={14} className="text-dark-400" />
+            </div>
+
+            {showLeadGroupDropdown && (
+              <div className="absolute left-0 mt-2 w-full rounded-2xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 p-2 shadow-2xl z-30 space-y-1">
+                {['Select Lead groups', 'VIP Clients', 'Hot Leads', 'Cold Leads', 'Retail', 'Enterprise'].map(
+                  (grp) => (
+                    <div
+                      key={grp}
+                      onClick={() => {
+                        setSelectedLeadGroup(grp);
+                        setShowLeadGroupDropdown(false);
+                      }}
+                      className={`p-2 rounded-lg cursor-pointer font-medium text-xs transition-colors ${
+                        selectedLeadGroup === grp
+                          ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 font-bold'
+                          : 'hover:bg-dark-50 dark:hover:bg-dark-700 text-dark-800 dark:text-dark-200'
+                      }`}
+                    >
+                      {grp}
+                    </div>
+                  )
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* CREATED BY */}
+          <div className="relative" ref={createdByRef}>
+            <label className="block text-dark-400 font-bold uppercase tracking-wider text-[10px] mb-1.5">
+              CREATED BY
+            </label>
+            <div
+              onClick={() => setShowCreatedByDropdown(!showCreatedByDropdown)}
+              className="flex items-center justify-between px-3 py-2 rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 cursor-pointer shadow-2xs text-dark-700 dark:text-dark-200"
+            >
+              <span className="truncate">{selectedCreatedBy}</span>
+              <ChevronDown size={14} className="text-dark-400" />
+            </div>
+
+            {showCreatedByDropdown && (
+              <div className="absolute left-0 mt-2 w-full min-w-[200px] rounded-2xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 p-2 shadow-2xl z-30 space-y-1 max-h-60 overflow-y-auto">
+                {[
+                  'Select Created by',
+                  ...(user?.name ? [user.name] : []),
+                  ...staffList.map((s) => s.name).filter((name) => name && name !== user?.name),
+                ].map((cBy) => (
                   <div
-                    key={grp}
+                    key={cBy}
                     onClick={() => {
-                      setSelectedLeadGroup(grp);
-                      setShowLeadGroupDropdown(false);
+                      setSelectedCreatedBy(cBy);
+                      setShowCreatedByDropdown(false);
                     }}
-                    className="p-2 rounded-lg hover:bg-dark-50 dark:hover:bg-dark-700 cursor-pointer font-medium text-dark-800 dark:text-dark-200 text-xs"
+                    className={`p-2 rounded-lg cursor-pointer font-medium text-xs transition-colors ${
+                      selectedCreatedBy === cBy
+                        ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 font-bold'
+                        : 'hover:bg-dark-50 dark:hover:bg-dark-700 text-dark-800 dark:text-dark-200'
+                    }`}
                   >
-                    {grp}
+                    {cBy}
                   </div>
-                )
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* CREATED DATE */}
+          <div>
+            <label className="block text-dark-400 font-bold uppercase tracking-wider text-[10px] mb-1.5">
+              CREATED DATE
+            </label>
+            <div className="flex items-center gap-2 px-3 py-2 rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 shadow-2xs text-dark-500">
+              <Calendar size={14} className="text-dark-400 flex-shrink-0" />
+              <select
+                value={createdDate}
+                onChange={(e) => setCreatedDate(e.target.value)}
+                className="bg-transparent focus:outline-none w-full text-dark-800 dark:text-dark-200 text-xs cursor-pointer"
+              >
+                <option value="">All Dates</option>
+                <option value="today">Today</option>
+                <option value="yesterday">Yesterday</option>
+                <option value="last 7 days">Last 7 Days</option>
+                <option value="this month">This Month</option>
+              </select>
+            </div>
+          </div>
+
+          {/* + Add more filters */}
+          <div className="flex items-end">
+            <button
+              type="button"
+              onClick={() => setShowAdvancedFilters((prev) => !prev)}
+              className={`w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border text-dark-700 dark:text-dark-200 font-semibold shadow-2xs transition-colors cursor-pointer ${
+                showAdvancedFilters
+                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300'
+                  : 'border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 hover:bg-dark-50'
+              }`}
+            >
+              <span>{showAdvancedFilters ? '− Hide filters' : '+ Add more filters'}</span>
+              {activeFiltersCount > 0 && (
+                <span className="px-1.5 py-0.2 rounded-md bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 text-[10px] font-bold">
+                  {activeFiltersCount}
+                </span>
               )}
-            </div>
-          )}
-        </div>
-
-        {/* CREATED BY */}
-        <div className="relative">
-          <label className="block text-dark-400 font-bold uppercase tracking-wider text-[10px] mb-1.5">
-            CREATED BY
-          </label>
-          <div
-            onClick={() => setShowCreatedByDropdown(!showCreatedByDropdown)}
-            className="flex items-center justify-between px-3 py-2 rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 cursor-pointer shadow-2xs text-dark-700 dark:text-dark-200"
-          >
-            <span className="truncate">{selectedCreatedBy}</span>
-            <ChevronDown size={14} className="text-dark-400" />
-          </div>
-
-          {showCreatedByDropdown && (
-            <div className="absolute left-0 mt-2 w-full rounded-2xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 p-2 shadow-2xl z-30 space-y-1">
-              {[
-                'Select Created by',
-                user?.name || 'My Account',
-              ].map((cBy) => (
-                <div
-                  key={cBy}
-                  onClick={() => {
-                    setSelectedCreatedBy(cBy);
-                    setShowCreatedByDropdown(false);
-                  }}
-                  className="p-2 rounded-lg hover:bg-dark-50 dark:hover:bg-dark-700 cursor-pointer font-medium text-dark-800 dark:text-dark-200 text-xs"
-                >
-                  {cBy}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* CREATED DATE */}
-        <div>
-          <label className="block text-dark-400 font-bold uppercase tracking-wider text-[10px] mb-1.5">
-            CREATED DATE
-          </label>
-          <div className="flex items-center gap-2 px-3 py-2 rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 shadow-2xs text-dark-500">
-            <Calendar size={14} className="text-dark-400 flex-shrink-0" />
-            <input
-              type="text"
-              value={createdDate}
-              onChange={(e) => setCreatedDate(e.target.value)}
-              placeholder="Select date range"
-              className="bg-transparent focus:outline-none w-full placeholder:text-dark-400 text-xs"
-            />
+            </button>
           </div>
         </div>
+      )}
 
-        {/* + Add more filters 1 */}
-        <div className="flex items-end">
-          <button
-            onClick={() => addToast('Advanced filters toggled', 'info')}
-            className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 text-dark-700 dark:text-dark-200 font-semibold hover:bg-dark-50 shadow-2xs transition-colors"
-          >
-            <span>+ Add more filters</span>
-            <span className="px-1.5 py-0.2 rounded-md bg-blue-100 text-blue-700 text-[10px] font-bold">
-              1
+      {/* Advanced Filters Expandable Panel */}
+      {showFilterBar && showAdvancedFilters && (
+        <div className="p-3.5 rounded-2xl bg-dark-50/70 dark:bg-dark-800/60 border border-dark-200 dark:border-dark-700/80 animate-in fade-in slide-in-from-top-1 duration-150">
+          <div className="flex items-center justify-between mb-2.5">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-dark-500 flex items-center gap-1.5">
+              <SlidersHorizontal size={12} className="text-blue-600" />
+              <span>Advanced Filter Options</span>
             </span>
-          </button>
+            <button
+              type="button"
+              onClick={handleClearAllFilters}
+              className="text-[11px] font-semibold text-rose-600 hover:underline cursor-pointer"
+            >
+              Reset Filters
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs">
+            {/* Team Filter */}
+            <div>
+              <label className="block text-dark-400 font-bold uppercase tracking-wider text-[10px] mb-1">
+                TEAM
+              </label>
+              <select
+                value={teamFilter}
+                onChange={(e) => setTeamFilter(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 text-dark-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 shadow-2xs cursor-pointer"
+              >
+                <option value="">All Teams</option>
+                {teams.map((t) => {
+                  const name = typeof t === 'string' ? t : t.name;
+                  return (
+                    <option key={name} value={name}>
+                      {name}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+
+            {/* Lead Stage */}
+            <div>
+              <label className="block text-dark-400 font-bold uppercase tracking-wider text-[10px] mb-1">
+                LEAD STAGE
+              </label>
+              <select
+                value={leadStageFilter}
+                onChange={(e) => setLeadStageFilter(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 text-dark-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 shadow-2xs cursor-pointer"
+              >
+                <option value="All Stages">All Stages</option>
+                <option value="new">New</option>
+                <option value="follow-up">Follow-up</option>
+                <option value="interested">Interested</option>
+                <option value="opportunity">Opportunity</option>
+                <option value="customer">Customer / Converted</option>
+                <option value="lost">Lost</option>
+              </select>
+            </div>
+
+            {/* Source */}
+            <div>
+              <label className="block text-dark-400 font-bold uppercase tracking-wider text-[10px] mb-1">
+                SOURCE
+              </label>
+              <select
+                value={sourceFilter}
+                onChange={(e) => setSourceFilter(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 text-dark-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 shadow-2xs cursor-pointer"
+              >
+                <option value="All Sources">All Sources</option>
+                <option value="call">Call</option>
+                <option value="whatsapp">WhatsApp</option>
+                <option value="website">Website</option>
+                <option value="referral">Referral</option>
+                <option value="excel">Excel Import</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+
+            {/* City */}
+            <div>
+              <label className="block text-dark-400 font-bold uppercase tracking-wider text-[10px] mb-1">
+                CITY / LOCATION
+              </label>
+              <input
+                type="text"
+                value={cityFilter}
+                onChange={(e) => setCityFilter(e.target.value)}
+                placeholder="Filter by city..."
+                className="w-full px-3 py-2 rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 placeholder:text-dark-400 text-dark-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 shadow-2xs"
+              />
+            </div>
+
+            {/* Tags / Interested In */}
+            <div>
+              <label className="block text-dark-400 font-bold uppercase tracking-wider text-[10px] mb-1">
+                TAGS / PRODUCT
+              </label>
+              <input
+                type="text"
+                value={tagsFilter}
+                onChange={(e) => setTagsFilter(e.target.value)}
+                placeholder="Filter by tag..."
+                className="w-full px-3 py-2 rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 placeholder:text-dark-400 text-dark-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 shadow-2xs"
+              />
+            </div>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* 3. Active Filter Chip Line */}
-      {teamFilter && (
-        <div className="flex items-center gap-2 text-xs">
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 font-medium text-[11px] border border-blue-200 dark:border-blue-900/60 shadow-2xs">
-            <span>Team name: {teamFilter}</span>
-            <button
-              onClick={() => setTeamFilter('')}
-              className="hover:text-rose-600 font-bold"
-            >
-              ×
-            </button>
-          </span>
+      {activeFiltersCount > 0 && (
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+          {teamFilter && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 font-medium text-[11px] border border-blue-200 dark:border-blue-900/60 shadow-2xs">
+              <span>Team: {teamFilter}</span>
+              <button
+                type="button"
+                onClick={() => setTeamFilter('')}
+                className="hover:text-rose-600 font-bold cursor-pointer"
+              >
+                ×
+              </button>
+            </span>
+          )}
+
+          {customerSearch && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 font-medium text-[11px] border border-blue-200 dark:border-blue-900/60 shadow-2xs">
+              <span>Search: "{customerSearch}"</span>
+              <button
+                type="button"
+                onClick={() => setCustomerSearch('')}
+                className="hover:text-rose-600 font-bold cursor-pointer"
+              >
+                ×
+              </button>
+            </span>
+          )}
+
+          {selectedLeadGroup && selectedLeadGroup !== 'Select Lead groups' && selectedLeadGroup !== 'All Groups' && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 font-medium text-[11px] border border-blue-200 dark:border-blue-900/60 shadow-2xs">
+              <span>Group: {selectedLeadGroup}</span>
+              <button
+                type="button"
+                onClick={() => setSelectedLeadGroup('Select Lead groups')}
+                className="hover:text-rose-600 font-bold cursor-pointer"
+              >
+                ×
+              </button>
+            </span>
+          )}
+
+          {selectedCreatedBy && selectedCreatedBy !== 'Select Created by' && selectedCreatedBy !== 'All Staff' && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 font-medium text-[11px] border border-blue-200 dark:border-blue-900/60 shadow-2xs">
+              <span>Created by: {selectedCreatedBy}</span>
+              <button
+                type="button"
+                onClick={() => setSelectedCreatedBy('Select Created by')}
+                className="hover:text-rose-600 font-bold cursor-pointer"
+              >
+                ×
+              </button>
+            </span>
+          )}
+
+          {leadStageFilter && leadStageFilter !== 'All Stages' && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 font-medium text-[11px] border border-blue-200 dark:border-blue-900/60 shadow-2xs">
+              <span>Stage: {leadStageFilter}</span>
+              <button
+                type="button"
+                onClick={() => setLeadStageFilter('All Stages')}
+                className="hover:text-rose-600 font-bold cursor-pointer"
+              >
+                ×
+              </button>
+            </span>
+          )}
+
+          {sourceFilter && sourceFilter !== 'All Sources' && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 font-medium text-[11px] border border-blue-200 dark:border-blue-900/60 shadow-2xs">
+              <span>Source: {sourceFilter}</span>
+              <button
+                type="button"
+                onClick={() => setSourceFilter('All Sources')}
+                className="hover:text-rose-600 font-bold cursor-pointer"
+              >
+                ×
+              </button>
+            </span>
+          )}
+
+          {cityFilter && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 font-medium text-[11px] border border-blue-200 dark:border-blue-900/60 shadow-2xs">
+              <span>City: {cityFilter}</span>
+              <button
+                type="button"
+                onClick={() => setCityFilter('')}
+                className="hover:text-rose-600 font-bold cursor-pointer"
+              >
+                ×
+              </button>
+            </span>
+          )}
+
+          {tagsFilter && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 font-medium text-[11px] border border-blue-200 dark:border-blue-900/60 shadow-2xs">
+              <span>Tag: {tagsFilter}</span>
+              <button
+                type="button"
+                onClick={() => setTagsFilter('')}
+                className="hover:text-rose-600 font-bold cursor-pointer"
+              >
+                ×
+              </button>
+            </span>
+          )}
+
+          {createdDate && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 font-medium text-[11px] border border-blue-200 dark:border-blue-900/60 shadow-2xs">
+              <span>Date: {createdDate}</span>
+              <button
+                type="button"
+                onClick={() => setCreatedDate('')}
+                className="hover:text-rose-600 font-bold cursor-pointer"
+              >
+                ×
+              </button>
+            </span>
+          )}
 
           <button
-            onClick={() => {
-              setTeamFilter('');
-              setCustomerSearch('');
-              setSelectedLeadGroup('Select Lead groups');
-              setSelectedCreatedBy('Select Created by');
-            }}
-            className="text-blue-600 hover:underline font-semibold text-[11px] ml-1"
+            type="button"
+            onClick={handleClearAllFilters}
+            className="text-blue-600 dark:text-blue-400 hover:underline font-semibold text-[11px] ml-1 cursor-pointer"
           >
             Clear all
           </button>
@@ -855,7 +1527,13 @@ export default function Contacts({ onNavigate }) {
       {/* 4. Results summary & SELECT ALL / UNCHECK ALL */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-dark-500 font-medium pt-1">
         <div>
-          <p className="text-[11px]">Showing results from Main Team</p>
+          <p className="text-[11px]">
+            {teamFilter
+              ? `Showing results from ${teamFilter}`
+              : activeFiltersCount > 0
+              ? `Showing filtered contacts (${activeFiltersCount} filter${activeFiltersCount > 1 ? 's' : ''} applied)`
+              : 'Showing all contacts'}
+          </p>
           <p className="font-semibold text-dark-800 dark:text-dark-200">
             Showing {displayedContacts.length} contacts
           </p>
