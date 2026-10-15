@@ -1101,9 +1101,10 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                 <button
                   onClick={() => setIsExcelModalOpen(true)}
                   className="inline-flex items-center gap-2 px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold transition-colors shadow-sm cursor-pointer"
+                  title="Bulk import customer accounts and assign leads by city or business filters"
                 >
                   <FileSpreadsheet size={17} />
-                  <span>Import Leads</span>
+                  <span>Import Customers</span>
                 </button>
                 <button
                   onClick={openAdd}
@@ -5397,7 +5398,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
           onClose={() => setIsExcelModalOpen(false)}
           onImportSuccess={() => {
             loadData(true);
-            addToast('Leads successfully imported & assigned!', 'success');
+            addToast('Customers successfully imported & assigned!', 'success');
           }}
         />
       )}

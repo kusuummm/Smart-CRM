@@ -22,6 +22,10 @@ import {
   MapPin,
   Tag,
   FileText,
+  SlidersHorizontal,
+  Trash2,
+  Plus,
+  Filter,
 } from 'lucide-react';
 import { getUsers } from '../api/users';
 import { bulkImportLeads } from '../api/leads';
@@ -51,13 +55,26 @@ export default function ExcelLeadImportModal({ isOpen, onClose, onImportSuccess 
     remarks: '',
   });
 
-  // Assignment Strategy
-  const [assignmentStrategy, setAssignmentStrategy] = useState('round-robin'); // 'round-robin' | 'direct' | 'unassigned'
+  // Assignment Strategy: 'rules' (filter-based) | 'round-robin' | 'direct' | 'unassigned'
+  const [assignmentStrategy, setAssignmentStrategy] = useState('rules');
   const [activeTelecallers, setActiveTelecallers] = useState([]);
   const [selectedCallerIds, setSelectedCallerIds] = useState([]);
   const [directCallerId, setDirectCallerId] = useState('');
   const [skipDuplicates, setSkipDuplicates] = useState(true);
   const [batchName, setBatchName] = useState('');
+
+  // Filter-based rules state (assign by city, business, product, etc.)
+  const [filterRules, setFilterRules] = useState([
+    {
+      id: 'rule_1',
+      field: 'city', // 'city' | 'company' | 'state' | 'interestedProduct' | 'leadSource'
+      operator: 'equals', // 'equals' | 'contains'
+      value: '',
+      telecallerId: '',
+    },
+  ]);
+  const [fallbackStrategy, setFallbackStrategy] = useState('round-robin'); // 'round-robin' | 'direct' | 'unassigned'
+  const [fallbackLeadId, setFallbackLeadId] = useState('');
 
   // Execution & Progress State
   const [progress, setProgress] = useState({
@@ -84,7 +101,13 @@ export default function ExcelLeadImportModal({ isOpen, onClose, onImportSuccess 
         setActiveTelecallers(approved);
         // Default select all active telecallers for round-robin
         setSelectedCallerIds(approved.map((u) => u._id));
-        if (approved.length > 0) setDirectCallerId(approved[0]._id);
+        if (approved.length > 0) {
+          setDirectCallerId(approved[0]._id);
+          setFallbackLeadId(approved[0]._id);
+          setFilterRules((prev) =>
+            prev.map((r) => (!r.telecallerId ? { ...r, telecallerId: approved[0]._id } : r))
+          );
+        }
       })
       .catch(() => {});
   }, [isOpen]);
@@ -98,6 +121,17 @@ export default function ExcelLeadImportModal({ isOpen, onClose, onImportSuccess 
       setHeaderSampleMap({});
       setRawData([]);
       setBatchName('');
+      setAssignmentStrategy('rules');
+      setFilterRules([
+        {
+          id: 'rule_1',
+          field: 'city',
+          operator: 'equals',
+          value: '',
+          telecallerId: activeTelecallers[0]?._id || '',
+        },
+      ]);
+      setFallbackStrategy('round-robin');
       setProgress({
         currentChunk: 0,
         totalChunks: 0,
@@ -112,6 +146,165 @@ export default function ExcelLeadImportModal({ isOpen, onClose, onImportSuccess 
       cancelRef.current = false;
     }
   }, [isOpen]);
+
+  // Unique detected cities from rawData based on mapped city column
+  const detectedCities = useMemo(() => {
+    if (!mapping.city || !rawData.length) return [];
+    const counts = {};
+    rawData.forEach((row) => {
+      const val = (row[mapping.city] || '').toString().trim();
+      if (val) counts[val] = (counts[val] || 0) + 1;
+    });
+    return Object.entries(counts)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count);
+  }, [rawData, mapping.city]);
+
+  // Unique detected companies/businesses from rawData
+  const detectedCompanies = useMemo(() => {
+    if (!mapping.company || !rawData.length) return [];
+    const counts = {};
+    rawData.forEach((row) => {
+      const val = (row[mapping.company] || '').toString().trim();
+      if (val) counts[val] = (counts[val] || 0) + 1;
+    });
+    return Object.entries(counts)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count);
+  }, [rawData, mapping.company]);
+
+  // Unique detected products from rawData
+  const detectedProducts = useMemo(() => {
+    if (!mapping.interestedProduct || !rawData.length) return [];
+    const counts = {};
+    rawData.forEach((row) => {
+      const val = (row[mapping.interestedProduct] || '').toString().trim();
+      if (val) counts[val] = (counts[val] || 0) + 1;
+    });
+    return Object.entries(counts)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count);
+  }, [rawData, mapping.interestedProduct]);
+
+  // Real-time sequential matching calculation across rules
+  const ruleMatchCounts = useMemo(() => {
+    if (!rawData.length || !filterRules.length) return {};
+    const counts = {};
+    const claimedRows = new Set();
+
+    filterRules.forEach((rule) => {
+      if (!rule.value || !rule.field) {
+        counts[rule.id] = 0;
+        return;
+      }
+      const mappedCol = mapping[rule.field];
+      if (!mappedCol) {
+        counts[rule.id] = 0;
+        return;
+      }
+
+      const targetVal = rule.value.toLowerCase().trim();
+      let matchCount = 0;
+
+      rawData.forEach((row, idx) => {
+        if (claimedRows.has(idx)) return;
+        const cellVal = (row[mappedCol] || '').toString().toLowerCase().trim();
+        const isMatch =
+          rule.operator === 'contains'
+            ? cellVal.includes(targetVal)
+            : cellVal === targetVal;
+
+        if (isMatch) {
+          matchCount++;
+          claimedRows.add(idx);
+        }
+      });
+
+      counts[rule.id] = matchCount;
+    });
+
+    counts['__totalClaimed'] = claimedRows.size;
+    counts['__unmatched'] = Math.max(0, rawData.length - claimedRows.size);
+    return counts;
+  }, [rawData, filterRules, mapping]);
+
+  // Auto-generate rules from detected cities (allocating across leads)
+  const handleAutoGenerateCityRules = () => {
+    if (detectedCities.length === 0) {
+      toast.error('No cities detected in spreadsheet. Please map the City column first.');
+      return;
+    }
+    if (activeTelecallers.length === 0) {
+      toast.error('No active approved leads available in system to assign.');
+      return;
+    }
+    const newRules = detectedCities.slice(0, 10).map((city, idx) => ({
+      id: `city_rule_${Date.now()}_${idx}`,
+      field: 'city',
+      operator: 'equals',
+      value: city.name,
+      telecallerId: activeTelecallers[idx % activeTelecallers.length]._id,
+    }));
+    setFilterRules(newRules);
+    toast.success(`Generated ${newRules.length} city assignment rules!`);
+  };
+
+  // Auto-generate rules from detected businesses
+  const handleAutoGenerateCompanyRules = () => {
+    if (detectedCompanies.length === 0) {
+      toast.error('No companies/businesses detected. Please map the Company column first.');
+      return;
+    }
+    if (activeTelecallers.length === 0) {
+      toast.error('No active approved leads available in system to assign.');
+      return;
+    }
+    const newRules = detectedCompanies.slice(0, 10).map((comp, idx) => ({
+      id: `comp_rule_${Date.now()}_${idx}`,
+      field: 'company',
+      operator: 'contains',
+      value: comp.name,
+      telecallerId: activeTelecallers[idx % activeTelecallers.length]._id,
+    }));
+    setFilterRules(newRules);
+    toast.success(`Generated ${newRules.length} business assignment rules!`);
+  };
+
+  const handleAddRule = () => {
+    const defaultLeadId = activeTelecallers[0]?._id || '';
+    setFilterRules([
+      ...filterRules,
+      {
+        id: `rule_${Date.now()}`,
+        field: 'city',
+        operator: 'equals',
+        value: '',
+        telecallerId: defaultLeadId,
+      },
+    ]);
+  };
+
+  const handleDeleteRule = (ruleId) => {
+    if (filterRules.length <= 1) {
+      setFilterRules([
+        {
+          id: `rule_${Date.now()}`,
+          field: 'city',
+          operator: 'equals',
+          value: '',
+          telecallerId: activeTelecallers[0]?._id || '',
+        },
+      ]);
+      return;
+    }
+    setFilterRules(filterRules.filter((r) => r.id !== ruleId));
+  };
+
+  const handleRuleChange = (ruleId, key, val) => {
+    setFilterRules(
+      filterRules.map((r) => (r.id === ruleId ? { ...r, [key]: val } : r))
+    );
+  };
 
   // ================= 1. FILE PARSING WITH SMART HEADER DETECTION =================
   const handleFileProcess = (selectedFile) => {
@@ -323,8 +516,8 @@ export default function ExcelLeadImportModal({ isOpen, onClose, onImportSuccess 
 
     const worksheet = XLSX.utils.json_to_sheet(sampleRows);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Sample Leads');
-    XLSX.writeFile(workbook, 'smart_crm_sample_leads_template.xlsx');
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Sample Customers');
+    XLSX.writeFile(workbook, 'smart_crm_sample_customers_template.xlsx');
   };
 
   // ================= 2. COLUMN MAPPING VALIDATION =================
@@ -360,26 +553,98 @@ export default function ExcelLeadImportModal({ isOpen, onClose, onImportSuccess 
       return;
     }
     if (assignmentStrategy === 'direct' && !directCallerId) {
-      toast.error('Please select a lead to assign contacts to');
+      toast.error('Please select a lead to assign customer accounts to');
       return;
+    }
+    if (assignmentStrategy === 'rules') {
+      const activeValidRules = filterRules.filter(
+        (r) => r.field && r.value.trim() && r.telecallerId
+      );
+      if (activeValidRules.length === 0 && fallbackStrategy === 'unassigned') {
+        toast.error('Please specify at least one filter rule (e.g. City or Business) or configure fallback lead');
+        return;
+      }
     }
 
     setStep('importing');
     cancelRef.current = false;
     setIsCancelling(false);
 
-    // Transform raw rows into normalized lead payloads
-    const normalizedList = rawData.map((row) => ({
-      name: mapping.name ? row[mapping.name] : '',
-      mobile: mapping.mobile ? row[mapping.mobile] : '',
-      email: mapping.email ? row[mapping.email] : '',
-      company: mapping.company ? row[mapping.company] : '',
-      city: mapping.city ? row[mapping.city] : '',
-      state: mapping.state ? row[mapping.state] : '',
-      interestedProduct: mapping.interestedProduct ? row[mapping.interestedProduct] : '',
-      leadSource: mapping.leadSource ? row[mapping.leadSource] : '',
-      remarks: mapping.remarks ? row[mapping.remarks] : '',
-    }));
+    const callerMap = new Map(activeTelecallers.map((c) => [c._id, c]));
+
+    // Pre-evaluate rules and fallback so each row has its assigned lead
+    let unmatchedCounter = 0;
+    const normalizedList = rawData.map((row, rowIdx) => {
+      const name = mapping.name ? row[mapping.name] : '';
+      const mobile = mapping.mobile ? row[mapping.mobile] : '';
+      const email = mapping.email ? row[mapping.email] : '';
+      const company = mapping.company ? row[mapping.company] : '';
+      const city = mapping.city ? row[mapping.city] : '';
+      const state = mapping.state ? row[mapping.state] : '';
+      const interestedProduct = mapping.interestedProduct ? row[mapping.interestedProduct] : '';
+      const leadSource = mapping.leadSource ? row[mapping.leadSource] : '';
+      const remarks = mapping.remarks ? row[mapping.remarks] : '';
+
+      const custPayload = {
+        name,
+        mobile,
+        email,
+        company,
+        city,
+        state,
+        interestedProduct,
+        leadSource,
+        remarks,
+        telecallerId: null,
+        assignedTelecaller: 'Unassigned',
+      };
+
+      let assigned = null;
+
+      if (assignmentStrategy === 'rules') {
+        for (const rule of filterRules) {
+          if (!rule.field || !rule.value.trim() || !rule.telecallerId) continue;
+          const mappedCol = mapping[rule.field];
+          const rawVal = (mappedCol ? row[mappedCol] : custPayload[rule.field] || '')
+            .toString()
+            .toLowerCase()
+            .trim();
+          const targetVal = rule.value.toLowerCase().trim();
+          const isMatch =
+            rule.operator === 'contains'
+              ? rawVal.includes(targetVal)
+              : rawVal === targetVal;
+
+          if (isMatch) {
+            assigned = callerMap.get(rule.telecallerId);
+            break;
+          }
+        }
+
+        // Apply fallback if no filter rule matched
+        if (!assigned) {
+          if (fallbackStrategy === 'direct' && fallbackLeadId) {
+            assigned = callerMap.get(fallbackLeadId);
+          } else if (fallbackStrategy === 'round-robin' && selectedCallerIds.length > 0) {
+            const idx = (unmatchedCounter) % selectedCallerIds.length;
+            assigned = callerMap.get(selectedCallerIds[idx]);
+            unmatchedCounter++;
+          }
+        }
+      } else if (assignmentStrategy === 'round-robin' && selectedCallerIds.length > 0) {
+        const idx = (rowIdx) % selectedCallerIds.length;
+        assigned = callerMap.get(selectedCallerIds[idx]);
+      } else if (assignmentStrategy === 'direct' && directCallerId) {
+        assigned = callerMap.get(directCallerId);
+      }
+
+      if (assigned) {
+        custPayload.telecallerId = assigned._id;
+        custPayload.assignedTelecaller = assigned.name;
+      }
+
+      return custPayload;
+    });
 
     const totalRows = normalizedList.length;
     const totalChunks = Math.ceil(totalRows / CHUNK_SIZE);
@@ -413,8 +678,11 @@ export default function ExcelLeadImportModal({ isOpen, onClose, onImportSuccess 
         const res = await bulkImportLeads({
           batch: chunk,
           assignmentStrategy,
+          filterRules,
+          fallbackStrategy,
+          fallbackLeadId,
           telecallerIds:
-            assignmentStrategy === 'round-robin'
+            assignmentStrategy === 'round-robin' || fallbackStrategy === 'round-robin'
               ? selectedCallerIds
               : assignmentStrategy === 'direct'
               ? [directCallerId]
@@ -472,7 +740,7 @@ export default function ExcelLeadImportModal({ isOpen, onClose, onImportSuccess 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-3 sm:p-4 animate-in fade-in duration-200">
-      <div className="bg-white dark:bg-dark-900 rounded-2xl border border-dark-200 dark:border-dark-700 shadow-2xl max-w-3xl w-full overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="bg-white dark:bg-dark-900 rounded-2xl border border-dark-200 dark:border-dark-700 shadow-2xl max-w-4xl w-full overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="p-4 sm:p-5 border-b border-dark-200 dark:border-dark-700 flex items-center justify-between bg-dark-50/50 dark:bg-dark-800/40">
           <div className="flex items-center gap-3">
@@ -481,10 +749,10 @@ export default function ExcelLeadImportModal({ isOpen, onClose, onImportSuccess 
             </div>
             <div>
               <h2 className="text-base sm:text-lg font-bold text-dark-900 dark:text-white flex items-center gap-2">
-                Excel / CSV Lead Importer & Assigner
+                Excel / CSV Customer Importer & Smart Lead Assignment
               </h2>
               <p className="text-xs text-dark-500 dark:text-dark-400">
-                Bulk ingest thousands of leads, deduplicate & distribute across leads
+                Bulk ingest customer accounts, deduplicate & smartly assign to leads by City, Business, or Strategy
               </p>
             </div>
           </div>
@@ -524,7 +792,7 @@ export default function ExcelLeadImportModal({ isOpen, onClose, onImportSuccess 
             }`}
           >
             <span className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px]">3</span>
-            <span>Assign Leads</span>
+            <span>Smart Lead Assignment</span>
           </div>
           <ArrowRight size={14} className="text-dark-300" />
           <div
@@ -533,7 +801,7 @@ export default function ExcelLeadImportModal({ isOpen, onClose, onImportSuccess 
             }`}
           >
             <span className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px]">4</span>
-            <span>Process & Done</span>
+            <span>Import & Distribute</span>
           </div>
         </div>
 
@@ -873,8 +1141,31 @@ export default function ExcelLeadImportModal({ isOpen, onClose, onImportSuccess 
               </div>
 
               {/* Strategy Selector Radio Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {/* 1. Round-Robin */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                {/* 1. Smart Filter Rules (Recommended) */}
+                <div
+                  onClick={() => setAssignmentStrategy('rules')}
+                  className={`p-3.5 rounded-xl border cursor-pointer transition-all relative ${
+                    assignmentStrategy === 'rules'
+                      ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/30 text-emerald-900 dark:text-emerald-200 shadow-xs ring-1 ring-emerald-500'
+                      : 'border-dark-200 dark:border-dark-700 hover:border-dark-300'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-1.5">
+                      <SlidersHorizontal size={15} className="text-emerald-600" />
+                      <span className="font-bold text-xs">Smart Filter Rules</span>
+                    </div>
+                    <span className="px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-emerald-600 text-white uppercase tracking-wider">
+                      Best
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-dark-500 dark:text-dark-400">
+                    Assign leads dynamically by City, Business/Company, State, or Product filters.
+                  </p>
+                </div>
+
+                {/* 2. Round-Robin */}
                 <div
                   onClick={() => setAssignmentStrategy('round-robin')}
                   className={`p-3.5 rounded-xl border cursor-pointer transition-all ${
@@ -892,7 +1183,7 @@ export default function ExcelLeadImportModal({ isOpen, onClose, onImportSuccess 
                   </p>
                 </div>
 
-                {/* 2. Direct Assign */}
+                {/* 3. Direct Assign */}
                 <div
                   onClick={() => setAssignmentStrategy('direct')}
                   className={`p-3.5 rounded-xl border cursor-pointer transition-all ${
@@ -910,7 +1201,7 @@ export default function ExcelLeadImportModal({ isOpen, onClose, onImportSuccess 
                   </p>
                 </div>
 
-                {/* 3. Unassigned Pool */}
+                {/* 4. Unassigned Pool */}
                 <div
                   onClick={() => setAssignmentStrategy('unassigned')}
                   className={`p-3.5 rounded-xl border cursor-pointer transition-all ${
@@ -924,10 +1215,283 @@ export default function ExcelLeadImportModal({ isOpen, onClose, onImportSuccess 
                     <span className="font-bold text-xs">Unassigned Pool</span>
                   </div>
                   <p className="text-[11px] text-dark-500 dark:text-dark-400">
-                    Imports contacts as unassigned for leads to claim later or manual dispatch.
+                    Imports contacts into unassigned queue for leads to claim later.
                   </p>
                 </div>
               </div>
+
+              {/* Strategy 1: SMART FILTER-BASED RULES BUILDER */}
+              {assignmentStrategy === 'rules' && (
+                <div className="p-4 rounded-xl bg-dark-50/70 dark:bg-dark-800/40 border border-dark-200 dark:border-dark-700 space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-dark-200/80 dark:border-dark-700/80 pb-3">
+                    <div>
+                      <h4 className="text-xs font-bold text-dark-900 dark:text-white flex items-center gap-2">
+                        <Filter size={14} className="text-emerald-600" />
+                        <span>Filter-Based Lead Assignment Rules</span>
+                      </h4>
+                      <p className="text-[11px] text-dark-500 dark:text-dark-400">
+                        Assign leads dynamically based on customer City, Business/Company, State, or Product.
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {detectedCities.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={handleAutoGenerateCityRules}
+                          className="px-2.5 py-1 rounded-lg bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-950/80 dark:hover:bg-emerald-900 text-emerald-800 dark:text-emerald-300 text-[11px] font-semibold transition-colors flex items-center gap-1 cursor-pointer"
+                          title="Auto-generates rules for detected cities"
+                        >
+                          <Sparkles size={11} />
+                          <span>Auto City Rules ({detectedCities.length})</span>
+                        </button>
+                      )}
+                      {detectedCompanies.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={handleAutoGenerateCompanyRules}
+                          className="px-2.5 py-1 rounded-lg bg-blue-100 hover:bg-blue-200 dark:bg-blue-950/80 dark:hover:bg-blue-900 text-blue-800 dark:text-blue-300 text-[11px] font-semibold transition-colors flex items-center gap-1 cursor-pointer"
+                          title="Auto-generates rules for detected businesses/companies"
+                        >
+                          <Building size={11} />
+                          <span>Auto Business Rules ({detectedCompanies.length})</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Rules List */}
+                  <div className="space-y-2.5">
+                    {filterRules.map((rule, idx) => {
+                      const matchCount = ruleMatchCounts[rule.id] || 0;
+                      const matchPct = rawData.length > 0 ? Math.round((matchCount / rawData.length) * 100) : 0;
+                      const currentFieldValues =
+                        rule.field === 'city'
+                          ? detectedCities
+                          : rule.field === 'company'
+                          ? detectedCompanies
+                          : rule.field === 'interestedProduct'
+                          ? detectedProducts
+                          : [];
+
+                      return (
+                        <div
+                          key={rule.id}
+                          className="p-3 rounded-xl bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 shadow-2xs space-y-2"
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] font-bold">
+                              {idx + 1}
+                            </span>
+
+                            <div className="flex items-center gap-2">
+                              {rule.value && (
+                                <span
+                                  className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                    matchCount > 0
+                                      ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+                                      : 'bg-dark-100 dark:bg-dark-700 text-dark-500'
+                                  }`}
+                                >
+                                  {matchCount > 0
+                                    ? `✓ Matches ${matchCount.toLocaleString()} customers (${matchPct}%)`
+                                    : '0 matches'}
+                                </span>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteRule(rule.id)}
+                                className="p-1 rounded-lg text-dark-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                                title="Delete rule"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 text-xs">
+                            {/* Filter Field */}
+                            <div>
+                              <label className="block text-[10px] font-semibold text-dark-500 uppercase mb-0.5">
+                                Filter By Field
+                              </label>
+                              <select
+                                value={rule.field}
+                                onChange={(e) => handleRuleChange(rule.id, 'field', e.target.value)}
+                                className="w-full px-2.5 py-1.5 rounded-lg border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-900 text-dark-900 dark:text-white text-xs font-medium"
+                              >
+                                <option value="city">City (Location)</option>
+                                <option value="company">Business / Company</option>
+                                <option value="state">State / Region</option>
+                                <option value="interestedProduct">Interested Product</option>
+                                <option value="leadSource">Lead Source</option>
+                              </select>
+                            </div>
+
+                            {/* Operator */}
+                            <div>
+                              <label className="block text-[10px] font-semibold text-dark-500 uppercase mb-0.5">
+                                Condition
+                              </label>
+                              <select
+                                value={rule.operator}
+                                onChange={(e) => handleRuleChange(rule.id, 'operator', e.target.value)}
+                                className="w-full px-2.5 py-1.5 rounded-lg border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-900 text-dark-900 dark:text-white text-xs font-medium"
+                              >
+                                <option value="equals">Equals (Exact)</option>
+                                <option value="contains">Contains (Partial)</option>
+                              </select>
+                            </div>
+
+                            {/* Value with datalist */}
+                            <div>
+                              <label className="block text-[10px] font-semibold text-dark-500 uppercase mb-0.5">
+                                Filter Value
+                              </label>
+                              <input
+                                type="text"
+                                list={`datalist_${rule.id}`}
+                                value={rule.value}
+                                onChange={(e) => handleRuleChange(rule.id, 'value', e.target.value)}
+                                placeholder={rule.field === 'city' ? 'e.g. Jaipur' : 'e.g. Real Estate'}
+                                className="w-full px-2.5 py-1.5 rounded-lg border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-900 text-dark-900 dark:text-white text-xs"
+                              />
+                              <datalist id={`datalist_${rule.id}`}>
+                                {currentFieldValues.map((item) => (
+                                  <option key={item.name} value={item.name}>
+                                    {item.name} ({item.count} rows)
+                                  </option>
+                                ))}
+                              </datalist>
+                            </div>
+
+                            {/* Assign To Lead */}
+                            <div>
+                              <label className="block text-[10px] font-semibold text-dark-500 uppercase mb-0.5">
+                                Assign To Lead
+                              </label>
+                              <select
+                                value={rule.telecallerId}
+                                onChange={(e) => handleRuleChange(rule.id, 'telecallerId', e.target.value)}
+                                className="w-full px-2.5 py-1.5 rounded-lg border border-emerald-300 dark:border-emerald-700 bg-emerald-50/30 dark:bg-emerald-950/30 text-dark-900 dark:text-white text-xs font-semibold"
+                              >
+                                <option value="">Select Target Lead...</option>
+                                {activeTelecallers.map((tc) => (
+                                  <option key={tc._id} value={tc._id}>
+                                    {tc.name} {tc.isOnline ? '🟢' : ''} ({tc.email})
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                    <div className="flex items-center justify-between pt-1 flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={handleAddRule}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-dashed border-dark-300 dark:border-dark-600 hover:border-emerald-500 hover:text-emerald-600 text-dark-600 dark:text-dark-300 text-xs font-semibold transition-colors cursor-pointer"
+                      >
+                        <Plus size={14} />
+                        <span>Add Another Filter Rule</span>
+                      </button>
+
+                      <span className="text-[11px] text-dark-500">
+                        Customers covered by filters:{' '}
+                        <strong className="text-emerald-600 dark:text-emerald-400 font-bold">
+                          {(ruleMatchCounts['__totalClaimed'] || 0).toLocaleString()} of {rawData.length.toLocaleString()}
+                        </strong>
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Fallback Assignment for Unmatched Customers */}
+                  <div className="p-3 rounded-xl bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/60 space-y-2">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <div className="flex items-center gap-2">
+                        <AlertTriangle size={15} className="text-amber-600 shrink-0" />
+                        <span className="text-xs font-bold text-amber-900 dark:text-amber-200">
+                          Fallback for {(ruleMatchCounts['__unmatched'] || 0).toLocaleString()} Unmatched Customers
+                        </span>
+                      </div>
+                      <span className="text-[11px] text-amber-700 dark:text-amber-400">
+                        For records not matching any filter above
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 text-xs">
+                      <label
+                        className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer ${
+                          fallbackStrategy === 'round-robin'
+                            ? 'border-amber-400 bg-white dark:bg-dark-800 font-bold text-dark-900 dark:text-white'
+                            : 'border-amber-200/60 text-dark-600 dark:text-dark-300'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="fallbackStrategy"
+                          checked={fallbackStrategy === 'round-robin'}
+                          onChange={() => setFallbackStrategy('round-robin')}
+                          className="text-amber-600"
+                        />
+                        <span>Round-Robin across leads</span>
+                      </label>
+
+                      <label
+                        className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer ${
+                          fallbackStrategy === 'direct'
+                            ? 'border-amber-400 bg-white dark:bg-dark-800 font-bold text-dark-900 dark:text-white'
+                            : 'border-amber-200/60 text-dark-600 dark:text-dark-300'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="fallbackStrategy"
+                          checked={fallbackStrategy === 'direct'}
+                          onChange={() => setFallbackStrategy('direct')}
+                          className="text-amber-600"
+                        />
+                        <span>Assign to specific lead</span>
+                      </label>
+
+                      <label
+                        className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer ${
+                          fallbackStrategy === 'unassigned'
+                            ? 'border-amber-400 bg-white dark:bg-dark-800 font-bold text-dark-900 dark:text-white'
+                            : 'border-amber-200/60 text-dark-600 dark:text-dark-300'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="fallbackStrategy"
+                          checked={fallbackStrategy === 'unassigned'}
+                          onChange={() => setFallbackStrategy('unassigned')}
+                          className="text-amber-600"
+                        />
+                        <span>Unassigned Pool</span>
+                      </label>
+                    </div>
+
+                    {fallbackStrategy === 'direct' && (
+                      <div className="pt-1.5">
+                        <select
+                          value={fallbackLeadId}
+                          onChange={(e) => setFallbackLeadId(e.target.value)}
+                          className="w-full px-2.5 py-1.5 rounded-lg border border-amber-300 dark:border-amber-800 bg-white dark:bg-dark-800 text-dark-900 dark:text-white text-xs font-semibold"
+                        >
+                          {activeTelecallers.map((tc) => (
+                            <option key={tc._id} value={tc._id}>
+                              {tc.name} ({tc.email})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Telecaller Selection for Round-Robin */}
               {assignmentStrategy === 'round-robin' && (
@@ -1044,17 +1608,17 @@ export default function ExcelLeadImportModal({ isOpen, onClose, onImportSuccess 
                 <button
                   type="button"
                   onClick={() => setStep('mapping')}
-                  className="px-3.5 py-2 rounded-xl text-dark-600 dark:text-dark-400 hover:bg-dark-100 dark:hover:bg-dark-800 font-semibold text-xs flex items-center gap-1.5"
+                  className="px-3.5 py-2 rounded-xl text-dark-600 dark:text-dark-400 hover:bg-dark-100 dark:hover:bg-dark-800 font-semibold text-xs flex items-center gap-1.5 cursor-pointer"
                 >
                   <ArrowLeft size={14} /> Back to Mapping
                 </button>
                 <button
                   type="button"
                   onClick={handleStartImport}
-                  className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-2 shadow-sm"
+                  className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-2 shadow-sm cursor-pointer"
                 >
                   <Sparkles size={15} />
-                  <span>Start Import ({rawData.length.toLocaleString()} Leads)</span>
+                  <span>Start Import ({rawData.length.toLocaleString()} Customers)</span>
                 </button>
               </div>
             </div>
@@ -1072,7 +1636,7 @@ export default function ExcelLeadImportModal({ isOpen, onClose, onImportSuccess 
 
               <div>
                 <h3 className="text-lg font-bold text-dark-900 dark:text-white">
-                  Ingesting & Distributing Leads...
+                  Ingesting & Distributing Customer Accounts...
                 </h3>
                 <p className="text-xs text-dark-500 dark:text-dark-400 mt-1">
                   Processing batch {progress.currentChunk} of {progress.totalChunks} ({CHUNK_SIZE} rows per batch)
@@ -1120,7 +1684,7 @@ export default function ExcelLeadImportModal({ isOpen, onClose, onImportSuccess 
                   type="button"
                   onClick={handleCancelImport}
                   disabled={isCancelling}
-                  className="px-4 py-2 rounded-xl border border-dark-200 dark:border-dark-700 text-xs font-semibold text-dark-600 dark:text-dark-400 hover:bg-dark-50 dark:hover:bg-dark-800 disabled:opacity-50"
+                  className="px-4 py-2 rounded-xl border border-dark-200 dark:border-dark-700 text-xs font-semibold text-dark-600 dark:text-dark-400 hover:bg-dark-50 dark:hover:bg-dark-800 disabled:opacity-50 cursor-pointer"
                 >
                   {isCancelling ? 'Stopping...' : 'Pause / Cancel Remaining'}
                 </button>
@@ -1137,10 +1701,10 @@ export default function ExcelLeadImportModal({ isOpen, onClose, onImportSuccess 
 
               <div>
                 <h3 className="text-lg font-bold text-dark-900 dark:text-white">
-                  Import & Assignment Complete!
+                  Customer Import & Lead Assignment Complete!
                 </h3>
                 <p className="text-xs text-dark-500 dark:text-dark-400 mt-1">
-                  All valid records have been saved into MongoDB and assigned into the lead pipeline.
+                  All valid customer records have been saved into MongoDB and assigned into the lead pipeline.
                 </p>
               </div>
 
@@ -1183,7 +1747,7 @@ export default function ExcelLeadImportModal({ isOpen, onClose, onImportSuccess 
                     {Object.entries(progress.callerBreakdown).map(([name, count]) => (
                       <div key={name} className="flex items-center justify-between text-xs py-1 px-2.5 rounded-lg bg-white dark:bg-dark-900 border border-dark-100 dark:border-dark-800">
                         <span className="font-semibold text-dark-900 dark:text-white">{name}</span>
-                        <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">{count.toLocaleString()} leads</span>
+                        <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">{count.toLocaleString()} customers</span>
                       </div>
                     ))}
                   </div>

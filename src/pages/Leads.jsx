@@ -395,6 +395,23 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
     }
   };
 
+  // Display complete customer data on dedicated new page instead of popup
+  if (customer360Lead) {
+    return (
+      <Customer360Modal
+        isOpen={true}
+        isPage={true}
+        onClose={() => {
+          setCustomer360Lead(null);
+          setIsCustomer360Open(false);
+        }}
+        customer={customer360Lead}
+        onStartCall={() => onNavigate?.('call-history')}
+        onUpdateContact={() => loadLeads()}
+      />
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -413,9 +430,10 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
             <button
               onClick={() => setIsExcelModalOpen(true)}
               className="inline-flex items-center gap-2 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors cursor-pointer"
+              title="Bulk import customer accounts and assign leads by city or business filters"
             >
               <FileSpreadsheet size={16} />
-              <span>Import Leads (Excel/CSV)</span>
+              <span>Import Customers (Excel/CSV)</span>
             </button>
             <button
               onClick={openAssignCustomerModal}
@@ -1278,29 +1296,15 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
         type="danger"
       />
 
-      {/* EXCEL / CSV BULK LEAD IMPORTER MODAL */}
+      {/* EXCEL / CSV BULK CUSTOMER IMPORTER & ASSIGNER MODAL */}
       <ExcelLeadImportModal
         isOpen={isExcelModalOpen}
         onClose={() => setIsExcelModalOpen(false)}
         onImportSuccess={() => {
-          fetchLeads();
-          addToast('Leads successfully imported & assigned!', 'success');
+          loadLeads();
+          addToast('Customers successfully imported & assigned!', 'success');
         }}
       />
-
-      {/* Customer 360 Full History & Details Modal */}
-      {customer360Lead && (
-        <Customer360Modal
-          isOpen={isCustomer360Open}
-          onClose={() => {
-            setIsCustomer360Open(false);
-            setCustomer360Lead(null);
-          }}
-          customer={customer360Lead}
-          onStartCall={(cust) => onNavigate?.('call-history')}
-          onUpdateContact={() => loadLeads()}
-        />
-      )}
     </div>
   );
 }

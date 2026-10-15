@@ -3,6 +3,7 @@ import { Plus, X, Edit2, Loader2, UserCheck } from 'lucide-react';
 import { PageHeader } from '../components/Common';
 import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
+import Customer360Modal from '../components/Customer360Modal';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../context/ConfirmContext';
@@ -35,6 +36,7 @@ export default function FollowUps({ onNavigate }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingFollowUp, setEditingFollowUp] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [selectedCustomerForView, setSelectedCustomerForView] = useState(null);
   const [statusFilter, setStatusFilter] = useState('');
   const [dateFilter, setDateFilter] = useState('');
   const [agentFilter, setAgentFilter] = useState('');
@@ -154,6 +156,19 @@ export default function FollowUps({ onNavigate }) {
     }
   };
 
+  if (selectedCustomerForView) {
+    return (
+      <Customer360Modal
+        isOpen={true}
+        isPage={true}
+        customer={selectedCustomerForView}
+        onClose={() => setSelectedCustomerForView(null)}
+        onStartCall={() => onNavigate?.('call-history')}
+        onUpdateContact={() => loadData()}
+      />
+    );
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -225,7 +240,26 @@ export default function FollowUps({ onNavigate }) {
             ) : (
               paginated.map(fu => (
                 <tr key={fu._id} className="hover:bg-dark-50 dark:hover:bg-dark-700">
-                  <td className="px-4 py-3 font-medium text-dark-900 dark:text-white">{fu.customerName}</td>
+                  <td className="px-4 py-3 font-medium text-dark-900 dark:text-white">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const matched = customers.find(
+                          (c) => c._id === fu.customerId || c.name === fu.customerName
+                        ) || {
+                          _id: fu.customerId,
+                          name: fu.customerName,
+                          status: fu.status,
+                          assignedTelecaller: fu.createdByName || '',
+                        };
+                        setSelectedCustomerForView(matched);
+                      }}
+                      className="font-bold text-left text-primary-600 hover:text-primary-700 hover:underline cursor-pointer block"
+                      title="Click to view complete customer profile & timeline on new page"
+                    >
+                      {fu.customerName}
+                    </button>
+                  </td>
                   <td className="px-4 py-3 text-xs text-dark-600 dark:text-dark-300 font-medium">
                     <span className="px-2 py-0.5 rounded-full bg-dark-100 dark:bg-dark-700 text-dark-700 dark:text-dark-300">
                       {fu.createdByName || 'User'}

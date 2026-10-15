@@ -32,6 +32,7 @@ import {
   Square,
   AlertCircle,
   ArrowRight,
+  ArrowLeft,
   Shield,
   Send,
   Loader2,
@@ -62,7 +63,7 @@ const FOLLOW_UP_STATUS_OPTIONS = [
   { id: 'closed', label: 'Follow-up: Closed', Icon: Lock, color: 'bg-dark-100 text-dark-700 border-dark-200 dark:bg-dark-800 dark:text-dark-300' },
 ];
 
-export default function Customer360Modal({ isOpen, onClose, customer, onStartCall, onUpdateContact }) {
+export default function Customer360Modal({ isOpen, onClose, customer, onStartCall, onUpdateContact, isPage = false }) {
   const { user } = useAuth();
   const { addToast } = useToast();
   const { confirm } = useConfirm();
@@ -764,10 +765,13 @@ export default function Customer360Modal({ isOpen, onClose, customer, onStartCal
 
   if (!isOpen || !customer) return null;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-2 sm:p-4 animate-in fade-in duration-200">
-      <div className="bg-white dark:bg-dark-900 rounded-2xl border border-dark-200 dark:border-dark-700 shadow-2xl max-w-4xl w-full overflow-hidden flex flex-col max-h-[92vh]">
-        {/* Modal Top Header */}
+  const modalBody = (
+    <div
+      className={`bg-white dark:bg-dark-900 rounded-2xl border border-dark-200 dark:border-dark-700 w-full overflow-hidden flex flex-col ${
+        isPage ? 'shadow-sm' : 'shadow-2xl max-w-4xl max-h-[92vh]'
+      }`}
+    >
+      {/* Modal Top Header */}
         <div className="p-4 sm:p-5 border-b border-dark-200 dark:border-dark-700 bg-gradient-to-r from-dark-50/80 via-white to-blue-50/40 dark:from-dark-800 dark:via-dark-900 dark:to-dark-800 flex items-start justify-between gap-4">
           <div className="flex items-center gap-3.5">
             {/* Customer Avatar */}
@@ -1040,7 +1044,7 @@ export default function Customer360Modal({ isOpen, onClose, customer, onStartCal
         </div>
 
         {/* Modal Scrollable Content */}
-        <div className="p-5 flex-1 overflow-y-auto space-y-4">
+        <div className={`p-5 flex-1 ${isPage ? 'space-y-6' : 'overflow-y-auto space-y-4'}`}>
           {/* ================= TAB 1: CALL HISTORY & RECORDINGS ================= */}
           {activeTab === 'history' && (
             <div className="space-y-4">
@@ -1754,12 +1758,54 @@ export default function Customer360Modal({ isOpen, onClose, customer, onStartCal
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 text-dark-700 dark:text-dark-200 text-xs font-semibold hover:bg-dark-50 dark:hover:bg-dark-700 cursor-pointer"
+            className={`px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer transition-colors ${
+              isPage
+                ? 'bg-primary-600 hover:bg-primary-700 text-white font-bold shadow-xs'
+                : 'border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 text-dark-700 dark:text-dark-200 hover:bg-dark-50 dark:hover:bg-dark-700'
+            }`}
           >
-            Close View
+            {isPage ? '← Back to Follow-up Pipeline' : 'Close View'}
           </button>
         </div>
       </div>
+  );
+
+  if (isPage) {
+    return (
+      <div className="space-y-4 animate-in fade-in duration-200">
+        {/* Top Breadcrumbs / Back navigation */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-dark-200 dark:border-dark-700">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 text-xs font-bold text-dark-700 dark:text-dark-200 hover:bg-dark-50 dark:hover:bg-dark-700 shadow-2xs transition-colors cursor-pointer group"
+            >
+              <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
+              <span>Back to Follow-up Pipeline</span>
+            </button>
+            <div className="h-5 w-px bg-dark-200 dark:bg-dark-700 hidden sm:block" />
+            <span className="text-xs text-dark-400 hidden sm:inline">
+              Complete Customer 360 Account Profile & Timeline
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2 text-xs text-dark-400">
+            <span>Customer ID:</span>
+            <span className="font-mono font-semibold text-dark-600 dark:text-dark-300">
+              {profile.id || 'Local Record'}
+            </span>
+          </div>
+        </div>
+
+        {modalBody}
+      </div>
+    );
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-2 sm:p-4 animate-in fade-in duration-200">
+      {modalBody}
     </div>
   );
 }

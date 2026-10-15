@@ -647,10 +647,11 @@ export default function Customers({ onNavigate }) {
             {isAdmin && (
               <button
                 onClick={() => setIsExcelModalOpen(true)}
-                className="flex items-center gap-2 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold shadow-sm transition-colors"
+                className="flex items-center gap-2 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold shadow-sm transition-colors cursor-pointer"
+                title="Bulk import customer accounts and assign leads by city or business filters"
               >
                 <FileSpreadsheet size={18} />
-                <span>Import Leads (Excel/CSV)</span>
+                <span>Import Customers (Excel/CSV)</span>
               </button>
             )}
             <button
@@ -1000,7 +1001,7 @@ export default function Customers({ onNavigate }) {
         onClose={() => setIsExcelModalOpen(false)}
         onImportSuccess={() => {
           loadCustomers();
-          addToast('Leads successfully imported & assigned!', 'success');
+          addToast('Customers successfully imported & assigned!', 'success');
         }}
       />
 
