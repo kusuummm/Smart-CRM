@@ -739,6 +739,13 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
     return users.reduce((sum, u) => sum + (u.assignedCustomers || 0), 0);
   }, [users]);
 
+  const totalSystemCustomers = useMemo(() => {
+    if (systemOverview?.metrics?.totalCustomers !== undefined && systemOverview?.metrics?.totalCustomers !== null) {
+      return systemOverview.metrics.totalCustomers;
+    }
+    return totalAssignedCustomers + (unassignedList?.length || 0);
+  }, [systemOverview, totalAssignedCustomers, unassignedList]);
+
   const totalAssignedLeads = useMemo(() => {
     return users.reduce((sum, u) => sum + (u.assignedLeads || 0), 0);
   }, [users]);
@@ -1109,8 +1116,34 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
             }
           />
 
-          {/* 4 Clean Metric Summary Cards */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* 5 Clean Metric Summary Cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 sm:gap-4">
+            {/* Total Customer Accounts */}
+            <div
+              className="bg-white dark:bg-dark-800 p-5 rounded-2xl border border-blue-200 dark:border-blue-900/60 shadow-xs relative overflow-hidden"
+              title="Total customer accounts across all leads"
+            >
+              <div className="flex items-center justify-between">
+                <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                  <Users size={20} />
+                </div>
+                <span className="text-[10px] font-bold text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-950/60 px-2.5 py-0.5 rounded-full border border-blue-200 dark:border-blue-800">
+                  Customers
+                </span>
+              </div>
+              <div className="mt-3">
+                <p className="text-2xl sm:text-3xl font-bold text-dark-900 dark:text-white">
+                  {totalSystemCustomers}
+                </p>
+                <p className="text-xs font-semibold text-dark-700 dark:text-dark-300 mt-0.5">
+                  Total Customer Accounts
+                </p>
+                <p className="text-[10px] text-dark-400 dark:text-dark-500 mt-1">
+                  🔒 Count only (details isolated to leads)
+                </p>
+              </div>
+            </div>
+
             {/* Total Users */}
             <div
               onClick={() => onNavigate?.('admin-users')}
@@ -1119,7 +1152,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
             >
               <div className="flex items-center justify-between">
                 <div className="w-10 h-10 rounded-xl bg-dark-100 dark:bg-dark-700/60 text-dark-700 dark:text-dark-300 flex items-center justify-center">
-                  <Users size={20} />
+                  <UserCheck size={20} />
                 </div>
                 <span className="text-[11px] font-semibold text-dark-500 dark:text-dark-400 bg-dark-100 dark:bg-dark-700/60 px-2.5 py-0.5 rounded-full">
                   Accounts
@@ -1159,7 +1192,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
               </div>
             </div>
 
-            {/* Telecallers */}
+            {/* Registered Leads */}
             <div
               onClick={() => onNavigate?.('admin-agents')}
               className="bg-white dark:bg-dark-800 p-5 rounded-2xl border border-dark-200 dark:border-dark-700 shadow-xs cursor-pointer hover:border-dark-300 dark:hover:border-dark-600 transition-colors"
@@ -1184,7 +1217,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
               </div>
             </div>
 
-            {/* Pending Caller Approvals */}
+            {/* Pending Approvals */}
             <div
               onClick={() => onNavigate?.('admin-users')}
               className={`bg-white dark:bg-dark-800 p-5 rounded-2xl border ${
@@ -1274,6 +1307,221 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
               </button>
             </div>
           )}
+
+          {/* LEAD CUSTOMER DISTRIBUTION (Shows which lead has what customer count, without exposing customer details) */}
+          <div className="bg-white dark:bg-dark-800 rounded-2xl border border-dark-200 dark:border-dark-700 shadow-sm overflow-hidden">
+            <div className="p-5 sm:p-6 border-b border-dark-100 dark:border-dark-700/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                    <Users size={17} />
+                  </div>
+                  <h3 className="text-base font-bold text-dark-900 dark:text-white">
+                    Lead Customer Workload Distribution
+                  </h3>
+                  <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 flex items-center gap-1">
+                    <Shield size={11} />
+                    <span>Customer Data Protected</span>
+                  </span>
+                </div>
+                <p className="text-xs text-dark-500 dark:text-dark-400 mt-1 max-w-3xl">
+                  Overview of customer count assigned to each lead. Individual customer personal details, phone numbers, and call logs are strictly restricted to each assigned lead's private panel.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 self-start sm:self-auto">
+                <button
+                  type="button"
+                  onClick={() => setIsAddCustomerModalOpen(true)}
+                  className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold inline-flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                >
+                  <Plus size={14} />
+                  <span>Assign New Customer</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onNavigate?.('admin-workload')}
+                  className="px-3 py-2 border border-dark-200 dark:border-dark-700 hover:bg-dark-50 dark:hover:bg-dark-700 text-dark-700 dark:text-dark-300 rounded-xl text-xs font-semibold inline-flex items-center gap-1 transition-colors cursor-pointer"
+                >
+                  <span>Rebalance</span>
+                  <ChevronRight size={13} />
+                </button>
+              </div>
+            </div>
+
+            {/* Table of Leads with Customer Counts */}
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs text-left border-collapse">
+                <thead>
+                  <tr className="bg-dark-50/70 dark:bg-dark-900/40 border-b border-dark-200 dark:border-dark-700 text-[11px] font-bold uppercase tracking-wider text-dark-500 dark:text-dark-400">
+                    <th className="py-3 px-4">Lead / Team Member</th>
+                    <th className="py-3 px-4">Status & Presence</th>
+                    <th className="py-3 px-4 text-center">Customer Count</th>
+                    <th className="py-3 px-4 text-center">Active Pipeline Leads</th>
+                    <th className="py-3 px-4 min-w-[160px]">Workload Share</th>
+                    <th className="py-3 px-4 text-center">Data Isolation</th>
+                    <th className="py-3 px-4 text-right">Quick Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-dark-100 dark:divide-dark-700/60 text-dark-800 dark:text-dark-200">
+                  {telecallers.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="py-8 text-center text-dark-400 text-xs">
+                        No active leads registered in the CRM yet. Click "Add User" to invite a lead agent.
+                      </td>
+                    </tr>
+                  ) : (
+                    telecallers.map((tc) => {
+                      const custCount = tc.assignedCustomers || 0;
+                      const leadCount = tc.assignedLeads || 0;
+                      const sharePct =
+                        totalAssignedCustomers > 0
+                          ? Math.round((custCount / totalAssignedCustomers) * 100)
+                          : 0;
+
+                      return (
+                        <tr
+                          key={tc._id}
+                          className="hover:bg-dark-50/50 dark:hover:bg-dark-750/30 transition-colors"
+                        >
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-950/60 text-primary-700 dark:text-primary-300 font-bold text-xs flex items-center justify-center flex-shrink-0">
+                                {initials(tc.name)}
+                              </div>
+                              <div>
+                                <span className="font-semibold text-dark-900 dark:text-white block">
+                                  {tc.name}
+                                </span>
+                                <span className="text-[11px] text-dark-400">
+                                  {tc.email}
+                                </span>
+                              </div>
+                            </div>
+                          </td>
+
+                          <td className="py-3 px-4">
+                            <span
+                              className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${
+                                tc.isOnline
+                                  ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+                                  : 'bg-dark-100 dark:bg-dark-700/60 text-dark-500 dark:text-dark-400'
+                              }`}
+                            >
+                              <span
+                                className={`w-1.5 h-1.5 rounded-full ${
+                                  tc.isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-dark-400'
+                                }`}
+                              />
+                              {tc.isOnline ? 'Active Online' : 'Offline'}
+                            </span>
+                          </td>
+
+                          <td className="py-3 px-4 text-center">
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-xl text-xs font-bold bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                              {custCount} Customers
+                            </span>
+                          </td>
+
+                          <td className="py-3 px-4 text-center">
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-xl text-xs font-semibold bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+                              {leadCount} Leads
+                            </span>
+                          </td>
+
+                          <td className="py-3 px-4">
+                            <div className="space-y-1">
+                              <div className="flex items-center justify-between text-[11px]">
+                                <span className="font-medium text-dark-600 dark:text-dark-300">
+                                  {sharePct}% of assigned base
+                                </span>
+                              </div>
+                              <div className="w-full h-1.5 rounded-full bg-dark-100 dark:bg-dark-700 overflow-hidden">
+                                <div
+                                  className="h-full bg-blue-600 rounded-full transition-all"
+                                  style={{ width: `${Math.min(100, Math.max(sharePct, 2))}%` }}
+                                />
+                              </div>
+                            </div>
+                          </td>
+
+                          <td className="py-3 px-4 text-center">
+                            <span className="text-[11px] font-medium text-dark-500 dark:text-dark-400 bg-dark-100 dark:bg-dark-700/60 px-2 py-0.5 rounded-md inline-flex items-center gap-1" title="Customer names, phone numbers, and notes are restricted to this lead">
+                              <Shield size={11} className="text-dark-400" />
+                              <span>Details Isolated</span>
+                            </span>
+                          </td>
+
+                          <td className="py-3 px-4 text-right">
+                            <button
+                              type="button"
+                              onClick={() => openTransferModal(tc._id)}
+                              className="px-2.5 py-1 rounded-lg border border-dark-200 dark:border-dark-700 hover:bg-dark-100 dark:hover:bg-dark-700 text-dark-700 dark:text-dark-300 font-semibold text-[11px] transition-colors cursor-pointer"
+                              title="Transfer customer accounts to another lead"
+                            >
+                              Transfer
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+
+                  {/* Summary row for Unassigned accounts */}
+                  <tr className="bg-amber-50/50 dark:bg-amber-950/20 font-medium">
+                    <td className="py-3 px-4">
+                      <div className="flex items-center gap-2">
+                        <AlertTriangle size={15} className="text-amber-600" />
+                        <span className="font-bold text-amber-900 dark:text-amber-200">
+                          Unassigned Customer Queue
+                        </span>
+                      </div>
+                    </td>
+                    <td className="py-3 px-4 text-dark-500 text-[11px]">
+                      Awaiting allocation
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-xl text-xs font-bold bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+                        {unassignedList.length} Unassigned
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-center text-dark-400 text-xs">—</td>
+                    <td className="py-3 px-4 text-dark-500 text-[11px]">
+                      {totalSystemCustomers > 0 ? Math.round((unassignedList.length / totalSystemCustomers) * 100) : 0}% unallocated
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      <span className="text-[11px] font-semibold text-amber-700 dark:text-amber-300">
+                        Pending Assignment
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-right">
+                      {unassignedList.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => onNavigate?.('admin-workload')}
+                          className="px-2.5 py-1 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-[11px] transition-colors cursor-pointer shadow-2xs"
+                        >
+                          Distribute
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            {/* Total System Footprint */}
+            <div className="p-4 bg-dark-50/70 dark:bg-dark-800/60 border-t border-dark-100 dark:border-dark-700/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+              <span className="text-dark-500">
+                Total Customer Footprint across all leads:{' '}
+                <strong className="text-dark-900 dark:text-white font-bold">{totalSystemCustomers} customer account(s)</strong>{' '}
+                ({totalAssignedCustomers} assigned + {unassignedList.length} unassigned)
+              </span>
+              <span className="text-dark-400 text-[11px]">
+                🔒 Customer privacy policy: Personal contact data is inaccessible to Admin account.
+              </span>
+            </div>
+          </div>
 
           {/* Operations Launchpad Cards */}
           <div>
