@@ -51,6 +51,7 @@ import {
   DollarSign,
   Link2,
   ListPlus,
+  UserCheck,
   X,
 } from 'lucide-react';
 import { PageHeader } from '../components/Common';
@@ -74,7 +75,7 @@ import {
   approveUser,
   rejectUser,
 } from '../api/users';
-import { getCustomers, updateCustomer, bulkAssignCustomers } from '../api/customers';
+import { getCustomers, createCustomer, updateCustomer, bulkAssignCustomers } from '../api/customers';
 import { getFollowUps, createFollowUp, updateFollowUp, deleteFollowUp } from '../api/followups';
 import { testEmailDelivery } from '../api/emails';
 import CallerProgressReports from '../components/CallerProgressReports';
@@ -139,6 +140,86 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
   // Unassigned Batch Assigner State
   const [unassignedBatchAgentId, setUnassignedBatchAgentId] = useState('');
   const [isAssigningUnassigned, setIsAssigningUnassigned] = useState(false);
+
+  // Add Customer & Assign Lead Modal State
+  const [isAddCustomerModalOpen, setIsAddCustomerModalOpen] = useState(false);
+  const [isCreatingCustomer, setIsCreatingCustomer] = useState(false);
+  const initialNewCustomerForm = {
+    name: '',
+    mobile: '',
+    email: '',
+    company: '',
+    city: '',
+    leadSource: 'Call',
+    status: 'new',
+    telecallerId: '',
+    remarks: '',
+  };
+  const [newCustomerForm, setNewCustomerForm] = useState(initialNewCustomerForm);
+
+  const handleCreateCustomerAndAssign = async (e) => {
+    e.preventDefault();
+    if (!newCustomerForm.name.trim()) {
+      addToast('Customer Name is required', 'error');
+      return;
+    }
+    if (!newCustomerForm.mobile.trim()) {
+      addToast('Mobile number is required', 'error');
+      return;
+    }
+
+    setIsCreatingCustomer(true);
+    try {
+      const selectedTc = users.find((u) => u._id === newCustomerForm.telecallerId);
+      const payload = {
+        name: newCustomerForm.name.trim(),
+        mobile: newCustomerForm.mobile.trim(),
+        phone: newCustomerForm.mobile.trim(),
+        email: newCustomerForm.email.trim(),
+        company: newCustomerForm.company.trim(),
+        city: newCustomerForm.city.trim(),
+        leadSource: newCustomerForm.leadSource,
+        status: newCustomerForm.status,
+        remarks: newCustomerForm.remarks.trim(),
+      };
+      if (newCustomerForm.telecallerId) {
+        payload.telecallerId = newCustomerForm.telecallerId;
+        payload.assignedTelecaller = selectedTc?.name || '';
+      }
+
+      const res = await createCustomer(payload);
+      if (res?.customer) {
+        const assignedName = selectedTc ? selectedTc.name : 'Unassigned Workload Queue';
+        addToast(`Customer "${newCustomerForm.name}" created and assigned to ${assignedName}!`, 'success');
+
+        try {
+          const cached = JSON.parse(localStorage.getItem('smartcrm_contacts') || '[]');
+          const newContactObj = {
+            id: res.customer._id,
+            name: res.customer.name,
+            phone: res.customer.mobile || res.customer.phone || '',
+            email: res.customer.email || '-',
+            additionalInfo: res.customer.company || '-',
+            tags: res.customer.interestedProduct || '-',
+            leadStage: res.customer.status || 'new',
+            source: res.customer.leadSource?.toLowerCase() || 'call',
+            city: res.customer.city || '-',
+            assignedTelecaller: payload.assignedTelecaller || 'Unassigned',
+            createdAt: new Date().toISOString(),
+          };
+          localStorage.setItem('smartcrm_contacts', JSON.stringify([newContactObj, ...cached]));
+        } catch {}
+
+        setIsAddCustomerModalOpen(false);
+        setNewCustomerForm(initialNewCustomerForm);
+        loadData(true);
+      }
+    } catch (err) {
+      addToast(err.response?.data?.message || err.message || 'Failed to create customer', 'error');
+    } finally {
+      setIsCreatingCustomer(false);
+    }
+  };
 
   // Caller Tasks Management State
   const [tasksList, setTasksList] = useState([]);
@@ -1002,6 +1083,13 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                 >
                   <Users size={16} />
                   <span className="hidden sm:inline">Users Roster</span>
+                </button>
+                <button
+                  onClick={() => setIsAddCustomerModalOpen(true)}
+                  className="inline-flex items-center gap-2 px-3.5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition-colors shadow-sm cursor-pointer"
+                >
+                  <UserCheck size={17} />
+                  <span>Add Customer & Assign</span>
                 </button>
                 <button
                   onClick={() => setIsExcelModalOpen(true)}
@@ -2150,6 +2238,13 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                   title="Refresh"
                 >
                   <RefreshCw size={17} className={refreshing ? 'animate-spin text-primary-600' : ''} />
+                </button>
+                <button
+                  onClick={() => setIsAddCustomerModalOpen(true)}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition-colors shadow-sm cursor-pointer"
+                >
+                  <UserCheck size={16} />
+                  <span>Add Customer & Assign</span>
                 </button>
                 <button
                   onClick={() => openTransferModal('')}
@@ -5058,6 +5153,161 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
           }}
         />
       )}
+
+      {/* GLOBAL MODAL: Add Customer & Assign Lead */}
+      <Modal
+        isOpen={isAddCustomerModalOpen}
+        onClose={() => setIsAddCustomerModalOpen(false)}
+        title="Add New Customer & Assign Lead"
+        size="lg"
+      >
+        <form onSubmit={handleCreateCustomerAndAssign} className="space-y-4">
+          <p className="text-xs text-dark-500 dark:text-dark-400">
+            Create an individual customer account and automatically generate their pipeline lead with immediate assignment to a lead telecaller.
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            <div>
+              <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1">
+                Customer Full Name <span className="text-rose-500">*</span>
+              </label>
+              <input
+                type="text"
+                required
+                value={newCustomerForm.name}
+                onChange={(e) => setNewCustomerForm({ ...newCustomerForm, name: e.target.value })}
+                placeholder="e.g. Rahul Sharma"
+                className="w-full px-3 py-2 text-xs rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1">
+                Mobile Number <span className="text-rose-500">*</span>
+              </label>
+              <input
+                type="tel"
+                required
+                value={newCustomerForm.mobile}
+                onChange={(e) => setNewCustomerForm({ ...newCustomerForm, mobile: e.target.value })}
+                placeholder="e.g. 9876543210"
+                className="w-full px-3 py-2 text-xs rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1">
+                Email Address
+              </label>
+              <input
+                type="email"
+                value={newCustomerForm.email}
+                onChange={(e) => setNewCustomerForm({ ...newCustomerForm, email: e.target.value })}
+                placeholder="e.g. rahul@example.com"
+                className="w-full px-3 py-2 text-xs rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1">
+                Company / Business Name
+              </label>
+              <input
+                type="text"
+                value={newCustomerForm.company}
+                onChange={(e) => setNewCustomerForm({ ...newCustomerForm, company: e.target.value })}
+                placeholder="e.g. Apex Enterprises"
+                className="w-full px-3 py-2 text-xs rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1">
+                City / Location
+              </label>
+              <input
+                type="text"
+                value={newCustomerForm.city}
+                onChange={(e) => setNewCustomerForm({ ...newCustomerForm, city: e.target.value })}
+                placeholder="e.g. Mumbai"
+                className="w-full px-3 py-2 text-xs rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1">
+                Lead Source
+              </label>
+              <select
+                value={newCustomerForm.leadSource}
+                onChange={(e) => setNewCustomerForm({ ...newCustomerForm, leadSource: e.target.value })}
+                className="w-full px-3 py-2 text-xs rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="Call">Direct Phone Call</option>
+                <option value="WhatsApp">WhatsApp Inbound</option>
+                <option value="Website">Website Form / Organic</option>
+                <option value="Referral">Client Referral</option>
+                <option value="Campaign">Marketing Campaign</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Lead Assignment Box */}
+          <div className="p-3.5 rounded-2xl bg-blue-50/70 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/60 space-y-2">
+            <label className="block text-xs font-bold text-blue-900 dark:text-blue-300 flex items-center gap-1.5">
+              <Users size={14} className="text-blue-600" />
+              <span>Assign to Lead / Telecaller</span>
+            </label>
+            <select
+              value={newCustomerForm.telecallerId}
+              onChange={(e) => setNewCustomerForm({ ...newCustomerForm, telecallerId: e.target.value })}
+              className="w-full px-3 py-2 text-xs rounded-xl border border-blue-300 dark:border-blue-800 bg-white dark:bg-dark-800 text-dark-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+            >
+              <option value="">Leave Unassigned (Add to Unassigned Workload Queue)</option>
+              {telecallers.map((tc) => (
+                <option key={tc._id} value={tc._id}>
+                  {tc.name} ({tc.assignedCustomers || 0} active clients) {tc.status === 'offline' ? '• Offline' : '• Online'}
+                </option>
+              ))}
+            </select>
+            <p className="text-[11px] text-blue-700 dark:text-blue-400">
+              Assigned telecaller will instantly see this contact in their personal Lead Panel and receive automated email dispatch.
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1">
+              Initial Lead Remarks / Notes (Optional)
+            </label>
+            <textarea
+              rows={2}
+              value={newCustomerForm.remarks}
+              onChange={(e) => setNewCustomerForm({ ...newCustomerForm, remarks: e.target.value })}
+              placeholder="e.g. Inquired about enterprise annual plan, requested quotation by tomorrow."
+              className="w-full px-3 py-2 text-xs rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div className="flex justify-end gap-2.5 pt-2">
+            <button
+              type="button"
+              onClick={() => setIsAddCustomerModalOpen(false)}
+              className="px-4 py-2 text-xs font-semibold rounded-xl hover:bg-dark-100 dark:hover:bg-dark-700 text-dark-600 dark:text-dark-300 transition-colors cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isCreatingCustomer}
+              className="px-5 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+            >
+              {isCreatingCustomer ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
+              <span>Create Customer & Assign</span>
+            </button>
+          </div>
+        </form>
+      </Modal>
 
       {/* GLOBAL MODAL: Assign Task to Caller / Lead */}
       <Modal
