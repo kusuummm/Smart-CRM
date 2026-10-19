@@ -924,7 +924,7 @@ export default function ToDos({ onNavigate }) {
                             </span>
                           )}
                           {task.leadStatus && (
-                            <span className="px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 dark:bg-purple-950/50 dark:text-purple-300 font-semibold border border-purple-200 dark:border-purple-800">
+                            <span className="px-2 py-0.5 rounded-md bg-sky-50 text-sky-700 dark:bg-sky-950/50 dark:text-sky-300 font-semibold border border-sky-200 dark:border-sky-800">
                               {task.leadStatus}
                             </span>
                           )}

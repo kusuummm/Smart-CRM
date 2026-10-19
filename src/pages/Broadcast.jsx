@@ -508,7 +508,7 @@ export default function Broadcast({ onNavigate }) {
                         ) : camp.channel === 'voice' ? (
                           <Radio size={13} className="text-blue-500" />
                         ) : (
-                          <Send size={13} className="text-purple-500" />
+                          <Send size={13} className="text-sky-500" />
                         )}
                         <span>{camp.channel}</span>
                       </span>
@@ -578,7 +578,7 @@ export default function Broadcast({ onNavigate }) {
                   ) : selectedCampaign.channel === 'voice' ? (
                     <Radio size={20} className="text-blue-600" />
                   ) : (
-                    <Send size={18} className="text-purple-600" />
+                    <Send size={18} className="text-sky-600" />
                   )}
                 </div>
                 <div>
@@ -651,14 +651,14 @@ export default function Broadcast({ onNavigate }) {
                   <p className="text-[10px] text-blue-600 mt-0.5">{selectedCampaign.readRate} rate</p>
                 </div>
 
-                <div className="p-3 rounded-xl bg-purple-50/70 dark:bg-purple-950/30 border border-purple-100 dark:border-purple-900/60">
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-purple-700 dark:text-purple-300">
+                <div className="p-3 rounded-xl bg-sky-50/70 dark:bg-sky-950/30 border border-sky-100 dark:border-sky-900/60">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-sky-700 dark:text-sky-300">
                     Responses
                   </p>
-                  <p className="text-lg font-bold font-mono text-purple-700 dark:text-purple-300 mt-1">
+                  <p className="text-lg font-bold font-mono text-sky-700 dark:text-sky-300 mt-1">
                     {selectedCampaign.repliedCount || 42}
                   </p>
-                  <p className="text-[10px] text-purple-600 mt-0.5">High engagement</p>
+                  <p className="text-[10px] text-sky-600 dark:text-sky-400 mt-0.5">High engagement</p>
                 </div>
               </div>
 
@@ -704,8 +704,8 @@ export default function Broadcast({ onNavigate }) {
                       <p className="italic text-dark-700 dark:text-dark-300">{selectedCampaign.messagePreview}</p>
                     </div>
                   ) : (
-                    <div className="p-3.5 rounded-xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200/60 dark:border-purple-900/50 text-xs space-y-1">
-                      <span className="text-[11px] font-mono text-purple-700 dark:text-purple-400 font-bold">
+                    <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-dark-900/60 border border-slate-200 dark:border-dark-700 text-xs space-y-1">
+                      <span className="text-[11px] font-mono text-primary-600 dark:text-primary-400 font-bold">
                         Sender ID: VK-SMARTCRM
                       </span>
                       <p className="text-dark-800 dark:text-dark-200">{selectedCampaign.messagePreview}</p>
@@ -740,7 +740,7 @@ export default function Broadcast({ onNavigate }) {
                             rec.status.includes('Read') || rec.status.includes('Answered')
                               ? 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
                               : rec.status.includes('Replied')
-                              ? 'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300'
+                              ? 'bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300'
                               : rec.status === 'Failed'
                               ? 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300'
                               : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'

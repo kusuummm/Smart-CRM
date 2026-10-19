@@ -103,10 +103,10 @@ export default function Settings() {
         <div className="lg:col-span-2 space-y-6">
           {/* 1. CALL RECORDING & TELEPHONY SETTINGS (Toggle Bars) */}
           <div className="bg-white dark:bg-dark-800 rounded-xl border border-dark-200 dark:border-dark-700 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-dark-200 dark:border-dark-700 bg-gradient-to-r from-blue-50/50 to-indigo-50/30 dark:from-blue-950/20 dark:to-indigo-950/10">
+            <div className="px-6 py-4 border-b border-dark-200 dark:border-dark-700 bg-slate-50/70 dark:bg-dark-900/40">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center">
                     <Mic size={22} />
                   </div>
                   <div>
@@ -288,7 +288,10 @@ export default function Settings() {
             <div className="px-6 py-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <div className={`w-12 h-12 rounded-xl bg-${themeColor}-500 flex items-center justify-center`}>
+                  <div
+                    className="w-12 h-12 rounded-xl flex items-center justify-center shadow-xs"
+                    style={{ backgroundColor: 'var(--color-primary-500, #2563eb)' }}
+                  >
                     <div className="w-6 h-6 bg-white rounded-lg dark:bg-dark-800" />
                   </div>
                   <div>

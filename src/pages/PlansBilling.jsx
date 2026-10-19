@@ -292,7 +292,7 @@ export default function PlansBilling({ onNavigate }) {
 
             {/* Unlimited Calls Tag Pill */}
             <div className="pt-2">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-purple-50 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
                 <Sparkles size={12} />
                 <span>Unlimited calls</span>
               </span>

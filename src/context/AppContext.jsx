@@ -316,8 +316,16 @@ export function AppProvider({ children }) {
 
   // Theme color state
   const [themeColor, setThemeColor] = useState(() => {
-    const saved = localStorage.getItem('themeColor');
-    return saved || 'blue';
+    try {
+      const saved = localStorage.getItem('themeColor');
+      if (!saved || saved === 'purple') {
+        localStorage.setItem('themeColor', 'blue');
+        return 'blue';
+      }
+      return saved;
+    } catch {
+      return 'blue';
+    }
   });
 
   // Timezone state
@@ -344,17 +352,75 @@ export function AppProvider({ children }) {
   // Apply theme color
   useEffect(() => {
     const colors = {
-      blue: { 500: '#2563eb', 600: '#1d4ed8', 700: '#1e40af' },
-      slate: { 500: '#475569', 600: '#334155', 700: '#1e293b' },
-      green: { 500: '#059669', 600: '#047857', 700: '#065f46' },
-      red: { 500: '#dc2626', 600: '#b91c1c', 700: '#991b1b' },
-      orange: { 500: '#ea580c', 600: '#c2410c', 700: '#9a3412' },
+      blue: {
+        50: '#f0f7ff',
+        100: '#e0effe',
+        200: '#bae0fd',
+        300: '#7cc2fb',
+        400: '#389df6',
+        500: '#2563eb',
+        600: '#1d4ed8',
+        700: '#1e40af',
+        800: '#1e3a8a',
+        900: '#172554',
+      },
+      slate: {
+        50: '#f8fafc',
+        100: '#f1f5f9',
+        200: '#e2e8f0',
+        300: '#cbd5e1',
+        400: '#94a3b8',
+        500: '#475569',
+        600: '#334155',
+        700: '#1e293b',
+        800: '#0f172a',
+        900: '#020617',
+      },
+      green: {
+        50: '#f0fdf4',
+        100: '#dcfce7',
+        200: '#bbf7d0',
+        300: '#86efac',
+        400: '#4ade80',
+        500: '#10b981',
+        600: '#059669',
+        700: '#047857',
+        800: '#065f46',
+        900: '#064e3b',
+      },
+      red: {
+        50: '#fef2f2',
+        100: '#fee2e2',
+        200: '#fecaca',
+        300: '#fca5a5',
+        400: '#f87171',
+        500: '#ef4444',
+        600: '#dc2626',
+        700: '#b91c1c',
+        800: '#991b1b',
+        900: '#7f1d1d',
+      },
+      orange: {
+        50: '#fff7ed',
+        100: '#ffedd5',
+        200: '#fed7aa',
+        300: '#fdba74',
+        400: '#fb923c',
+        500: '#f97316',
+        600: '#ea580c',
+        700: '#c2410c',
+        800: '#9a3412',
+        900: '#7c2d12',
+      },
     };
-    const c = colors[themeColor] || colors.blue;
-    document.documentElement.style.setProperty('--color-primary-500', c[500]);
-    document.documentElement.style.setProperty('--color-primary-600', c[600]);
-    document.documentElement.style.setProperty('--color-primary-700', c[700]);
-    localStorage.setItem('themeColor', themeColor);
+    const activeColor = themeColor === 'purple' ? 'blue' : themeColor;
+    const c = colors[activeColor] || colors.blue;
+    Object.entries(c).forEach(([shade, hex]) => {
+      document.documentElement.style.setProperty(`--color-primary-${shade}`, hex);
+    });
+    try {
+      localStorage.setItem('themeColor', activeColor);
+    } catch {}
   }, [themeColor]);
 
   // Persist timezone

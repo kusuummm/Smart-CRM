@@ -262,7 +262,7 @@ export default function Events({ onNavigate }) {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-center gap-2">
-                        <button onClick={() => handleSendReminder(event)} disabled={reminding === event._id} className="p-1.5 rounded-lg hover:bg-purple-50 text-purple-600 disabled:opacity-50" title="Send Reminder Now">
+                        <button onClick={() => handleSendReminder(event)} disabled={reminding === event._id} className="p-1.5 rounded-lg hover:bg-sky-50 dark:hover:bg-sky-950/40 text-sky-600 dark:text-sky-400 disabled:opacity-50" title="Send Reminder Now">
                           {reminding === event._id ? <Loader2 size={16} className="animate-spin" /> : <BellRing size={16} />}
                         </button>
                         <button onClick={() => openEdit(event)} className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-600" title="Edit">

@@ -15,18 +15,18 @@ import { isAdminOrOwner, getRoleInfo } from '../utils/permissions';
 const COLORS = {
   blue: '#2563eb',
   green: '#16a34a',
-  purple: '#0284c7',
-  yellow: '#d97706',
+  amber: '#d97706',
+  yellow: '#eab308',
   orange: '#ea580c',
   red: '#dc2626',
   gray: '#64748b',
-  indigo: '#3b82f6',
+  indigo: '#2563eb',
 };
 
 const LEAD_STATUS_COLORS = {
   new: COLORS.blue,
   contacted: COLORS.yellow,
-  interested: COLORS.purple,
+  interested: COLORS.amber,
   'follow-up': COLORS.orange,
   converted: COLORS.green,
   'not-interested': COLORS.gray,
@@ -485,7 +485,7 @@ export default function Dashboard({ onNavigate }) {
             <div className="space-y-3 max-h-[380px] overflow-y-auto pr-1">
               {upcomingEvents.map(ev => (
                 <div key={ev._id} onClick={() => onNavigate?.('events')} className="flex items-center gap-3 p-3 rounded-lg bg-dark-50 dark:bg-dark-700 hover:bg-primary-50 dark:hover:bg-primary-900/20 cursor-pointer transition-all group">
-                  <Gift className="text-purple-500 flex-shrink-0" size={18} />
+                  <Gift className="text-primary-500 flex-shrink-0" size={18} />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-dark-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors capitalize">{ev.customerName} · {ev.type}</p>
                     <p className="text-xs text-dark-500 dark:text-dark-400">{new Date(ev.date).toLocaleDateString()} {ev.description && `· ${ev.description}`}</p>

@@ -97,7 +97,7 @@ export default function WhatsApp({ onNavigate }) {
               lastMessage: c.remarks || 'Connected via WhatsApp',
               timestamp: 'Recent',
               unread: 0,
-              avatarColor: ['bg-emerald-600', 'bg-blue-600', 'bg-purple-600', 'bg-amber-600'][idx % 4],
+              avatarColor: ['bg-emerald-600', 'bg-blue-600', 'bg-slate-600', 'bg-amber-600'][idx % 4],
               messages: [
                 {
                   id: `m_${c._id || idx}_1`,

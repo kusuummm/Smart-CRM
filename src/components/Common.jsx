@@ -1,9 +1,9 @@
 export function StatCard({ title, value, icon: Icon, trend, trendUp = true, color = 'blue', onClick }) {
   const colorClasses = {
     blue: 'bg-blue-50 text-blue-600', green: 'bg-green-50 text-green-600',
-    yellow: 'bg-yellow-50 text-yellow-600', purple: 'bg-purple-50 text-purple-600',
+    yellow: 'bg-yellow-50 text-yellow-600', slate: 'bg-slate-100 text-slate-700',
     orange: 'bg-orange-50 text-orange-600', red: 'bg-red-50 text-red-600',
-    indigo: 'bg-indigo-50 text-indigo-600',
+    sky: 'bg-sky-50 text-sky-600',
   };
   return (
     <div

@@ -194,8 +194,8 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
       { id: 'new', label: 'New Follow-up', Icon: Sparkles, count: pipelineStats.new || 0, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-950/40' },
       { id: 'contacted', label: 'Contacted', Icon: PhoneCall, count: pipelineStats.contacted || 0, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-950/40' },
       { id: 'interested', label: 'Interested', Icon: Star, count: pipelineStats.interested || 0, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-950/40' },
-      { id: 'meeting', label: 'Meeting', Icon: Calendar, count: pipelineStats.meeting || 0, color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-50 dark:bg-purple-950/40' },
-      { id: 'follow-up', label: 'In Progress', Icon: Clock, count: pipelineStats['follow-up'] || 0, color: 'text-indigo-600 dark:text-indigo-400', bg: 'bg-indigo-50 dark:bg-indigo-950/40' },
+      { id: 'meeting', label: 'Meeting', Icon: Calendar, count: pipelineStats.meeting || 0, color: 'text-sky-600 dark:text-sky-400', bg: 'bg-sky-50 dark:bg-sky-950/40' },
+      { id: 'follow-up', label: 'In Progress', Icon: Clock, count: pipelineStats['follow-up'] || 0, color: 'text-slate-600 dark:text-slate-300', bg: 'bg-slate-100 dark:bg-slate-800' },
       { id: 'converted', label: 'Won / Converted', Icon: CheckCircle2, count: pipelineStats.converted || 0, color: 'text-teal-600 dark:text-teal-400', bg: 'bg-teal-50 dark:bg-teal-950/40' },
       { id: 'not-interested', label: 'Not Interested', Icon: XCircle, count: pipelineStats['not-interested'] || 0, color: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-50 dark:bg-rose-950/40' },
     ],
@@ -764,7 +764,7 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
                           {/* Schedule Meeting with Customer (Triggers 1-hour email reminder) */}
                           <button
                             onClick={() => openScheduleMeeting(lead)}
-                            className="p-1.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 transition-colors"
+                            className="p-1.5 rounded-lg hover:bg-sky-50 dark:hover:bg-sky-950/50 text-sky-600 dark:text-sky-400 transition-colors"
                             title="Schedule Meeting with Customer (Sends invites & 1-hour prior email reminder)"
                           >
                             <Calendar size={16} />
@@ -813,7 +813,7 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
                   </div>
                   <button
                     onClick={() => openScheduleMeeting(expLead)}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors"
                   >
                     <Calendar size={14} />
                     <span>Schedule Customer Meeting (1-Hr Reminder Armed)</span>
@@ -1004,11 +1004,11 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
         size="lg"
       >
         <form onSubmit={handleScheduleMeetingSubmit} className="space-y-4">
-          <div className="p-3.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-900/60 flex items-start gap-3 text-xs text-indigo-900 dark:text-indigo-200 shadow-2xs">
-            <Bell size={18} className="text-indigo-600 dark:text-indigo-400 flex-shrink-0 mt-0.5" />
+          <div className="p-3.5 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/60 flex items-start gap-3 text-xs text-blue-900 dark:text-blue-200 shadow-2xs">
+            <Bell size={18} className="text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
             <div>
               <p className="font-bold text-sm">Automated 1-Hour Prior Email Reminder Guarantee</p>
-              <p className="mt-0.5 text-indigo-800 dark:text-indigo-300 leading-relaxed">
+              <p className="mt-0.5 text-blue-800 dark:text-blue-300 leading-relaxed">
                 An invitation confirmation email will be dispatched to both client and lead immediately. Smart CRM&apos;s background scheduler will automatically send an email reminder to both parties <strong>1 hour before the meeting starts</strong> with the agenda and joining link.
               </p>
             </div>
@@ -1123,7 +1123,7 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
             <button
               type="submit"
               disabled={schedulingMeeting}
-              className="inline-flex items-center gap-2 px-5 py-2 text-sm font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors shadow-xs"
+              className="inline-flex items-center gap-2 px-5 py-2 text-sm font-bold text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 transition-colors shadow-xs"
             >
               {schedulingMeeting ? <Loader2 size={16} className="animate-spin" /> : <Calendar size={16} />}
               <span>{schedulingMeeting ? 'Scheduling...' : 'Schedule & Send Invites'}</span>

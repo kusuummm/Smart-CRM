@@ -1629,10 +1629,10 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                 className="bg-white dark:bg-dark-800 p-5 rounded-2xl border border-dark-200 dark:border-dark-700 shadow-xs cursor-pointer hover:border-dark-300 dark:hover:border-dark-600 transition-colors flex flex-col justify-between"
               >
                 <div className="flex items-center justify-between">
-                  <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 flex items-center justify-center">
                     <BarChart3 size={20} />
                   </div>
-                  <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">Team Analytics</span>
+                  <span className="text-xs font-bold text-blue-600 dark:text-blue-400">Team Analytics</span>
                 </div>
                 <div className="mt-4">
                   <h4 className="font-bold text-base text-dark-900 dark:text-white">Lead Progress Reports</h4>
@@ -1669,7 +1669,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                 className="bg-white dark:bg-dark-800 p-5 rounded-2xl border border-dark-200 dark:border-dark-700 shadow-xs cursor-pointer hover:border-dark-300 dark:hover:border-dark-600 transition-colors flex flex-col justify-between"
               >
                 <div className="flex items-center justify-between">
-                  <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center justify-center">
                     <Database size={20} />
                   </div>
                   <span className="text-xs font-bold text-dark-500 dark:text-dark-400">Healthy</span>
@@ -2134,7 +2134,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                                   {/* Reset Password */}
                                   <button
                                     onClick={() => setResetPasswordUser(u)}
-                                    className="p-2 rounded-lg hover:bg-dark-100 dark:hover:bg-dark-700 text-indigo-600 dark:text-indigo-400 transition-colors"
+                                    className="p-2 rounded-lg hover:bg-dark-100 dark:hover:bg-dark-700 text-blue-600 dark:text-blue-400 transition-colors"
                                     title="Reset User Password"
                                   >
                                     <KeyRound size={16} />
@@ -2355,7 +2355,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                               className="relative cursor-pointer group text-left"
                               title="Click to inspect lead workload and portfolio"
                             >
-                              <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 group-hover:scale-105 text-white font-bold text-base flex items-center justify-center shadow-xs transition-transform">
+                              <div className="w-12 h-12 rounded-xl bg-blue-600 group-hover:bg-blue-700 group-hover:scale-105 text-white font-bold text-base flex items-center justify-center shadow-xs transition-transform">
                                 {initials(agent.name)}
                               </div>
                               <span
@@ -2813,7 +2813,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                             ? 'bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300'
                             : isWa
                             ? 'bg-green-100 text-green-700 dark:bg-green-950/60 dark:text-green-300'
-                            : 'bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300'
+                            : 'bg-sky-100 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300'
                         }`}
                       >
                         {isCall ? <Phone size={16} /> : isWa ? <MessageCircle size={16} /> : <Mail size={16} />}
@@ -2868,7 +2868,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
           />
           <div className="space-y-6">
           {/* SMTP Deliverability Live Test Tool */}
-          <div className="bg-gradient-to-r from-blue-500/10 via-primary-500/10 to-indigo-500/10 bg-white dark:bg-dark-800 rounded-2xl border border-primary-200 dark:border-primary-800 p-5 sm:p-6 shadow-sm">
+          <div className="bg-slate-50/70 dark:bg-dark-800 rounded-2xl border border-dark-200 dark:border-dark-700 p-5 sm:p-6 shadow-xs">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
                 <h4 className="text-base font-bold text-dark-900 dark:text-white flex items-center gap-2">
@@ -3156,19 +3156,19 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                 <button
                   type="button"
                   onClick={() => handleNavigate('call-history')}
-                  className="p-4 rounded-xl bg-dark-50 dark:bg-dark-900/50 hover:bg-white dark:hover:bg-dark-800 border border-dark-100 dark:border-dark-700/60 hover:border-indigo-500 dark:hover:border-indigo-500 hover:shadow-md cursor-pointer transition-colors text-left group flex flex-col justify-between"
+                  className="p-4 rounded-xl bg-dark-50 dark:bg-dark-900/50 hover:bg-white dark:hover:bg-dark-800 border border-dark-100 dark:border-dark-700/60 hover:border-blue-500 dark:hover:border-blue-500 hover:shadow-md cursor-pointer transition-colors text-left group flex flex-col justify-between"
                   title="Click to view Call Logs & History"
                 >
                   <div className="flex items-center justify-between w-full">
-                    <span className="text-xs text-dark-500 dark:text-dark-400 font-medium group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                    <span className="text-xs text-dark-500 dark:text-dark-400 font-medium group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                       Call Logs Recorded
                     </span>
-                    <ChevronRight size={14} className="text-dark-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 group-hover:translate-x-0.5 transition-all" />
+                    <ChevronRight size={14} className="text-dark-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 group-hover:translate-x-0.5 transition-all" />
                   </div>
                   <p className="text-2xl font-bold text-dark-900 dark:text-white mt-1">
                     {systemOverview.metrics.totalCalls}
                   </p>
-                  <span className="text-[11px] text-dark-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 font-medium mt-1 flex items-center gap-1 transition-colors">
+                  <span className="text-[11px] text-dark-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 font-medium mt-1 flex items-center gap-1 transition-colors">
                     Open History <ArrowRight size={10} />
                   </span>
                 </button>
@@ -3545,7 +3545,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                       <div className="flex items-center justify-between">
                         <span className="text-xs text-dark-500 dark:text-dark-400 font-medium">Calls Logged</span>
                       </div>
-                      <p className="text-2xl font-black text-indigo-600 dark:text-indigo-400 mt-1">
+                      <p className="text-2xl font-black text-blue-600 dark:text-blue-400 mt-1">
                         {inspectorReport?.metrics?.totalCalls ?? 0}
                       </p>
                       <span className="text-[11px] text-dark-400 block mt-1">
@@ -3592,7 +3592,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                           className="flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity"
                           title={`Click to view all calls for ${inspectorUser.name} in Call History`}
                         >
-                          <span className="w-3 h-3 rounded-sm bg-indigo-500" />
+                          <span className="w-3 h-3 rounded-sm bg-blue-500" />
                           <span className="text-dark-600 dark:text-dark-300 font-medium">Calls</span>
                         </div>
                         <div
@@ -3656,7 +3656,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                                         style={{ height: `${d.calls ? callHeight : 4}px` }}
                                         className={`w-3 sm:w-4 rounded-t-md transition-all cursor-pointer hover:brightness-125 hover:scale-y-105 origin-bottom ${
                                           d.calls
-                                            ? 'bg-gradient-to-t from-indigo-600 to-indigo-400 shadow-xs'
+                                            ? 'bg-blue-600 shadow-xs'
                                             : 'bg-dark-100 dark:bg-dark-700/60'
                                         }`}
                                         title={`Calls: ${d.calls || 0} on ${d.day} (${d.date}) — Click to view in Call History`}

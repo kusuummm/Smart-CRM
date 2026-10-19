@@ -1227,11 +1227,11 @@ export default function Teams({ onNavigate, onOpenBuyNumber }) {
                                   }}
                                   className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all cursor-pointer select-none hover:shadow-2xs hover:scale-105 active:scale-95 ${
                                     staff.role === 'Owner'
-                                      ? 'bg-purple-50 text-purple-700 dark:bg-purple-950/50 dark:text-purple-300 border-purple-200 dark:border-purple-800 hover:bg-purple-100'
+                                      ? 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200 border-slate-300 dark:border-slate-700 hover:bg-slate-200'
                                       : staff.role === 'Manager'
                                       ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 border-blue-200 dark:border-blue-800 hover:bg-blue-100'
                                       : staff.role === 'AI Agent'
-                                      ? 'bg-violet-50 text-violet-700 dark:bg-violet-950/50 dark:text-violet-300 border-violet-200 dark:border-violet-800 hover:bg-violet-100'
+                                      ? 'bg-teal-50 text-teal-700 dark:bg-teal-950/50 dark:text-teal-300 border-teal-200 dark:border-teal-800 hover:bg-teal-100'
                                       : staff.role === 'Lead' || staff.role === 'Telecaller'
                                       ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300 border-amber-200 dark:border-amber-800 hover:bg-amber-100'
                                       : 'bg-dark-50 text-dark-800 dark:bg-dark-900/60 dark:text-dark-100 border-dark-200 dark:border-dark-700 hover:bg-dark-100'
@@ -2301,7 +2301,7 @@ export default function Teams({ onNavigate, onOpenBuyNumber }) {
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="text-xs font-bold uppercase tracking-wider text-dark-400 flex items-center gap-1.5">
-                      <Users size={13} className="text-purple-600" />
+                      <Users size={13} className="text-primary-600" />
                       <span>
                         3. Allocate Staff Members ({newTeamForm.selectedMemberIds.length} of {staffList.length} selected)
                       </span>

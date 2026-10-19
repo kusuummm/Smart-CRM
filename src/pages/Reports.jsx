@@ -635,19 +635,19 @@ export default function Reports({ onNavigate }) {
                   title: 'Detailed Report: Total Talktime Call Breakdown',
                 })
               }
-              className="p-5 rounded-2xl bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 shadow-xs space-y-3 cursor-pointer hover:shadow-md hover:border-purple-400 dark:hover:border-purple-500 transition-all group"
+              className="p-5 rounded-2xl bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 shadow-xs space-y-3 cursor-pointer hover:shadow-md hover:border-primary-400 dark:hover:border-primary-500 transition-all group"
               title="Click to view detailed talktime breakdown"
             >
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-purple-600">
-                  <div className="w-8 h-8 rounded-lg bg-purple-50 dark:bg-purple-950/60 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <div className="flex items-center gap-2 text-primary-600 dark:text-primary-400">
+                  <div className="w-8 h-8 rounded-lg bg-primary-50 dark:bg-primary-950/60 flex items-center justify-center group-hover:scale-110 transition-transform">
                     <Clock size={16} />
                   </div>
                   <span className="text-xs font-semibold text-dark-600 dark:text-dark-300">
                     Total talktime
                   </span>
                 </div>
-                <span className="text-[10px] text-purple-600 font-semibold opacity-0 group-hover:opacity-100 flex items-center gap-0.5 transition-opacity">
+                <span className="text-[10px] text-primary-600 dark:text-primary-400 font-semibold opacity-0 group-hover:opacity-100 flex items-center gap-0.5 transition-opacity">
                   View <ArrowUpRight size={12} />
                 </span>
               </div>

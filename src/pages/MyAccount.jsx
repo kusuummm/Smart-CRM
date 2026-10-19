@@ -396,7 +396,7 @@ export default function MyAccount({ onNavigate, onLogout }) {
           <div className="bg-white rounded-xl border border-dark-200 shadow-sm p-6 dark:bg-dark-800 dark:border-dark-700">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 bg-indigo-50 dark:bg-indigo-950/40 rounded-xl flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                <div className="w-9 h-9 bg-blue-50 dark:bg-blue-950/40 rounded-xl flex items-center justify-center text-blue-600 dark:text-blue-400">
                   <KeyRound size={20} />
                 </div>
                 <div>

@@ -61,9 +61,9 @@ const eventTypeConfig = {
   anniversary: {
     label: 'Anniversary',
     icon: Sparkles,
-    badge: 'bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 border-purple-200 dark:border-purple-900',
-    accent: 'text-purple-600 dark:text-purple-400',
-    lightBg: 'bg-purple-50/50 dark:bg-purple-950/20',
+    badge: 'bg-sky-100 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300 border-sky-200 dark:border-sky-900',
+    accent: 'text-sky-600 dark:text-sky-400',
+    lightBg: 'bg-sky-50/50 dark:bg-sky-950/20',
   },
   emi: {
     label: 'EMI Due',

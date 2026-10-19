@@ -45,8 +45,8 @@ export const FOLLOW_UP_STATUSES = [
   { id: 'new', label: 'New Follow-up', Icon: Sparkles, badge: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300' },
   { id: 'contacted', label: 'Contacted', Icon: PhoneCall, badge: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300' },
   { id: 'interested', label: 'Interested', Icon: Star, badge: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300' },
-  { id: 'meeting', label: 'Meeting Scheduled', Icon: Calendar, badge: 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/40 dark:text-purple-300' },
-  { id: 'follow-up', label: 'In Progress', Icon: Clock, badge: 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-300' },
+  { id: 'meeting', label: 'Meeting Scheduled', Icon: Calendar, badge: 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/40 dark:text-sky-300' },
+  { id: 'follow-up', label: 'In Progress', Icon: Clock, badge: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300' },
   { id: 'converted', label: 'Won / Converted', Icon: CheckCircle2, badge: 'bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-950/40 dark:text-teal-300' },
   { id: 'not-interested', label: 'Not Interested', Icon: XCircle, badge: 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300' },
   { id: 'closed', label: 'Closed', Icon: Lock, badge: 'bg-dark-100 text-dark-700 border-dark-200 dark:bg-dark-800 dark:text-dark-300' },
@@ -1017,7 +1017,7 @@ export default function CallHistory({ onNavigate, initialCallType = 'all' }) {
           )}
 
           {followUpFilter && (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 font-medium border border-purple-200 dark:border-purple-900/60 shadow-2xs">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 font-medium border border-blue-200 dark:border-blue-900/60 shadow-2xs">
               <span>Status: {FOLLOW_UP_STATUSES.find((s) => s.id === followUpFilter)?.label || followUpFilter}</span>
               <button
                 onClick={() => setFollowUpFilter('')}

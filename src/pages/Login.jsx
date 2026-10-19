@@ -369,10 +369,10 @@ export default function Login({ isAddingAccount = false, onCancelAdd }) {
                     setPassword('admin123');
                     setErrors({});
                   }}
-                  className="w-full p-2.5 rounded-xl border border-purple-200 dark:border-purple-900 bg-purple-50/70 dark:bg-purple-950/40 hover:bg-purple-100 dark:hover:bg-purple-900/50 text-left transition-colors cursor-pointer flex items-center justify-between"
+                  className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/60 hover:bg-slate-100 dark:hover:bg-slate-800 text-left transition-colors cursor-pointer flex items-center justify-between"
                 >
-                  <div className="flex items-center gap-2 text-purple-700 dark:text-purple-300 font-semibold text-xs">
-                    <ShieldCheck size={14} />
+                  <div className="flex items-center gap-2 text-slate-800 dark:text-slate-200 font-semibold text-xs">
+                    <ShieldCheck size={14} className="text-primary-600 dark:text-primary-400" />
                     <span>Quick Fill: Master Admin</span>
                   </div>
                   <span className="text-[11px] font-mono text-dark-500 dark:text-dark-400">admin@crm.com</span>
@@ -612,7 +612,7 @@ export default function Login({ isAddingAccount = false, onCancelAdd }) {
                   />
 
                   <div className="text-center mb-3">
-                    <div className="w-10 h-10 bg-indigo-100 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded-xl flex items-center justify-center mx-auto mb-1.5 shadow-xs">
+                    <div className="w-10 h-10 bg-blue-100 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 rounded-xl flex items-center justify-center mx-auto mb-1.5 shadow-xs">
                       <KeyRound size={20} />
                     </div>
                     <h2 className="text-lg font-bold text-dark-900 dark:text-white">Set New Password</h2>

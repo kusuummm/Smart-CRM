@@ -200,8 +200,8 @@ export default function Sidebar({
               title={collapsed ? item.label : undefined}
               className={`w-full flex items-center justify-between px-3 h-10 rounded-lg text-[14px] font-normal transition-colors cursor-pointer group ${
                 isActive
-                  ? 'bg-blue-50 text-[#1890ff] dark:bg-blue-950/60 dark:text-blue-400 font-medium'
-                  : 'text-[rgba(0,0,0,0.88)] dark:text-dark-200 hover:bg-dark-50 dark:hover:bg-dark-800 hover:text-[#1890ff] dark:hover:text-white'
+                  ? 'bg-primary-50 text-primary-600 dark:bg-primary-950/60 dark:text-primary-400 font-medium'
+                  : 'text-[rgba(0,0,0,0.88)] dark:text-dark-200 hover:bg-dark-50 dark:hover:bg-dark-800 hover:text-primary-600 dark:hover:text-white'
               }`}
             >
               <div className="flex items-center gap-2.5 min-w-0">
@@ -209,7 +209,7 @@ export default function Sidebar({
                   size={17}
                   className={`flex-shrink-0 ${
                     isActive
-                      ? 'text-[#1890ff] dark:text-blue-400'
+                      ? 'text-primary-600 dark:text-primary-400'
                       : 'text-dark-500 dark:text-dark-400 group-hover:text-dark-800 dark:group-hover:text-dark-200'
                   }`}
                 />

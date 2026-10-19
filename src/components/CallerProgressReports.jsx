@@ -343,16 +343,16 @@ export default function CallerProgressReports({ onNavigate }) {
             sessionStorage.removeItem('smartcrm_filter_telecaller');
             handleQuickNavigate('call-history');
           }}
-          className="bg-white dark:bg-dark-800 p-4 rounded-2xl border border-dark-200 dark:border-dark-700 shadow-xs cursor-pointer hover:shadow-md hover:border-indigo-400 dark:hover:border-indigo-500 transition-all group"
+          className="bg-white dark:bg-dark-800 p-4 rounded-2xl border border-dark-200 dark:border-dark-700 shadow-xs cursor-pointer hover:shadow-md hover:border-primary-400 dark:hover:border-primary-500 transition-all group"
           title="Click to view call durations and logs in Call History"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-dark-500 uppercase tracking-wider">Talk Time Logged</span>
             <div className="flex items-center gap-1.5">
-              <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-semibold opacity-0 group-hover:opacity-100 flex items-center gap-0.5 transition-opacity">
+              <span className="text-[10px] text-primary-600 dark:text-primary-400 font-semibold opacity-0 group-hover:opacity-100 flex items-center gap-0.5 transition-opacity">
                 View <ArrowUpRight size={12} />
               </span>
-              <div className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900/60 transition-colors">
+              <div className="p-2 rounded-xl bg-primary-50 dark:bg-primary-950/50 text-primary-600 group-hover:bg-primary-100 dark:group-hover:bg-primary-900/60 transition-colors">
                 <Clock size={18} />
               </div>
             </div>
@@ -762,7 +762,7 @@ export default function CallerProgressReports({ onNavigate }) {
                           {caller.connectedCalls}
                         </button>
                       </td>
-                      <td className="px-4 py-3 text-center font-mono text-indigo-600 font-medium">
+                      <td className="px-4 py-3 text-center font-mono text-dark-700 dark:text-dark-200 font-medium">
                         {caller.totalDurationMinutes} mins
                       </td>
                       <td className="px-4 py-3 text-center">

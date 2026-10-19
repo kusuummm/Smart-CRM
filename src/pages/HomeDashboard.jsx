@@ -379,20 +379,20 @@ export default function HomeDashboard({
             {/* Connected Calls */}
             <div
               onClick={() => onNavigate?.('call-history', 'connected')}
-              className="p-3.5 rounded-xl cursor-pointer hover:bg-indigo-50/70 dark:hover:bg-indigo-950/40 border border-transparent hover:border-indigo-200/80 dark:hover:border-indigo-900/60 transition-colors duration-150 group"
+              className="p-3.5 rounded-xl cursor-pointer hover:bg-blue-50/70 dark:hover:bg-blue-950/40 border border-transparent hover:border-blue-200/80 dark:hover:border-blue-900/60 transition-colors duration-150 group"
               title="Click to view all Connected calls in Call History"
             >
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5 text-xs text-dark-500 dark:text-dark-400 font-medium group-hover:text-indigo-600 transition-colors">
-                  <PhoneCall size={13} className="text-indigo-500" />
+                <div className="flex items-center gap-1.5 text-xs text-dark-500 dark:text-dark-400 font-medium group-hover:text-blue-600 transition-colors">
+                  <PhoneCall size={13} className="text-blue-500" />
                   <span>Connected Calls</span>
                 </div>
                 <ArrowUpRight
                   size={13}
-                  className="text-dark-300 dark:text-dark-600 group-hover:text-indigo-600 transition-colors"
+                  className="text-dark-300 dark:text-dark-600 group-hover:text-blue-600 transition-colors"
                 />
               </div>
-              <p className="text-2xl sm:text-3xl font-heading font-extrabold text-dark-900 dark:text-white mt-2 group-hover:text-indigo-600 transition-colors">
+              <p className="text-2xl sm:text-3xl font-heading font-extrabold text-dark-900 dark:text-white mt-2 group-hover:text-blue-600 transition-colors">
                 {callStats.connected}
               </p>
               <span className="text-[10px] text-dark-400 font-medium opacity-0 group-hover:opacity-100 transition-opacity mt-1 block">
