@@ -29,10 +29,10 @@ import ContactDetailView from '../components/ContactDetailView';
 import { getUsers, createUser, deleteUser, updateUser, toggleUserStatus } from '../api/users';
 
 const ROLES_LIST = [
-  { name: 'Owner', desc: 'Full workspace administrator' },
-  { name: 'Manager', desc: 'Manage teams and view reports' },
-  { name: 'Member', desc: 'Standard staff member' },
-  { name: 'Lead', desc: 'Calling agent with dialer access' },
+  { name: 'Owner', desc: 'Supreme workspace owner & billing' },
+  { name: 'Admin', desc: 'Operations & user management' },
+  { name: 'Manager', desc: 'Supervise teams and monitor workload' },
+  { name: 'Member', desc: 'Frontline agent with customer pipeline & dialer' },
   { name: 'AI Agent', desc: 'Automated AI calling assistant' },
 ];
 export default function TeamMembers({ onNavigate }) {
@@ -128,9 +128,10 @@ export default function TeamMembers({ onNavigate }) {
         const mapped = res.users.map((u) => {
           let displayRole = 'Member';
           const r = String(u.role || '').toLowerCase();
-          if (r === 'admin' || r === 'owner') displayRole = 'Owner';
+          if (r === 'owner') displayRole = 'Owner';
+          else if (r === 'admin') displayRole = 'Admin';
           else if (r === 'manager') displayRole = 'Manager';
-          else if (r === 'telecaller') displayRole = 'Lead';
+          else if (r === 'member' || r === 'telecaller' || r === 'lead' || r === 'user') displayRole = 'Member';
           else if (r === 'ai_agent' || r === 'ai agent') displayRole = 'AI Agent';
           else if (u.role) displayRole = u.role.charAt(0).toUpperCase() + u.role.slice(1);
 
@@ -205,14 +206,14 @@ export default function TeamMembers({ onNavigate }) {
       try {
         const backendRole =
           newRole === 'Owner'
+            ? 'owner'
+            : newRole === 'Admin'
             ? 'admin'
-            : newRole === 'Lead' || newRole === 'Telecaller'
-            ? 'telecaller'
             : newRole === 'Manager'
             ? 'manager'
             : newRole === 'AI Agent'
             ? 'ai_agent'
-            : 'user';
+            : 'member';
         await updateUser(memberId, { role: backendRole });
       } catch (err) {
         console.error('Failed to sync role update to backend:', err);
@@ -1534,7 +1535,31 @@ export default function TeamMembers({ onNavigate }) {
                 <div>
                   <p className="text-xs font-bold text-dark-900 dark:text-white">Owner</p>
                   <p className="text-[11px] text-dark-500">
-                    Full access. Manage numbers, team & settings
+                    Supreme access. Manage billing, subscription, diagnostics & all users
+                  </p>
+                </div>
+              </label>
+
+              {/* Option: Admin */}
+              <label
+                className={`p-3 rounded-xl border flex items-start gap-3 cursor-pointer transition-all ${
+                  addForm.role === 'Admin'
+                    ? 'border-blue-500 bg-blue-50/40 dark:bg-blue-950/30'
+                    : 'border-dark-200 dark:border-dark-700 hover:border-dark-300'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="role"
+                  value="Admin"
+                  checked={addForm.role === 'Admin'}
+                  onChange={() => setAddForm({ ...addForm, role: 'Admin' })}
+                  className="mt-0.5 text-blue-600 focus:ring-blue-500"
+                />
+                <div>
+                  <p className="text-xs font-bold text-dark-900 dark:text-white">Admin</p>
+                  <p className="text-[11px] text-dark-500">
+                    Operations control. Add users, import customers, balance workloads
                   </p>
                 </div>
               </label>

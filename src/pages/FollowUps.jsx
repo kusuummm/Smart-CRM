@@ -11,6 +11,7 @@ import { statusColors } from '../data/mockData';
 import { getFollowUps, createFollowUp, updateFollowUp, deleteFollowUp as deleteFollowUpRequest } from '../api/followups';
 import { getCustomers } from '../api/customers';
 import { getUsers } from '../api/users';
+import { isAdminOrOwner, isManagerOrAbove } from '../utils/permissions';
 
 const emptyForm = {
   customerId: '',
@@ -25,7 +26,7 @@ const emptyForm = {
 export default function FollowUps({ onNavigate }) {
   const { user } = useAuth();
   const { confirm } = useConfirm();
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = isAdminOrOwner(user);
   const [followUps, setFollowUps] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [telecallers, setTelecallers] = useState([]);

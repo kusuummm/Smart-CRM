@@ -34,6 +34,7 @@ import Customer360Modal from '../components/Customer360Modal';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../context/ConfirmContext';
+import { isAdminOrOwner, isManagerOrAbove } from '../utils/permissions';
 import { leadStatuses, leadStatusLabels, statusColors } from '../data/mockData';
 import { getLeads, createLead, updateLeadStatus, deleteLead as deleteLeadRequest } from '../api/leads';
 import { getUsers } from '../api/users';
@@ -55,7 +56,8 @@ const statusOptionsConfig = [
 export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus }) {
   const { user } = useAuth();
   const { confirm } = useConfirm();
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = isAdminOrOwner(user);
+  const isSupervisor = isManagerOrAbove(user);
   const [leads, setLeads] = useState([]);
   const [telecallers, setTelecallers] = useState([]);
   const [loading, setLoading] = useState(true);

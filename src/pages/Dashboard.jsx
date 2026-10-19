@@ -10,6 +10,7 @@ import { getTodayFollowUps, getFollowUps } from '../api/followups';
 import { getCalls } from '../api/callHistory';
 import { getUpcomingEvents } from '../api/events';
 import { getUsers } from '../api/users';
+import { isAdminOrOwner, getRoleInfo } from '../utils/permissions';
 
 const COLORS = {
   blue: '#3b82f6',
@@ -51,7 +52,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 export default function Dashboard({ onNavigate }) {
   const { t } = useApp();
   const { user } = useAuth();
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = isAdminOrOwner(user);
   const { addToast } = useToast();
 
   const [loading, setLoading] = useState(true);

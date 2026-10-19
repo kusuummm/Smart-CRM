@@ -20,9 +20,11 @@ import {
   Gift,
   AlertTriangle,
   Pin,
+  Crown,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useNotifications } from '../hooks/useNotifications';
+import { getRoleInfo, isAdminOrOwner, isManager } from '../utils/permissions';
 
 const getNotifIcon = (type) => {
   switch (type) {
@@ -140,28 +142,47 @@ export default function Header({
           <Menu size={18} />
         </button>
 
-        {/* Panel Role Badge */}
-        {isAdmin ? (
-          <div className="flex items-center gap-2">
+        {/* Panel Role Badge with Hierarchy */}
+        {(() => {
+          const roleInfo = getRoleInfo(user?.role);
+          const RoleIcon = roleInfo.icon;
+          if (isAdminOrOwner(user)) {
+            return (
+              <div className="flex items-center gap-2">
+                <span
+                  onClick={() => onNavigate?.('admin-panel')}
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold tracking-wider uppercase border shadow-2xs cursor-pointer transition-colors ${roleInfo.badgeClass}`}
+                  title={`Go to ${roleInfo.name} Control Center`}
+                >
+                  <RoleIcon size={13} />
+                  {roleInfo.badge} DESK
+                </span>
+              </div>
+            );
+          }
+          if (isManager(user)) {
+            return (
+              <span
+                onClick={() => onNavigate?.('teams')}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold tracking-wider uppercase border shadow-2xs cursor-pointer transition-colors ${roleInfo.badgeClass}`}
+                title="Go to Team Manager Supervision"
+              >
+                <RoleIcon size={13} />
+                MANAGER DESK
+              </span>
+            );
+          }
+          return (
             <span
-              onClick={() => onNavigate?.('admin-panel')}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold tracking-wider uppercase bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200 dark:border-rose-900/60 shadow-2xs cursor-pointer hover:bg-rose-100 dark:hover:bg-rose-900/40 transition-colors"
-              title="Go to Admin Desk Overview"
+              onClick={() => onNavigate?.('home')}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold tracking-wider uppercase bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-900/60 shadow-2xs cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
+              title="Go to Member Workspace"
             >
-              <Shield size={13} className="text-rose-600 dark:text-rose-400" />
-              ADMIN DESK
+              <Phone size={13} className="text-blue-600 dark:text-blue-400" />
+              MEMBER PANEL
             </span>
-          </div>
-        ) : (
-          <span
-            onClick={() => onNavigate?.('home')}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold tracking-wider uppercase bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-900/60 shadow-2xs cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
-            title="Go to Lead Panel Home"
-          >
-            <Phone size={13} className="text-blue-600 dark:text-blue-400" />
-            LEAD PANEL
-          </span>
-        )}
+          );
+        })()}
       </div>
 
       {/* Right Section: Balance, User Profile, Quick Actions, Logout */}

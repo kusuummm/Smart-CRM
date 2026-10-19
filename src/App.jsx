@@ -6,6 +6,7 @@ import { ConfirmProvider } from './context/ConfirmContext';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import { Toaster } from 'react-hot-toast';
+import { isAdminOrOwner, isManager, isOwner } from './utils/permissions';
 
 // Core synchronous pages for instant initial paint
 import Login from './pages/Login';
@@ -173,7 +174,8 @@ const CALLER_PANEL_PAGES = new Set([
 
 function AppLayout() {
   const { user, logout } = useAuth();
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = isAdminOrOwner(user);
+  const manager = isManager(user);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -182,7 +184,7 @@ function AppLayout() {
     const cleanPath = pathname.length > 1 && pathname.endsWith('/') ? pathname.slice(0, -1) : pathname;
 
     if (isAdmin) {
-      // STRICT RULE: Admin cannot access any caller panel!
+      // STRICT RULE: Admin/Owner cannot access personal caller panels!
       if (cleanPath === '/' || !cleanPath) {
         return 'admin-panel';
       }
@@ -194,6 +196,20 @@ function AppLayout() {
         return 'admin-panel';
       }
       return pageId || 'admin-panel';
+    }
+
+    if (manager) {
+      // Managers supervise teams and review team progress reports
+      if (cleanPath === '/' || !cleanPath) {
+        return 'teams';
+      }
+      if (cleanPath === '/admin/reports' || cleanPath === '/reports') {
+        return 'admin-reports';
+      }
+      if (cleanPath.startsWith('/admin')) {
+        return 'teams';
+      }
+      return pathToPage[cleanPath] || 'teams';
     }
 
     // STRICT RULE: Callers cannot access admin panel or overview!
@@ -215,10 +231,17 @@ function AppLayout() {
     }
 
     if (isAdmin) {
-      // Admin cannot access any caller panel
+      // Admin/Owner cannot access personal caller panels
       const pageId = pathToPage[location.pathname] || targetPage;
       if (CALLER_PANEL_PAGES.has(pageId) || location.pathname === '/' || location.pathname === '/home') {
         navigate('/admin', { replace: true });
+      }
+    } else if (manager) {
+      // Manager lands on /teams and can view /admin/reports
+      if (location.pathname === '/') {
+        navigate('/teams', { replace: true });
+      } else if (location.pathname.startsWith('/admin') && location.pathname !== '/admin/reports') {
+        navigate('/teams', { replace: true });
       }
     } else {
       // Callers cannot access admin panel
@@ -226,7 +249,7 @@ function AppLayout() {
         navigate('/home', { replace: true });
       }
     }
-  }, [location.pathname, isAdmin]);
+  }, [location.pathname, isAdmin, manager]);
 
   // Sub-navigation filters & parameters
   const [selectedCustomer, setSelectedCustomer] = useState('');
@@ -294,8 +317,10 @@ function AppLayout() {
     if (isAdmin && CALLER_PANEL_PAGES.has(page)) {
       page = 'admin-panel';
     }
-    if (!isAdmin && page.startsWith('admin-')) {
+    if (!isAdmin && !manager && page.startsWith('admin-')) {
       page = 'home';
+    } else if (manager && page.startsWith('admin-') && page !== 'admin-reports') {
+      page = 'teams';
     }
 
     if (type === 'status') {
@@ -324,9 +349,11 @@ function AppLayout() {
     if (isAdmin && CALLER_PANEL_PAGES.has(page)) {
       page = 'admin-panel';
     }
-    // Callers cannot navigate to admin pages
-    if (!isAdmin && page.startsWith('admin-')) {
+    // Non-admins cannot navigate to restricted admin pages
+    if (!isAdmin && !manager && page.startsWith('admin-')) {
       page = 'home';
+    } else if (manager && page.startsWith('admin-') && page !== 'admin-reports') {
+      page = 'teams';
     }
 
     setSelectedCustomer('');
@@ -375,7 +402,7 @@ function AppLayout() {
 
       // 4. Reports
       case 'reports':
-        return isAdmin ? (
+        return (isAdmin || manager) ? (
           <AdminPanel targetSection="admin-reports" onNavigate={navigateToPage} />
         ) : (
           <Reports initialReportId={selectedReportId} onNavigate={navigateToPage} />
@@ -441,11 +468,19 @@ function AppLayout() {
       case 'events':
       case 'tc-events':
         return <Events onNavigate={navigateToPage} />;
+      case 'admin-reports':
+        return (isAdmin || manager) ? (
+          <AdminPanel targetSection="admin-reports" onNavigate={navigateToPage} />
+        ) : (
+          <HomeDashboard
+            onNavigate={navigateToPage}
+            onOpenBuyNumber={() => setIsBuyNumberOpen(true)}
+          />
+        );
       case 'admin-panel':
       case 'admin-users':
       case 'admin-agents':
       case 'admin-workload':
-      case 'admin-reports':
       case 'admin-portfolio':
       case 'admin-audit':
       case 'admin-system':

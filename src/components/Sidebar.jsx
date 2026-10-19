@@ -25,6 +25,7 @@ import {
   LayoutDashboard,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { isOwner, isAdmin, isManager, isAdminOrOwner } from '../utils/permissions';
 
 export default function Sidebar({
   currentPage,
@@ -33,11 +34,13 @@ export default function Sidebar({
   onToggle,
 }) {
   const { user } = useAuth();
-  const isAdmin = user?.role === 'admin';
-  const showAdminMenu = isAdmin;
+  const userIsOwner = isOwner(user);
+  const userIsAdmin = isAdmin(user);
+  const userIsManager = isManager(user);
+  const userIsAdminOrOwner = isAdminOrOwner(user);
 
-  // Caller Panel Navigation items matching Reference Superfone CRM
-  const callerMenuItems = [
+  // Member / Caller Workspace
+  const memberMenuItems = [
     { type: 'header', label: 'CORE CRM' },
     { id: 'home', label: 'Home', icon: Home },
     { id: 'contacts', label: 'Contacts', icon: BookUser },
@@ -51,20 +54,37 @@ export default function Sidebar({
     { id: 'whatsapp', label: 'WhatsApp', icon: MessageSquare },
     { id: 'emails', label: 'Emails', icon: Mail },
     { id: 'events', label: 'Calendar & Reminders', icon: Calendar },
-    { id: 'broadcast', label: 'Broadcast', icon: Radio },
     { id: 'quick-message', label: 'Quick Message', icon: Zap },
     { id: 'notes', label: 'Notes', icon: FileText },
 
-    { type: 'header', label: 'TEAM & SYSTEM' },
-    { id: 'teams', label: 'Teams', icon: Users },
-    { id: 'team-members', label: 'Team Members', icon: UserCheck },
-    { id: 'automations', label: 'Automations', icon: Cpu },
+    { type: 'header', label: 'WORKSPACE' },
     { id: 'wallet', label: 'Wallet', icon: Wallet },
-    { id: 'plans-billing', label: 'Plans & Billing', icon: CreditCard },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
 
-  // Dedicated Admin Panel Navigation items (administrative oversight & tools)
+  // Manager Supervision Center
+  const managerMenuItems = [
+    { type: 'header', label: 'TEAM SUPERVISION' },
+    { id: 'teams', label: 'Teams', icon: Users },
+    { id: 'team-members', label: 'Team Members', icon: UserCheck },
+    { id: 'leads', label: 'Team Leads & Pipeline', icon: TrendingUp },
+    { id: 'contacts', label: 'Contacts', icon: BookUser },
+    { id: 'todos', label: 'To Dos & Tasks', icon: CheckSquare },
+    { id: 'call-history', label: 'Call History & Logs', icon: Phone },
+    { id: 'admin-reports', label: 'Team Progress Reports', icon: BarChart2 },
+
+    { type: 'header', label: 'COMMUNICATIONS' },
+    { id: 'whatsapp', label: 'WhatsApp', icon: MessageSquare },
+    { id: 'emails', label: 'Emails', icon: Mail },
+    { id: 'events', label: 'Calendar & Reminders', icon: Calendar },
+    { id: 'broadcast', label: 'Broadcast', icon: Radio },
+
+    { type: 'header', label: 'PREFERENCES' },
+    { id: 'wallet', label: 'Wallet', icon: Wallet },
+    { id: 'settings', label: 'Settings', icon: Settings },
+  ];
+
+  // Admin Control Center (Operations & Users)
   const adminMenuItems = [
     { type: 'header', label: 'ADMIN CONTROL CENTER' },
     { id: 'admin-panel', label: 'Dashboard Overview', icon: Shield },
@@ -74,9 +94,28 @@ export default function Sidebar({
     { id: 'admin-workload', label: 'Workload Balancer', icon: ArrowRightLeft },
     { id: 'admin-reports', label: 'Lead Progress Reports', icon: BarChart2 },
     { id: 'admin-audit', label: 'Audit Activity Log', icon: Clock },
-    { id: 'admin-system', label: 'System Diagnostics', icon: Database },
 
     { type: 'header', label: 'ORGANIZATION & TOOLS' },
+    { id: 'teams', label: 'Teams', icon: Users },
+    { id: 'automations', label: 'Automations', icon: Cpu },
+    { id: 'broadcast', label: 'Broadcast', icon: Radio },
+    { id: 'wallet', label: 'Wallet', icon: Wallet },
+    { id: 'settings', label: 'Settings', icon: Settings },
+  ];
+
+  // Owner Control Center (Full Supreme Organization Access including Billing & Diagnostics)
+  const ownerMenuItems = [
+    { type: 'header', label: 'OWNER CONTROL CENTER' },
+    { id: 'admin-panel', label: 'Dashboard Overview', icon: Shield },
+    { id: 'admin-users', label: 'Users & Approvals', icon: UserCheck },
+    { id: 'admin-tasks', label: 'Lead Tasks & Schedules', icon: CheckSquare },
+    { id: 'admin-agents', label: 'Lead Presence', icon: Activity },
+    { id: 'admin-workload', label: 'Workload Balancer', icon: ArrowRightLeft },
+    { id: 'admin-reports', label: 'Lead Progress Reports', icon: BarChart2 },
+    { id: 'admin-audit', label: 'Audit Activity Log', icon: Clock },
+    { id: 'admin-system', label: 'System Diagnostics', icon: Database },
+
+    { type: 'header', label: 'ORGANIZATION & BILLING' },
     { id: 'teams', label: 'Teams', icon: Users },
     { id: 'automations', label: 'Automations', icon: Cpu },
     { id: 'broadcast', label: 'Broadcast', icon: Radio },
@@ -85,7 +124,13 @@ export default function Sidebar({
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
 
-  const menuItems = showAdminMenu ? adminMenuItems : callerMenuItems;
+  const menuItems = userIsOwner
+    ? ownerMenuItems
+    : userIsAdmin
+    ? adminMenuItems
+    : userIsManager
+    ? managerMenuItems
+    : memberMenuItems;
 
   const handleItemClick = (item) => {
     if (item.id === 'caller-view') {

@@ -29,6 +29,7 @@ import { leadSources, indianStates, statusColors } from '../data/mockData';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { useConfirm } from '../context/ConfirmContext';
+import { isAdminOrOwner, isManagerOrAbove } from '../utils/permissions';
 import {
   getCustomers,
   createCustomer,
@@ -89,7 +90,8 @@ export default function Customers({ onNavigate }) {
   const { confirm } = useConfirm();
   const { t: translate } = useApp();
   const { user } = useAuth();
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = isAdminOrOwner(user);
+  const isSupervisor = isManagerOrAbove(user);
 
   // Customer 360 Detail Modal
   const [customer360Customer, setCustomer360Customer] = useState(null);

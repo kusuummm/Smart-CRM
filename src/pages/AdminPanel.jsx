@@ -53,6 +53,9 @@ import {
   ListPlus,
   UserCheck,
   X,
+  Crown,
+  Lock,
+  CheckCircle,
 } from 'lucide-react';
 import { PageHeader } from '../components/Common';
 import Modal from '../components/Modal';
@@ -60,6 +63,15 @@ import ConfirmDialog from '../components/ConfirmDialog';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../context/ConfirmContext';
 import { useAuth } from '../context/AuthContext';
+import {
+  getRoleInfo,
+  normalizeRole,
+  isOwner,
+  isAdminOrOwner,
+  isManager,
+  canAssignRole,
+  ROLE_DEFINITIONS,
+} from '../utils/permissions';
 import { getTelecallerReportGraph } from '../api/reports';
 import ExcelLeadImportModal from '../components/ExcelLeadImportModal';
 import {
@@ -80,7 +92,7 @@ import { getFollowUps, createFollowUp, updateFollowUp, deleteFollowUp } from '..
 import { testEmailDelivery } from '../api/emails';
 import CallerProgressReports from '../components/CallerProgressReports';
 
-const emptyForm = { name: '', email: '', password: '', role: 'telecaller', phone: '' };
+const emptyForm = { name: '', email: '', password: '', role: 'member', phone: '' };
 
 const initials = (name = '') =>
   name
@@ -349,6 +361,9 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
   };
 
   const [form, setForm] = useState(emptyForm);
+  const [roleChangeUser, setRoleChangeUser] = useState(null);
+  const [newSelectedRole, setNewSelectedRole] = useState('member');
+  const [roleChangeSaving, setRoleChangeSaving] = useState(false);
 
   // Load core admin data
   const loadData = useCallback(async (isSilent = false) => {
@@ -386,9 +401,12 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
     return () => clearInterval(liveTimer);
   }, [loadData]);
 
-  // Telecallers list for reassignment options
+  // Operational users (Members, Telecallers, Managers) for reassignment options
   const telecallers = useMemo(() => {
-    return users.filter((u) => u.role === 'telecaller' && u.status === 'active');
+    return users.filter((u) => {
+      const r = normalizeRole(u.role);
+      return (r === 'member' || r === 'manager') && u.status === 'active';
+    });
   }, [users]);
 
   // Pending Users for approval
@@ -405,7 +423,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
         u.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         u.phone?.toLowerCase().includes(searchQuery.toLowerCase());
 
-      const matchesRole = roleFilter === 'all' || u.role === roleFilter;
+      const matchesRole = roleFilter === 'all' || normalizeRole(u.role) === roleFilter;
       const matchesStatus =
         statusFilter === 'all' ||
         (statusFilter === 'pending'
@@ -681,34 +699,49 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
     return { total, pending, completed, high, todayCount };
   }, [tasksList]);
 
-  // Quick Role Switch Handler
-  const handleRoleClick = async (targetUser) => {
+  // Role Switch Handlers
+  const handleRoleClick = (targetUser) => {
     const isSelf = String(currentUser?.id || currentUser?._id) === String(targetUser._id);
     if (isSelf) {
-      addToast('You cannot change your own administrator role.', 'info');
+      addToast('You cannot change your own role.', 'info');
       return;
     }
-    const currentRole = targetUser.role;
-    const nextRole = currentRole === 'admin' ? 'telecaller' : 'admin';
-    const nextRoleName = nextRole === 'admin' ? 'Administrator' : 'Lead';
 
-    const ok = await confirm({
-      title: 'Update User Role',
-      message: `Do you want to change "${targetUser.name}" from ${currentRole === 'admin' ? 'Administrator' : 'Lead'} to ${nextRoleName}?`,
-      confirmText: `Switch to ${nextRoleName}`,
-      cancelText: 'Cancel',
-      type: 'primary',
-    });
-    if (!ok) return;
+    if (normalizeRole(targetUser.role) === 'owner' && !isOwner(currentUser)) {
+      addToast('Only an Organization Owner can modify an Owner account.', 'warning');
+      return;
+    }
 
+    setRoleChangeUser(targetUser);
+    setNewSelectedRole(normalizeRole(targetUser.role));
+  };
+
+  const handleConfirmRoleChange = async () => {
+    if (!roleChangeUser) return;
+    const currentNorm = normalizeRole(roleChangeUser.role);
+    if (newSelectedRole === currentNorm) {
+      setRoleChangeUser(null);
+      return;
+    }
+
+    if (!canAssignRole(currentUser, newSelectedRole)) {
+      addToast(`You do not have permission to assign the ${getRoleInfo(newSelectedRole).name} role.`, 'error');
+      return;
+    }
+
+    const targetInfo = getRoleInfo(newSelectedRole);
+    setRoleChangeSaving(true);
     try {
-      const data = await updateUser(targetUser._id, { role: nextRole });
+      const data = await updateUser(roleChangeUser._id, { role: newSelectedRole });
       setUsers((prev) =>
-        prev.map((u) => (u._id === targetUser._id ? { ...u, ...data.user } : u))
+        prev.map((u) => (u._id === roleChangeUser._id ? { ...u, ...data.user } : u))
       );
-      addToast(`"${targetUser.name}" role updated to ${nextRoleName}!`, 'success');
+      addToast(`"${roleChangeUser.name}" role updated to ${targetInfo.name}!`, 'success');
+      setRoleChangeUser(null);
     } catch (error) {
       addToast(error.response?.data?.message || 'Failed to update user role', 'error');
+    } finally {
+      setRoleChangeSaving(false);
     }
   };
 
@@ -839,7 +872,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
       name: u.name,
       email: u.email,
       password: '',
-      role: u.role,
+      role: normalizeRole(u.role),
       phone: u.phone || '',
     });
     setIsModalOpen(true);
@@ -855,11 +888,11 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
       return;
     }
 
-    if (editingUser && editingUser.role !== form.role) {
+    if (editingUser && normalizeRole(editingUser.role) !== normalizeRole(form.role)) {
       const ok = await confirm({
         title: 'Update User Role',
-        message: `Are you sure you want to change the role for "${editingUser.name}" to "${form.role}"?`,
-        confirmText: `Assign ${form.role}`,
+        message: `Are you sure you want to change the role for "${editingUser.name}" to "${getRoleInfo(form.role).name}"?`,
+        confirmText: `Assign ${getRoleInfo(form.role).name}`,
         cancelText: 'Cancel',
         type: 'primary',
       });
@@ -871,7 +904,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
       if (editingUser) {
         const data = await updateUser(editingUser._id, {
           name: form.name,
-          role: form.role,
+          role: normalizeRole(form.role),
           phone: form.phone,
         });
         setUsers((prev) =>
@@ -879,13 +912,14 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
         );
         addToast('User updated successfully!', 'success');
       } else {
-        const data = await createUser(form);
+        const data = await createUser({
+          ...form,
+          role: normalizeRole(form.role),
+        });
         setUsers((prev) => [data.user, ...prev]);
+        const createdRoleInfo = getRoleInfo(form.role);
         addToast(
-          data.message ||
-            (form.role === 'admin'
-              ? 'New admin account created successfully!'
-              : 'New lead account created! Pending admin approval before lead can log in.'),
+          data.message || `New ${createdRoleInfo.name} account created successfully!`,
           'success',
           5000
         );
@@ -1185,15 +1219,15 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
               </div>
               <div className="mt-3">
                 <p className="text-2xl sm:text-3xl font-bold text-dark-900 dark:text-white">
-                  {users.filter((u) => u.role === 'admin').length}
+                  {users.filter((u) => normalizeRole(u.role) === 'admin' || normalizeRole(u.role) === 'owner').length}
                 </p>
                 <p className="text-xs text-dark-500 dark:text-dark-400 mt-0.5">
-                  Active Administrators
+                  Owners & Administrators
                 </p>
               </div>
             </div>
 
-            {/* Registered Leads */}
+            {/* Registered Leads & Staff */}
             <div
               onClick={() => onNavigate?.('admin-agents')}
               className="bg-white dark:bg-dark-800 p-5 rounded-2xl border border-dark-200 dark:border-dark-700 shadow-xs cursor-pointer hover:border-dark-300 dark:hover:border-dark-600 transition-colors"
@@ -1210,10 +1244,10 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
               </div>
               <div className="mt-3">
                 <p className="text-2xl sm:text-3xl font-bold text-dark-900 dark:text-white">
-                  {users.filter((u) => u.role === 'telecaller' || u.role === 'user').length}
+                  {users.filter((u) => normalizeRole(u.role) === 'member' || normalizeRole(u.role) === 'manager').length}
                 </p>
                 <p className="text-xs text-dark-500 dark:text-dark-400 mt-0.5">
-                  Registered Leads
+                  Managers & Leads
                 </p>
               </div>
             </div>
@@ -1792,11 +1826,13 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                 <select
                   value={roleFilter}
                   onChange={(e) => setRoleFilter(e.target.value)}
-                  className="px-3 py-2 bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 rounded-xl text-xs sm:text-sm text-dark-700 dark:text-dark-300 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  className="px-3 py-2 bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 rounded-xl text-xs sm:text-sm text-dark-700 dark:text-dark-300 focus:outline-none focus:ring-2 focus:ring-primary-500 font-medium"
                 >
                   <option value="all">All Roles</option>
-                  <option value="admin">Administrators</option>
-                  <option value="telecaller">Standard Users</option>
+                  <option value="owner">Owners (Level 4)</option>
+                  <option value="admin">Administrators (Level 3)</option>
+                  <option value="manager">Managers (Level 2)</option>
+                  <option value="member">Members & Leads (Level 1)</option>
                 </select>
 
                 <select
@@ -1919,7 +1955,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                                         YOU
                                       </span>
                                     )}
-                                    {u.role !== 'admin' && (
+                                    {normalizeRole(u.role) !== 'admin' && normalizeRole(u.role) !== 'owner' && (
                                       u.isOnline ? (
                                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 shadow-2xs">
                                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
@@ -1942,32 +1978,41 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
 
                             {/* Role (Clickable) */}
                             <td className="px-5 py-4">
-                              <button
-                                type="button"
-                                onClick={() => handleRoleClick(u)}
-                                disabled={isSelf}
-                                className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg transition-all ${
-                                  isSelf
-                                    ? 'bg-purple-100 text-purple-700 dark:bg-purple-950/50 dark:text-purple-300 opacity-90 cursor-default'
-                                    : u.role === 'admin'
-                                    ? 'bg-purple-100 hover:bg-purple-200 text-purple-700 dark:bg-purple-950/50 dark:hover:bg-purple-900/60 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60 cursor-pointer hover:shadow-xs active:scale-95'
-                                    : 'bg-blue-100 hover:bg-blue-200 text-blue-700 dark:bg-blue-950/50 dark:hover:bg-blue-900/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60 cursor-pointer hover:shadow-xs active:scale-95'
-                                }`}
-                                title={
-                                  isSelf
-                                    ? 'Your account (Administrator)'
-                                    : `Click to change role (currently ${u.role === 'admin' ? 'Administrator' : 'Lead'})`
-                                }
-                              >
-                                {u.role === 'admin' ? <Shield size={13} /> : <User size={13} />}
-                                <span>{u.role === 'admin' ? 'Administrator' : 'Lead'}</span>
-                                {!isSelf && <ArrowUpDown size={11} className="opacity-50 ml-0.5" />}
-                              </button>
+                              {(() => {
+                                const roleInfo = getRoleInfo(u.role);
+                                const RoleIcon = roleInfo.icon;
+                                const isTargetOwner = normalizeRole(u.role) === 'owner';
+                                const canEditRole = !isSelf && (!isTargetOwner || isOwner(currentUser));
+
+                                return (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRoleClick(u)}
+                                    disabled={!canEditRole}
+                                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg border transition-all ${roleInfo.badgeClass} ${
+                                      canEditRole
+                                        ? 'cursor-pointer hover:shadow-xs active:scale-95'
+                                        : 'opacity-85 cursor-default'
+                                    }`}
+                                    title={
+                                      isSelf
+                                        ? `Your account (${roleInfo.name})`
+                                        : canEditRole
+                                        ? `Click to change role (currently ${roleInfo.name})`
+                                        : `${roleInfo.name} account`
+                                    }
+                                  >
+                                    <RoleIcon size={13} />
+                                    <span>{roleInfo.name}</span>
+                                    {canEditRole && <ArrowUpDown size={11} className="opacity-50 ml-0.5" />}
+                                  </button>
+                                );
+                              })()}
                             </td>
 
                             {/* Assigned Leads & Clients (Clickable) */}
                             <td className="px-5 py-4">
-                              {u.role === 'telecaller' || u.role === 'user' ? (
+                              {normalizeRole(u.role) === 'member' || normalizeRole(u.role) === 'manager' ? (
                                 <div className="flex items-center gap-2 text-xs">
                                   <button
                                     type="button"
@@ -5148,73 +5193,70 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title={editingUser ? 'Edit User Account' : 'Create New User Account'}
-        size="md"
+        size="lg"
       >
-        <div className="space-y-4">
-          <div>
-            <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1.5">
-              Full Name <span className="text-red-500">*</span>
-            </label>
-            <input
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-              className="w-full px-3 py-2 border border-dark-200 dark:border-dark-700 rounded-lg text-sm bg-white dark:bg-dark-800 text-dark-900 dark:text-white placeholder:text-dark-400 dark:placeholder:text-dark-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
-              placeholder="e.g. John Smith"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1.5">
-              Email Address <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="email"
-              value={form.email}
-              disabled={Boolean(editingUser)}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-              className="w-full px-3 py-2 border border-dark-200 dark:border-dark-700 rounded-lg text-sm bg-white dark:bg-dark-800 text-dark-900 dark:text-white placeholder:text-dark-400 dark:placeholder:text-dark-500 focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
-              placeholder="john@crm.com"
-            />
-          </div>
-
-          {!editingUser && (
+        <div className="space-y-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1.5">
-                Initial Password <span className="text-red-500">*</span>
+                Full Name <span className="text-red-500">*</span>
               </label>
-              <div className="relative">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  value={form.password}
-                  onChange={(e) => setForm({ ...form, password: e.target.value })}
-                  className="w-full px-3 py-2 border border-dark-200 dark:border-dark-700 rounded-lg text-sm bg-white dark:bg-dark-800 text-dark-900 dark:text-white placeholder:text-dark-400 dark:placeholder:text-dark-500 focus:outline-none focus:ring-2 focus:ring-primary-500 pr-10"
-                  placeholder="Minimum 4 characters"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-dark-400 hover:text-dark-600 dark:hover:text-dark-300"
-                >
-                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
+              <input
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                className="w-full px-3 py-2 border border-dark-200 dark:border-dark-700 rounded-lg text-sm bg-white dark:bg-dark-800 text-dark-900 dark:text-white placeholder:text-dark-400 dark:placeholder:text-dark-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                placeholder="e.g. John Smith"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1.5">
+                Email Address <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="email"
+                value={form.email}
+                disabled={Boolean(editingUser)}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                className="w-full px-3 py-2 border border-dark-200 dark:border-dark-700 rounded-lg text-sm bg-white dark:bg-dark-800 text-dark-900 dark:text-white placeholder:text-dark-400 dark:placeholder:text-dark-500 focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                placeholder="john@crm.com"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {!editingUser ? (
+              <div>
+                <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1.5">
+                  Initial Password <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={form.password}
+                    onChange={(e) => setForm({ ...form, password: e.target.value })}
+                    className="w-full px-3 py-2 border border-dark-200 dark:border-dark-700 rounded-lg text-sm bg-white dark:bg-dark-800 text-dark-900 dark:text-white placeholder:text-dark-400 dark:placeholder:text-dark-500 focus:outline-none focus:ring-2 focus:ring-primary-500 pr-10"
+                    placeholder="Minimum 4 characters"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-dark-400 hover:text-dark-600 dark:hover:text-dark-300"
+                  >
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
               </div>
-            </div>
-          )}
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1.5">
-                Role <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={form.role}
-                onChange={(e) => setForm({ ...form, role: e.target.value })}
-                className="w-full px-3 py-2 border border-dark-200 dark:border-dark-700 rounded-lg text-sm bg-white dark:bg-dark-800 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-              >
-                <option value="telecaller">Standard User</option>
-                <option value="admin">Administrator (Full Access)</option>
-              </select>
-            </div>
+            ) : (
+              <div>
+                <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1.5">
+                  Password Reset
+                </label>
+                <p className="text-xs text-dark-500 dark:text-dark-400 py-2">
+                  Password can be reset separately using the key icon on the user list.
+                </p>
+              </div>
+            )}
 
             <div>
               <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1.5">
@@ -5224,16 +5266,140 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                 value={form.phone}
                 onChange={(e) => setForm({ ...form, phone: e.target.value })}
                 className="w-full px-3 py-2 border border-dark-200 dark:border-dark-700 rounded-lg text-sm bg-white dark:bg-dark-800 text-dark-900 dark:text-white placeholder:text-dark-400 dark:placeholder:text-dark-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                placeholder="Optional"
+                placeholder="e.g. +91 98765 43210 (Optional)"
               />
             </div>
+          </div>
+
+          {/* Role Hierarchy Selection Cards */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-xs font-bold uppercase tracking-wider text-dark-700 dark:text-dark-300">
+                Assign System Role & Hierarchy Level <span className="text-red-500">*</span>
+              </label>
+              <span className="text-xs text-dark-500 dark:text-dark-400">
+                Selected: <span className="font-semibold text-primary-600 dark:text-primary-400">{getRoleInfo(form.role).name} (Level {ROLE_DEFINITIONS.find((r) => r.role === normalizeRole(form.role))?.level || 1})</span>
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+              {ROLE_DEFINITIONS.map((def) => {
+                const isSelected = normalizeRole(form.role) === def.role;
+                const canAssign = canAssignRole(currentUser, def.role);
+                const IconComponent = def.icon;
+
+                return (
+                  <button
+                    key={def.role}
+                    type="button"
+                    disabled={!canAssign}
+                    onClick={() => {
+                      if (canAssign) setForm({ ...form, role: def.role });
+                    }}
+                    className={`relative p-3 rounded-xl border text-left transition-all ${
+                      isSelected
+                        ? 'border-primary-500 bg-primary-50/70 dark:bg-primary-950/40 ring-2 ring-primary-500/20 shadow-xs'
+                        : canAssign
+                        ? 'border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800/80 hover:border-dark-300 dark:hover:border-dark-600 cursor-pointer'
+                        : 'border-dark-200/60 dark:border-dark-800 bg-dark-50 dark:bg-dark-900/60 opacity-55 cursor-not-allowed'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div
+                        className={`w-7 h-7 rounded-lg flex items-center justify-center ${
+                          isSelected
+                            ? 'bg-primary-600 text-white'
+                            : 'bg-dark-100 dark:bg-dark-700 text-dark-600 dark:text-dark-300'
+                        }`}
+                      >
+                        <IconComponent size={15} />
+                      </div>
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-dark-100 dark:bg-dark-700 text-dark-600 dark:text-dark-300 uppercase">
+                        Lvl {def.level}
+                      </span>
+                    </div>
+
+                    <div className="font-semibold text-xs text-dark-900 dark:text-white flex items-center gap-1">
+                      {def.role === 'member' ? 'Member' : def.role === 'manager' ? 'Manager' : def.role === 'admin' ? 'Admin' : 'Owner'}
+                      {!canAssign && <Lock size={11} className="text-dark-400" />}
+                    </div>
+                    <p className="text-[11px] text-dark-500 dark:text-dark-400 line-clamp-1 mt-0.5">
+                      {def.tagline}
+                    </p>
+
+                    {isSelected && (
+                      <div className="absolute top-2 right-2 text-primary-600 dark:text-primary-400">
+                        <CheckCircle size={14} />
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Selected Role Scope & Features Preview Card */}
+            {(() => {
+              const currentDef = ROLE_DEFINITIONS.find((r) => r.role === normalizeRole(form.role)) || ROLE_DEFINITIONS[0];
+              const roleInfo = getRoleInfo(form.role);
+              const IconComp = currentDef.icon;
+              return (
+                <div className="mt-3 p-3.5 rounded-xl border border-dark-200 dark:border-dark-700 bg-dark-50/70 dark:bg-dark-800/50">
+                  <div className="flex items-center justify-between pb-2 border-b border-dark-200/60 dark:border-dark-700/60">
+                    <div className="flex items-center gap-2">
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-bold ${roleInfo.badgeClass}`}>
+                        <IconComp size={12} />
+                        {roleInfo.badge}
+                      </span>
+                      <span className="text-xs font-semibold text-dark-800 dark:text-dark-200">
+                        {currentDef.title}
+                      </span>
+                    </div>
+                    <span className="text-[11px] text-dark-500 dark:text-dark-400 italic">
+                      Hierarchy Level {currentDef.level} of 4
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2.5">
+                    <div>
+                      <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 mb-1.5 flex items-center gap-1">
+                        <Check size={12} /> Features & Permissions
+                      </p>
+                      <ul className="space-y-1">
+                        {currentDef.features.map((feat, idx) => (
+                          <li key={idx} className="text-xs text-dark-600 dark:text-dark-300 flex items-start gap-1.5">
+                            <span className="text-emerald-500 font-bold">•</span>
+                            <span>{feat}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    {currentDef.restricted.length > 0 && (
+                      <div>
+                        <p className="text-[11px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 mb-1.5 flex items-center gap-1">
+                          <Lock size={12} /> Access Boundaries
+                        </p>
+                        <ul className="space-y-1">
+                          {currentDef.restricted.map((res, idx) => (
+                            <li key={idx} className="text-xs text-dark-500 dark:text-dark-400 flex items-start gap-1.5">
+                              <span className="text-amber-500 font-bold">•</span>
+                              <span>{res}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
 
           <div className="flex justify-end gap-3 pt-3 border-t border-dark-200 dark:border-dark-700">
             <button
               type="button"
               onClick={() => setIsModalOpen(false)}
-              className="px-4 py-2 text-sm font-medium text-dark-700 dark:text-dark-300 hover:bg-dark-100 dark:hover:bg-dark-700 rounded-lg transition-colors"
+              className="px-4 py-2 text-sm font-medium text-dark-700 dark:text-dark-300 hover:bg-dark-100 dark:hover:bg-dark-700 rounded-lg transition-colors cursor-pointer"
             >
               Cancel
             </button>
@@ -5241,10 +5407,127 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
               type="button"
               onClick={handleSave}
               disabled={saving}
-              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors disabled:opacity-50"
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors disabled:opacity-50 cursor-pointer"
             >
               {saving && <Loader2 size={16} className="animate-spin" />}
               {editingUser ? 'Update Account' : 'Create User Account'}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* MODAL: Quick Change Role */}
+      <Modal
+        isOpen={Boolean(roleChangeUser)}
+        onClose={() => setRoleChangeUser(null)}
+        title={`Change Role: ${roleChangeUser?.name || 'User'}`}
+        size="md"
+      >
+        <div className="space-y-4">
+          <div className="p-3 bg-dark-50 dark:bg-dark-800/60 rounded-xl border border-dark-200 dark:border-dark-700 flex items-center justify-between">
+            <div>
+              <p className="text-sm font-semibold text-dark-900 dark:text-white">{roleChangeUser?.name}</p>
+              <p className="text-xs text-dark-500 dark:text-dark-400">{roleChangeUser?.email}</p>
+            </div>
+            {roleChangeUser && (
+              <div className="text-right">
+                <span className="text-[10px] font-semibold text-dark-400 block mb-0.5 uppercase">Current Role</span>
+                {(() => {
+                  const currInfo = getRoleInfo(roleChangeUser.role);
+                  const Icon = currInfo.icon;
+                  return (
+                    <span className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-lg border ${currInfo.badgeClass}`}>
+                      <Icon size={12} />
+                      {currInfo.name}
+                    </span>
+                  );
+                })()}
+              </div>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider text-dark-700 dark:text-dark-300 mb-2">
+              Select New Role Hierarchy Level
+            </label>
+            <div className="grid grid-cols-2 gap-2.5">
+              {ROLE_DEFINITIONS.map((def) => {
+                const isSelected = normalizeRole(newSelectedRole) === def.role;
+                const canAssign = canAssignRole(currentUser, def.role);
+                const IconComponent = def.icon;
+
+                return (
+                  <button
+                    key={def.role}
+                    type="button"
+                    disabled={!canAssign}
+                    onClick={() => {
+                      if (canAssign) setNewSelectedRole(def.role);
+                    }}
+                    className={`relative p-3 rounded-xl border text-left transition-all ${
+                      isSelected
+                        ? 'border-primary-500 bg-primary-50/70 dark:bg-primary-950/40 ring-2 ring-primary-500/20'
+                        : canAssign
+                        ? 'border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 hover:border-dark-300 dark:hover:border-dark-600 cursor-pointer'
+                        : 'border-dark-200/60 dark:border-dark-800 bg-dark-50 dark:bg-dark-900/60 opacity-55 cursor-not-allowed'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1.5">
+                      <div className="flex items-center gap-1.5">
+                        <IconComponent size={14} className={isSelected ? 'text-primary-600 dark:text-primary-400' : 'text-dark-500'} />
+                        <span className="font-semibold text-xs text-dark-900 dark:text-white">
+                          {def.role === 'member' ? 'Member' : def.role === 'manager' ? 'Manager' : def.role === 'admin' ? 'Admin' : 'Owner'}
+                        </span>
+                      </div>
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-dark-100 dark:bg-dark-700 text-dark-600 dark:text-dark-300 uppercase">
+                        Lvl {def.level}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-dark-500 dark:text-dark-400 line-clamp-1">
+                      {def.tagline}
+                    </p>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Quick Preview of selected role */}
+          {(() => {
+            const def = ROLE_DEFINITIONS.find((r) => r.role === normalizeRole(newSelectedRole)) || ROLE_DEFINITIONS[0];
+            return (
+              <div className="p-3 rounded-xl border border-dark-200 dark:border-dark-700 bg-dark-50/60 dark:bg-dark-800/40 text-xs">
+                <p className="font-semibold text-dark-800 dark:text-dark-200 mb-1">
+                  Key Capabilities for {def.title}:
+                </p>
+                <ul className="space-y-0.5 text-dark-600 dark:text-dark-300">
+                  {def.features.slice(0, 3).map((f, idx) => (
+                    <li key={idx} className="flex items-center gap-1.5">
+                      <span className="text-emerald-500 font-bold">•</span>
+                      <span>{f}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            );
+          })()}
+
+          <div className="flex justify-end gap-3 pt-3 border-t border-dark-200 dark:border-dark-700">
+            <button
+              type="button"
+              onClick={() => setRoleChangeUser(null)}
+              className="px-4 py-2 text-sm font-medium text-dark-700 dark:text-dark-300 hover:bg-dark-100 dark:hover:bg-dark-700 rounded-lg transition-colors cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              disabled={roleChangeSaving || normalizeRole(roleChangeUser?.role) === normalizeRole(newSelectedRole)}
+              onClick={handleConfirmRoleChange}
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors disabled:opacity-50 cursor-pointer"
+            >
+              {roleChangeSaving && <Loader2 size={16} className="animate-spin" />}
+              Apply Role Change
             </button>
           </div>
         </div>

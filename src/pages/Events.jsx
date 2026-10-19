@@ -9,6 +9,7 @@ import { useConfirm } from '../context/ConfirmContext';
 import { eventTypes } from '../data/mockData';
 import { getEvents, createEvent, updateEvent, deleteEvent as deleteEventRequest, triggerReminder } from '../api/events';
 import { getCustomers } from '../api/customers';
+import { isAdminOrOwner } from '../utils/permissions';
 
 const emptyForm = {
   customerId: '',
@@ -21,7 +22,7 @@ const emptyForm = {
 export default function Events({ onNavigate }) {
   const { user } = useAuth();
   const { confirm } = useConfirm();
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = isAdminOrOwner(user);
   const [events, setEvents] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);

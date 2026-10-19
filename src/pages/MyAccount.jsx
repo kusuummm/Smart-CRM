@@ -23,6 +23,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/Toast';
 import { PageHeader } from '../components/Common';
+import { getRoleInfo } from '../utils/permissions';
 import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import LogoutModal from '../components/LogoutModal';
@@ -239,7 +240,7 @@ export default function MyAccount({ onNavigate, onLogout }) {
               <span className="text-white text-3xl font-bold">{user?.avatar}</span>
             </div>
             <h2 className="text-2xl font-bold mb-1">{user?.name}</h2>
-            <p className="text-sm text-dark-500 capitalize dark:text-dark-400">{user?.role === 'admin' ? 'Administrator' : 'User'}</p>
+            <p className="text-sm text-dark-500 capitalize dark:text-dark-400">{getRoleInfo(user?.role).name}</p>
             <div className="flex items-center gap-2 mt-3 px-3 py-1.5 bg-green-50 rounded-full text-xs text-green-700">
               <div className="w-2 h-2 bg-green-500 rounded-full"></div>
               <span>Active Account</span>
@@ -312,7 +313,7 @@ export default function MyAccount({ onNavigate, onLogout }) {
                 <span className="text-white text-3xl font-bold">{user?.avatar}</span>
               </div>
               <h2 className="text-2xl font-bold mb-1">{user?.name}</h2>
-              <p className="text-primary-200 capitalize">{user?.role === 'admin' ? 'Administrator' : 'User'}</p>
+              <p className="text-primary-200 capitalize">{getRoleInfo(user?.role).name}</p>
               <div className="flex items-center gap-2 mt-3 px-3 py-1.5 bg-white/20 rounded-full text-xs">
                 <div className="w-2 h-2 bg-green-400 rounded-full"></div>
                 <span>Active Account</span>
@@ -385,7 +386,7 @@ export default function MyAccount({ onNavigate, onLogout }) {
                 </div>
                 <div>
                   <p className="text-sm text-dark-500 dark:text-dark-400">Role</p>
-                  <p className="font-medium text-dark-900 capitalize dark:text-white">{user?.role === 'admin' ? 'Administrator' : 'User'}</p>
+                  <p className="font-medium text-dark-900 capitalize dark:text-white">{getRoleInfo(user?.role).name}</p>
                 </div>
               </div>
             </div>
