@@ -170,32 +170,38 @@ export default function Events({ onNavigate }) {
       />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-6 text-white">
+        <div className="bg-white dark:bg-dark-800 rounded-xl p-5 border border-dark-200 dark:border-dark-700 shadow-2xs">
           <div className="flex items-center gap-3">
-            <Calendar className="w-8 h-8" />
+            <div className="w-11 h-11 rounded-xl bg-blue-50 dark:bg-blue-950/50 flex items-center justify-center text-blue-600 dark:text-blue-400">
+              <Calendar size={22} />
+            </div>
             <div>
-              <p className="text-2xl font-bold">{events.length}</p>
-              <p className="text-sm opacity-90">Total Events</p>
+              <p className="text-2xl font-bold text-dark-900 dark:text-white">{events.length}</p>
+              <p className="text-xs text-dark-500 dark:text-dark-400">Total Events</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl p-6 text-white">
+        <div className="bg-white dark:bg-dark-800 rounded-xl p-5 border border-dark-200 dark:border-dark-700 shadow-2xs">
           <div className="flex items-center gap-3">
-            <Gift className="w-8 h-8" />
+            <div className="w-11 h-11 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+              <Gift size={22} />
+            </div>
             <div>
-              <p className="text-2xl font-bold">{upcoming.length}</p>
-              <p className="text-sm opacity-90">Upcoming</p>
+              <p className="text-2xl font-bold text-dark-900 dark:text-white">{upcoming.length}</p>
+              <p className="text-xs text-dark-500 dark:text-dark-400">Upcoming Milestones</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl p-6 text-white">
+        <div className="bg-white dark:bg-dark-800 rounded-xl p-5 border border-dark-200 dark:border-dark-700 shadow-2xs">
           <div className="flex items-center gap-3">
-            <Calendar className="w-8 h-8" />
+            <div className="w-11 h-11 rounded-xl bg-amber-50 dark:bg-amber-950/50 flex items-center justify-center text-amber-600 dark:text-amber-400">
+              <Calendar size={22} />
+            </div>
             <div>
-              <p className="text-2xl font-bold">{thisWeek.length}</p>
-              <p className="text-sm opacity-90">This Week</p>
+              <p className="text-2xl font-bold text-dark-900 dark:text-white">{thisWeek.length}</p>
+              <p className="text-xs text-dark-500 dark:text-dark-400">This Week</p>
             </div>
           </div>
         </div>

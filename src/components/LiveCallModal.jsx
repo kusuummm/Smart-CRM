@@ -108,7 +108,7 @@ export default function LiveCallModal({ isOpen, onClose, user }) {
           {activeTab === 'live' && (
             <div className="space-y-4">
               {/* Ongoing Call Card */}
-              <div className="p-5 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50/40 dark:from-dark-800 dark:to-dark-800/80 border border-blue-200 dark:border-blue-900/60 shadow-xs">
+              <div className="p-5 rounded-2xl bg-blue-50/40 dark:bg-dark-800 border border-blue-200 dark:border-dark-700 shadow-2xs">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-blue-100 dark:border-dark-700">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold shadow-sm">

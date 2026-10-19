@@ -56,8 +56,8 @@ const FOLLOW_UP_STATUS_OPTIONS = [
   { id: 'new', label: 'New Follow-up', Icon: Sparkles, color: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300' },
   { id: 'contacted', label: 'Follow-up: Contacted', Icon: PhoneCall, color: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300' },
   { id: 'interested', label: 'Follow-up: Interested', Icon: Star, color: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300' },
-  { id: 'meeting', label: 'Follow-up: Meeting Scheduled', Icon: Calendar, color: 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/40 dark:text-purple-300' },
-  { id: 'follow-up', label: 'Follow-up: In Progress', Icon: Clock, color: 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-300' },
+  { id: 'meeting', label: 'Follow-up: Meeting Scheduled', Icon: Calendar, color: 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/40 dark:text-sky-300' },
+  { id: 'follow-up', label: 'Follow-up: In Progress', Icon: Clock, color: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300' },
   { id: 'converted', label: 'Follow-up: Converted / Won', Icon: CheckCircle2, color: 'bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-950/40 dark:text-teal-300' },
   { id: 'not-interested', label: 'Follow-up: Not Interested', Icon: XCircle, color: 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300' },
   { id: 'closed', label: 'Follow-up: Closed', Icon: Lock, color: 'bg-dark-100 text-dark-700 border-dark-200 dark:bg-dark-800 dark:text-dark-300' },
@@ -772,10 +772,10 @@ export default function Customer360Modal({ isOpen, onClose, customer, onStartCal
       }`}
     >
       {/* Modal Top Header */}
-        <div className="p-4 sm:p-5 border-b border-dark-200 dark:border-dark-700 bg-gradient-to-r from-dark-50/80 via-white to-blue-50/40 dark:from-dark-800 dark:via-dark-900 dark:to-dark-800 flex items-start justify-between gap-4">
+        <div className="p-4 sm:p-5 border-b border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-900 flex items-start justify-between gap-4">
           <div className="flex items-center gap-3.5">
             {/* Customer Avatar */}
-            <div className="w-13 h-13 rounded-2xl bg-gradient-to-br from-blue-600 via-indigo-600 to-teal-500 text-white flex items-center justify-center font-bold text-xl shadow-md shrink-0">
+            <div className="w-13 h-13 rounded-2xl bg-primary-600 text-white flex items-center justify-center font-bold text-xl shadow-xs shrink-0">
               {profile.name.charAt(0).toUpperCase()}
             </div>
 

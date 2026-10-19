@@ -48,7 +48,7 @@ const getNotifIcon = (type) => {
       );
     case 'event':
       return (
-        <span className="w-7 h-7 rounded-lg bg-purple-50 text-purple-600 dark:bg-purple-950/60 dark:text-purple-300 flex items-center justify-center shrink-0">
+        <span className="w-7 h-7 rounded-lg bg-sky-50 text-sky-600 dark:bg-sky-950/60 dark:text-sky-300 flex items-center justify-center shrink-0">
           <Gift size={14} />
         </span>
       );

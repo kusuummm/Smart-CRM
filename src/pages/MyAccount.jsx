@@ -236,8 +236,8 @@ export default function MyAccount({ onNavigate, onLogout }) {
 
         <div className="bg-white rounded-xl border border-dark-200 shadow-sm p-6 dark:bg-dark-800 dark:border-dark-700">
           <div className="flex flex-col items-center mb-6">
-            <div className="w-24 h-24 bg-gradient-to-br from-primary-500 to-primary-600 rounded-full flex items-center justify-center mb-4">
-              <span className="text-white text-3xl font-bold">{user?.avatar}</span>
+            <div className="w-24 h-24 bg-primary-50 dark:bg-primary-950/50 text-primary-600 dark:text-primary-400 rounded-full flex items-center justify-center mb-4 border border-primary-200 dark:border-primary-800/60">
+              <span className="text-3xl font-bold">{user?.avatar}</span>
             </div>
             <h2 className="text-2xl font-bold mb-1">{user?.name}</h2>
             <p className="text-sm text-dark-500 capitalize dark:text-dark-400">{getRoleInfo(user?.role).name}</p>
@@ -307,20 +307,20 @@ export default function MyAccount({ onNavigate, onLogout }) {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Profile Card */}
         <div className="lg:col-span-1">
-          <div className="bg-gradient-to-br from-primary-600 to-primary-700 rounded-xl p-6 text-white">
+          <div className="bg-white dark:bg-dark-800 rounded-xl p-6 border border-dark-200 dark:border-dark-700 shadow-2xs">
             <div className="flex flex-col items-center">
-              <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center mb-4 backdrop-blur-sm">
-                <span className="text-white text-3xl font-bold">{user?.avatar}</span>
+              <div className="w-24 h-24 bg-primary-50 dark:bg-primary-950/50 text-primary-600 dark:text-primary-400 rounded-full flex items-center justify-center mb-4 border border-primary-200 dark:border-primary-800/60">
+                <span className="text-3xl font-bold">{user?.avatar}</span>
               </div>
-              <h2 className="text-2xl font-bold mb-1">{user?.name}</h2>
-              <p className="text-primary-200 capitalize">{getRoleInfo(user?.role).name}</p>
-              <div className="flex items-center gap-2 mt-3 px-3 py-1.5 bg-white/20 rounded-full text-xs">
-                <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+              <h2 className="text-2xl font-bold mb-1 text-dark-900 dark:text-white">{user?.name}</h2>
+              <p className="text-dark-500 dark:text-dark-400 capitalize text-sm">{getRoleInfo(user?.role).name}</p>
+              <div className="flex items-center gap-2 mt-3 px-3 py-1 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 rounded-full text-xs font-medium border border-emerald-200 dark:border-emerald-800">
+                <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
                 <span>Active Account</span>
               </div>
               <button
                 onClick={() => setIsEditing(true)}
-                className="w-full mt-6 flex items-center justify-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 transition-colors rounded-lg backdrop-blur-sm"
+                className="w-full mt-6 flex items-center justify-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white transition-colors rounded-lg text-sm font-medium cursor-pointer shadow-2xs"
               >
                 <Edit2 size={16} />
                 Edit Profile

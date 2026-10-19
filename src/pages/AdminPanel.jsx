@@ -1459,7 +1459,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                           </td>
 
                           <td className="py-3 px-4 text-center">
-                            <span className="inline-flex items-center px-2.5 py-1 rounded-xl text-xs font-semibold bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-xl text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                               {leadCount} Leads
                             </span>
                           </td>
@@ -1609,7 +1609,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                 className="bg-white dark:bg-dark-800 p-5 rounded-2xl border border-dark-200 dark:border-dark-700 shadow-xs cursor-pointer hover:border-dark-300 dark:hover:border-dark-600 transition-colors flex flex-col justify-between"
               >
                 <div className="flex items-center justify-between">
-                  <div className="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-950/50 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-xl bg-sky-50 dark:bg-sky-950/50 text-sky-600 dark:text-sky-400 flex items-center justify-center">
                     <ArrowRightLeft size={20} />
                   </div>
                   <span className="text-xs font-bold text-dark-500 dark:text-dark-400">{totalAssignedLeads} Leads</span>
@@ -2017,10 +2017,10 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                                   <button
                                     type="button"
                                     onClick={() => openInspector(u)}
-                                    className="inline-flex items-center gap-1.5 px-3 py-1 font-bold text-xs bg-purple-50 hover:bg-purple-100 text-purple-700 dark:bg-purple-950/50 dark:hover:bg-purple-900/60 dark:text-purple-300 rounded-lg border border-purple-200 dark:border-purple-800/60 shadow-2xs transition-all cursor-pointer hover:shadow-xs active:scale-95"
+                                    className="inline-flex items-center gap-1.5 px-3 py-1 font-bold text-xs bg-sky-50 hover:bg-sky-100 text-sky-700 dark:bg-sky-950/50 dark:hover:bg-sky-900/60 dark:text-sky-300 rounded-lg border border-sky-200 dark:border-sky-800/60 shadow-2xs transition-all cursor-pointer hover:shadow-xs active:scale-95"
                                     title="Click to inspect lead workload and reassign contacts"
                                   >
-                                    <Activity size={13} className="text-purple-600 dark:text-purple-400" />
+                                    <Activity size={13} className="text-sky-600 dark:text-sky-400" />
                                     <span>{u.assignedLeads || 0} Leads</span>
                                     <ExternalLink size={10} className="opacity-40 ml-0.5" />
                                   </button>
@@ -2456,13 +2456,13 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                           <button
                             type="button"
                             onClick={() => openInspector(agent)}
-                            className="p-3.5 rounded-xl bg-purple-50/70 hover:bg-purple-100/80 dark:bg-purple-950/30 dark:hover:bg-purple-900/50 border border-purple-200 hover:border-purple-300 dark:border-purple-900/50 dark:hover:border-purple-800 text-center shadow-2xs transition-all cursor-pointer active:scale-95 group"
+                            className="p-3.5 rounded-xl bg-emerald-50/70 hover:bg-emerald-100/80 dark:bg-emerald-950/30 dark:hover:bg-emerald-900/50 border border-emerald-200 hover:border-emerald-300 dark:border-emerald-900/50 dark:hover:border-emerald-800 text-center shadow-2xs transition-all cursor-pointer active:scale-95 group"
                             title="Click to view assigned leads and manage workload"
                           >
-                            <p className="text-2xl font-black text-purple-600 dark:text-purple-400 group-hover:scale-105 transition-transform">
+                            <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 group-hover:scale-105 transition-transform">
                               {agent.assignedLeads || 0}
                             </p>
-                            <p className="text-xs font-bold text-purple-700 dark:text-purple-300 mt-0.5 flex items-center justify-center gap-1">
+                            <p className="text-xs font-bold text-emerald-700 dark:text-emerald-300 mt-0.5 flex items-center justify-center gap-1">
                               <Activity size={12} /> Assigned Leads
                               <ExternalLink size={10} className="opacity-40 ml-0.5" />
                             </p>
@@ -3219,19 +3219,19 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                 <button
                   type="button"
                   onClick={() => handleNavigate('admin-users')}
-                  className="p-4 rounded-xl bg-dark-50 dark:bg-dark-900/50 hover:bg-white dark:hover:bg-dark-800 border border-dark-100 dark:border-dark-700/60 hover:border-purple-500 dark:hover:border-purple-500 hover:shadow-md cursor-pointer transition-colors text-left group flex flex-col justify-between"
+                  className="p-4 rounded-xl bg-dark-50 dark:bg-dark-900/50 hover:bg-white dark:hover:bg-dark-800 border border-dark-100 dark:border-dark-700/60 hover:border-primary-500 dark:hover:border-primary-500 hover:shadow-xs cursor-pointer transition-colors text-left group flex flex-col justify-between"
                   title="Click to manage Team User Accounts"
                 >
                   <div className="flex items-center justify-between w-full">
-                    <span className="text-xs text-dark-500 dark:text-dark-400 font-medium group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
+                    <span className="text-xs text-dark-500 dark:text-dark-400 font-medium group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
                       User Accounts
                     </span>
-                    <ChevronRight size={14} className="text-dark-400 group-hover:text-purple-600 dark:group-hover:text-purple-400 group-hover:translate-x-0.5 transition-all" />
+                    <ChevronRight size={14} className="text-dark-400 group-hover:text-primary-600 dark:group-hover:text-primary-400 group-hover:translate-x-0.5 transition-all" />
                   </div>
-                  <p className="text-2xl font-bold text-purple-600 dark:text-purple-400 mt-1">
+                  <p className="text-2xl font-bold text-dark-900 dark:text-white mt-1">
                     {systemOverview.metrics.totalUsers}
                   </p>
-                  <span className="text-[11px] text-dark-400 group-hover:text-purple-600 dark:group-hover:text-purple-400 font-medium mt-1 flex items-center gap-1 transition-colors">
+                  <span className="text-[11px] text-dark-400 group-hover:text-primary-600 dark:group-hover:text-primary-400 font-medium mt-1 flex items-center gap-1 transition-colors">
                     Manage Users <ArrowRight size={10} />
                   </span>
                 </button>
@@ -3376,7 +3376,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
               <div className="p-5 sm:p-6 rounded-2xl bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
                   <div className="relative flex-shrink-0">
-                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-primary-600 via-indigo-600 to-purple-600 text-white font-black text-xl flex items-center justify-center shadow-md">
+                    <div className="w-16 h-16 rounded-2xl bg-primary-600 text-white font-black text-xl flex items-center justify-center shadow-xs">
                       {initials(inspectorUser.name)}
                     </div>
                     <span
@@ -4852,12 +4852,12 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
             <div className="p-4 rounded-2xl bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 shadow-2xs col-span-2 sm:col-span-1">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-dark-500 dark:text-dark-400">Scheduled Today</span>
-                <div className="w-8 h-8 rounded-xl bg-purple-50 dark:bg-purple-950/50 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-xl bg-sky-50 dark:bg-sky-950/50 text-sky-600 dark:text-sky-400 flex items-center justify-center">
                   <Calendar size={16} />
                 </div>
               </div>
-              <p className="text-2xl font-bold text-purple-600 dark:text-purple-400 mt-2">{taskMetrics.todayCount}</p>
-              <span className="text-[11px] text-purple-600/80 mt-0.5 block">Due on today's roster</span>
+              <p className="text-2xl font-bold text-dark-900 dark:text-white mt-2">{taskMetrics.todayCount}</p>
+              <span className="text-[11px] text-sky-600 dark:text-sky-400 mt-0.5 block">Due on today's roster</span>
             </div>
           </div>
 

@@ -426,16 +426,16 @@ export default function CallerProgressReports({ onNavigate }) {
           onClick={() => {
             handleQuickNavigate('admin-agents');
           }}
-          className="bg-white dark:bg-dark-800 p-4 rounded-2xl border border-dark-200 dark:border-dark-700 shadow-xs cursor-pointer hover:shadow-md hover:border-purple-400 dark:hover:border-purple-500 transition-all group"
+          className="bg-white dark:bg-dark-800 p-4 rounded-2xl border border-dark-200 dark:border-dark-700 shadow-xs cursor-pointer hover:shadow-md hover:border-primary-400 dark:hover:border-primary-500 transition-all group"
           title="Click to view active leads in Lead Presence"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-dark-500 uppercase tracking-wider">Active Leads</span>
             <div className="flex items-center gap-1.5">
-              <span className="text-[10px] text-purple-600 dark:text-purple-400 font-semibold opacity-0 group-hover:opacity-100 flex items-center gap-0.5 transition-opacity">
+              <span className="text-[10px] text-primary-600 dark:text-primary-400 font-semibold opacity-0 group-hover:opacity-100 flex items-center gap-0.5 transition-opacity">
                 View <ArrowUpRight size={12} />
               </span>
-              <div className="p-2 rounded-xl bg-purple-50 dark:bg-purple-950/50 text-purple-600 group-hover:bg-purple-100 dark:group-hover:bg-purple-900/60 transition-colors">
+              <div className="p-2 rounded-xl bg-primary-50 dark:bg-primary-950/50 text-primary-600 group-hover:bg-primary-100 dark:group-hover:bg-primary-900/60 transition-colors">
                 <Users size={18} />
               </div>
             </div>
@@ -444,7 +444,7 @@ export default function CallerProgressReports({ onNavigate }) {
             {summary.activeCallersCount || 0}{' '}
             <span className="text-sm font-normal text-dark-400">/ {summary.totalRegisteredCallers || 0}</span>
           </p>
-          <p className="mt-2 text-[11px] text-purple-700 dark:text-purple-300 font-medium">
+          <p className="mt-2 text-[11px] text-primary-700 dark:text-primary-300 font-medium">
             Contributing leads
           </p>
         </div>
@@ -845,9 +845,9 @@ export default function CallerProgressReports({ onNavigate }) {
                 {selectedDayDetail?.connectedCalls || 0}
               </p>
             </div>
-            <div className="p-3 rounded-xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-900/60 text-center">
-              <span className="text-[10px] font-bold text-purple-600 uppercase">Active Leads</span>
-              <p className="text-xl font-black text-purple-700 dark:text-purple-300 font-mono mt-0.5">
+            <div className="p-3 rounded-xl bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-900/60 text-center">
+              <span className="text-[10px] font-bold text-sky-600 dark:text-sky-400 uppercase">Active Leads</span>
+              <p className="text-xl font-black text-sky-700 dark:text-sky-300 font-mono mt-0.5">
                 {selectedDayDetail?.activeCallersThisDay?.length || 0}
               </p>
             </div>

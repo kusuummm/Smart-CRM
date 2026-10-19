@@ -468,10 +468,10 @@ export default function UserPanel({ onNavigate }) {
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
       {/* 1. Welcoming User Header Banner */}
-      <div className="bg-gradient-to-r from-white via-primary-50/20 to-white dark:from-dark-800 dark:via-dark-800 dark:to-dark-800 rounded-2xl border border-dark-200 dark:border-dark-700 p-5 sm:p-6 shadow-sm">
+      <div className="bg-white dark:bg-dark-800 rounded-2xl border border-dark-200 dark:border-dark-700 p-5 sm:p-6 shadow-2xs">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-primary-600 to-indigo-600 flex items-center justify-center text-white font-bold text-xl shadow-md">
+            <div className="w-14 h-14 rounded-2xl bg-primary-600 flex items-center justify-center text-white font-bold text-xl shadow-xs">
               {user?.avatar || user?.name?.slice(0, 2).toUpperCase() || 'U'}
             </div>
             <div>
@@ -526,7 +526,7 @@ export default function UserPanel({ onNavigate }) {
 
       {/* 2. Today's Milestone Urgent Alert Banner */}
       {todayEvents.length > 0 && (
-        <div className="bg-gradient-to-r from-rose-500/10 via-amber-500/10 to-primary-500/10 border-l-4 border-rose-500 bg-white dark:bg-dark-800 rounded-xl p-4 sm:p-5 shadow-sm">
+        <div className="bg-rose-50/60 dark:bg-rose-950/30 border-l-4 border-rose-500 border border-rose-200 dark:border-rose-900/40 rounded-xl p-4 sm:p-5 shadow-2xs">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-rose-100 dark:bg-rose-950/60 flex items-center justify-center text-rose-600 flex-shrink-0 animate-bounce">

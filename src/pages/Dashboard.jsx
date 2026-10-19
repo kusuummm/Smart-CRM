@@ -13,14 +13,14 @@ import { getUsers } from '../api/users';
 import { isAdminOrOwner, getRoleInfo } from '../utils/permissions';
 
 const COLORS = {
-  blue: '#3b82f6',
-  green: '#22c55e',
-  purple: '#a855f7',
-  yellow: '#eab308',
-  orange: '#f97316',
-  red: '#ef4444',
+  blue: '#2563eb',
+  green: '#16a34a',
+  purple: '#0284c7',
+  yellow: '#d97706',
+  orange: '#ea580c',
+  red: '#dc2626',
   gray: '#64748b',
-  indigo: '#6366f1',
+  indigo: '#3b82f6',
 };
 
 const LEAD_STATUS_COLORS = {
@@ -175,16 +175,16 @@ export default function Dashboard({ onNavigate }) {
 
       {/* Admin Executive Lens & Shortcuts Bar */}
       {isAdmin && (
-        <div className="bg-gradient-to-r from-dark-900 via-dark-800 to-primary-950 text-white rounded-2xl p-5 shadow-lg border border-dark-700 space-y-4">
+        <div className="bg-white dark:bg-dark-800 rounded-xl p-4 sm:p-5 border border-dark-200 dark:border-dark-700 shadow-2xs space-y-4">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-primary-600/30 border border-primary-500/40 flex items-center justify-center text-primary-400">
+              <div className="w-10 h-10 rounded-xl bg-primary-50 dark:bg-primary-950/50 border border-primary-200 dark:border-primary-800/60 flex items-center justify-center text-primary-600 dark:text-primary-400">
                 <Shield size={20} />
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs uppercase font-bold tracking-wider text-primary-400">Executive View Filter</span>
-                  <span className="text-xs px-2 py-0.5 rounded bg-dark-700 text-dark-300">
+                  <span className="text-xs uppercase font-bold tracking-wider text-dark-800 dark:text-dark-200">Executive View Filter</span>
+                  <span className="text-xs px-2 py-0.5 rounded bg-dark-100 dark:bg-dark-700 text-dark-700 dark:text-dark-300 font-medium">
                     {selectedAgent === 'all'
                       ? 'Entire Organization'
                       : selectedAgent === 'unassigned'
@@ -192,7 +192,7 @@ export default function Dashboard({ onNavigate }) {
                       : selectedAgentObj?.name || 'Selected Agent'}
                   </span>
                 </div>
-                <p className="text-xs text-dark-300 mt-0.5">Filter all dashboard metrics, charts, and schedules by user</p>
+                <p className="text-xs text-dark-500 dark:text-dark-400 mt-0.5">Filter all dashboard metrics, charts, and schedules by user</p>
               </div>
             </div>
 
@@ -200,7 +200,7 @@ export default function Dashboard({ onNavigate }) {
               <select
                 value={selectedAgent}
                 onChange={(e) => setSelectedAgent(e.target.value)}
-                className="bg-dark-800 text-white text-sm rounded-xl px-4 py-2 border border-dark-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                className="bg-dark-50 dark:bg-dark-900 text-dark-900 dark:text-white text-xs sm:text-sm rounded-lg px-3 py-2 border border-dark-200 dark:border-dark-700 focus:outline-none focus:ring-2 focus:ring-primary-500 cursor-pointer"
               >
                 <option value="all">Company Overview (All Leads)</option>
                 <option value="unassigned">Unassigned Records Only</option>
@@ -216,7 +216,7 @@ export default function Dashboard({ onNavigate }) {
               <button
                 onClick={loadDashboard}
                 title="Refresh dashboard stats"
-                className="p-2 bg-dark-800 hover:bg-dark-700 text-dark-300 hover:text-white rounded-xl border border-dark-600 transition-colors"
+                className="p-2 bg-dark-50 dark:bg-dark-900 hover:bg-dark-100 dark:hover:bg-dark-700 text-dark-600 dark:text-dark-300 rounded-lg border border-dark-200 dark:border-dark-700 transition-colors cursor-pointer"
               >
                 <RefreshCw size={16} />
               </button>
@@ -224,39 +224,39 @@ export default function Dashboard({ onNavigate }) {
           </div>
 
           {/* Quick Action Navigation Buttons for Admin */}
-          <div className="flex items-center gap-2 flex-wrap pt-2 border-t border-dark-700/60 text-xs">
-            <span className="text-dark-400 font-medium">Executive Shortcuts:</span>
+          <div className="flex items-center gap-2 flex-wrap pt-3 border-t border-dark-200/70 dark:border-dark-700/60 text-xs">
+            <span className="text-dark-500 dark:text-dark-400 font-medium">Executive Shortcuts:</span>
             <button
               onClick={() => onNavigate?.('admin-panel')}
-              className="px-3 py-1.5 rounded-lg bg-dark-800/80 hover:bg-dark-700 text-dark-200 hover:text-white border border-dark-700 flex items-center gap-1.5 transition-colors"
+              className="px-2.5 py-1.5 rounded-lg bg-dark-50 dark:bg-dark-900 hover:bg-dark-100 dark:hover:bg-dark-700 text-dark-700 dark:text-dark-200 border border-dark-200 dark:border-dark-700 flex items-center gap-1.5 transition-colors cursor-pointer"
             >
-              <UserCheck size={14} className="text-primary-400" /> Users & Workloads
+              <UserCheck size={13} className="text-primary-600 dark:text-primary-400" /> Users & Workloads
             </button>
             <button
               onClick={() => onNavigate?.('customers')}
-              className="px-3 py-1.5 rounded-lg bg-dark-800/80 hover:bg-dark-700 text-dark-200 hover:text-white border border-dark-700 flex items-center gap-1.5 transition-colors"
+              className="px-2.5 py-1.5 rounded-lg bg-dark-50 dark:bg-dark-900 hover:bg-dark-100 dark:hover:bg-dark-700 text-dark-700 dark:text-dark-200 border border-dark-200 dark:border-dark-700 flex items-center gap-1.5 transition-colors cursor-pointer"
             >
-              <Users size={14} className="text-blue-400" /> Bulk Client Actions
+              <Users size={13} className="text-blue-600 dark:text-blue-400" /> Bulk Client Actions
             </button>
             <button
               onClick={() => onNavigate?.('leads')}
-              className="px-3 py-1.5 rounded-lg bg-dark-800/80 hover:bg-dark-700 text-dark-200 hover:text-white border border-dark-700 flex items-center gap-1.5 transition-colors"
+              className="px-2.5 py-1.5 rounded-lg bg-dark-50 dark:bg-dark-900 hover:bg-dark-100 dark:hover:bg-dark-700 text-dark-700 dark:text-dark-200 border border-dark-200 dark:border-dark-700 flex items-center gap-1.5 transition-colors cursor-pointer"
             >
-              <TrendingUp size={14} className="text-green-400" /> Pipeline Management
+              <TrendingUp size={13} className="text-emerald-600 dark:text-emerald-400" /> Pipeline Management
             </button>
             <button
               onClick={() => onNavigate?.('reports')}
-              className="px-3 py-1.5 rounded-lg bg-dark-800/80 hover:bg-dark-700 text-dark-200 hover:text-white border border-dark-700 flex items-center gap-1.5 transition-colors"
+              className="px-2.5 py-1.5 rounded-lg bg-dark-50 dark:bg-dark-900 hover:bg-dark-100 dark:hover:bg-dark-700 text-dark-700 dark:text-dark-200 border border-dark-200 dark:border-dark-700 flex items-center gap-1.5 transition-colors cursor-pointer"
             >
-              <BarChart3Icon size={14} className="text-purple-400" /> Performance Analytics
+              <BarChart3Icon size={13} className="text-sky-600 dark:text-sky-400" /> Performance Analytics
             </button>
           </div>
 
           {/* Unassigned records alert */}
           {(unassignedCount.customers > 0 || unassignedCount.leads > 0) && (
-            <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 flex items-center justify-between gap-3 text-amber-200 text-xs">
+            <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-xl p-3 flex items-center justify-between gap-3 text-amber-900 dark:text-amber-200 text-xs">
               <div className="flex items-center gap-2.5">
-                <AlertTriangle size={16} className="text-amber-400 flex-shrink-0" />
+                <AlertTriangle size={16} className="text-amber-600 dark:text-amber-400 flex-shrink-0" />
                 <span>
                   <strong>Unassigned Queue Alert:</strong> You have{' '}
                   <strong>{unassignedCount.customers} unassigned customers</strong> and{' '}
@@ -265,7 +265,7 @@ export default function Dashboard({ onNavigate }) {
               </div>
               <button
                 onClick={() => onNavigate?.('admin-panel')}
-                className="px-3 py-1 bg-amber-500 hover:bg-amber-600 text-dark-900 font-semibold rounded-lg flex items-center gap-1 flex-shrink-0 transition-colors shadow-sm"
+                className="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-lg flex items-center gap-1 flex-shrink-0 transition-colors shadow-2xs cursor-pointer"
               >
                 Reassign Now <ArrowRight size={13} />
               </button>
@@ -307,8 +307,8 @@ export default function Dashboard({ onNavigate }) {
               <p className="text-3xl font-bold text-dark-900 dark:text-white mt-1">{stats.todayFollowUps}</p>
               <p className="text-xs text-dark-400 dark:text-dark-500 mt-1">{stats.pendingFollowUps} pending</p>
             </div>
-            <div className="w-12 h-12 rounded-xl bg-purple-50 dark:bg-purple-900/30 flex items-center justify-center">
-              <CalendarCheck className="text-purple-600 dark:text-purple-400" size={24} />
+            <div className="w-12 h-12 rounded-xl bg-amber-50 dark:bg-amber-950/40 flex items-center justify-center">
+              <CalendarCheck className="text-amber-600 dark:text-amber-400" size={24} />
             </div>
           </div>
         </div>
@@ -320,8 +320,8 @@ export default function Dashboard({ onNavigate }) {
               <p className="text-3xl font-bold text-dark-900 dark:text-white mt-1">{recentCalls.length}</p>
               <p className="text-xs text-dark-400 dark:text-dark-500 mt-1">Recent</p>
             </div>
-            <div className="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center">
-              <Phone className="text-indigo-600 dark:text-indigo-400" size={24} />
+            <div className="w-12 h-12 rounded-xl bg-sky-50 dark:bg-sky-950/40 flex items-center justify-center">
+              <Phone className="text-sky-600 dark:text-sky-400" size={24} />
             </div>
           </div>
         </div>

@@ -232,7 +232,7 @@ export default function Login({ isAddingAccount = false, onCancelAdd }) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-600 via-primary-700 to-indigo-900 p-4 sm:p-6">
+    <div className="min-h-screen flex items-center justify-center bg-slate-900 dark:bg-dark-950 p-4 sm:p-6">
       <div className="w-full max-w-md">
         <div className="bg-white dark:bg-dark-900 rounded-2xl shadow-2xl p-6 sm:p-8 border border-dark-100 dark:border-dark-800 transition-all">
           {/* Header Bar */}
