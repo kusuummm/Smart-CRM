@@ -344,11 +344,11 @@ export function AppProvider({ children }) {
   // Apply theme color
   useEffect(() => {
     const colors = {
-      blue: { 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8' },
-      red: { 500: '#ef4444', 600: '#dc2626', 700: '#b91c1c' },
-      green: { 500: '#22c55e', 600: '#16a34a', 700: '#15803d' },
-      purple: { 500: '#a855f7', 600: '#9333ea', 700: '#7e22ce' },
-      orange: { 500: '#f97316', 600: '#ea580c', 700: '#c2410c' },
+      blue: { 500: '#2563eb', 600: '#1d4ed8', 700: '#1e40af' },
+      slate: { 500: '#475569', 600: '#334155', 700: '#1e293b' },
+      green: { 500: '#059669', 600: '#047857', 700: '#065f46' },
+      red: { 500: '#dc2626', 600: '#b91c1c', 700: '#991b1b' },
+      orange: { 500: '#ea580c', 600: '#c2410c', 700: '#9a3412' },
     };
     const c = colors[themeColor] || colors.blue;
     document.documentElement.style.setProperty('--color-primary-500', c[500]);

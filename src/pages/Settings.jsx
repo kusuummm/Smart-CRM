@@ -75,11 +75,11 @@ export default function Settings() {
   };
 
   const themeColors = [
-    { key: 'blue', label: 'Blue', class: 'bg-blue-500' },
-    { key: 'red', label: 'Red', class: 'bg-red-500' },
-    { key: 'green', label: 'Green', class: 'bg-green-500' },
-    { key: 'purple', label: 'Purple', class: 'bg-purple-500' },
-    { key: 'orange', label: 'Orange', class: 'bg-orange-500' },
+    { key: 'blue', label: 'Alpine Blue', class: 'bg-blue-600' },
+    { key: 'slate', label: 'Slate Monochrome', class: 'bg-slate-700' },
+    { key: 'green', label: 'Sage Emerald', class: 'bg-emerald-600' },
+    { key: 'red', label: 'Crimson', class: 'bg-rose-600' },
+    { key: 'orange', label: 'Amber', class: 'bg-amber-600' },
   ];
 
   return (
@@ -400,11 +400,11 @@ export default function Settings() {
                 <span className="text-sm text-dark-500 dark:text-dark-400">Accent Color</span>
                 <span className="flex items-center gap-2">
                   <span className={`w-4 h-4 rounded-full ${
-                    themeColor === 'blue' ? 'bg-blue-500' :
-                    themeColor === 'red' ? 'bg-red-500' :
-                    themeColor === 'green' ? 'bg-green-500' :
-                    themeColor === 'purple' ? 'bg-purple-500' :
-                    'bg-orange-500'
+                    themeColor === 'blue' ? 'bg-blue-600' :
+                    themeColor === 'slate' ? 'bg-slate-700' :
+                    themeColor === 'green' ? 'bg-emerald-600' :
+                    themeColor === 'red' ? 'bg-rose-600' :
+                    'bg-amber-600'
                   }`} />
                   <span className="text-sm font-medium text-dark-900 dark:text-white capitalize">{themeColor}</span>
                 </span>
