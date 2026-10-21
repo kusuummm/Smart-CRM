@@ -142,7 +142,7 @@ export default function Sidebar({
 
   return (
     <aside
-      className={`fixed top-16 left-0 z-20 h-[calc(100vh-4rem)] transition-all duration-300 ease-in-out bg-white/95 dark:bg-dark-900/95 backdrop-blur-md border-r border-dark-200/80 dark:border-dark-700/80 flex flex-col ${
+      className={`fixed top-16 left-0 z-20 h-[calc(100vh-4rem)] transition-all duration-300 ease-in-out bg-[#10192e] border-r border-[#1d2d52] flex flex-col ${
         collapsed ? 'w-[72px]' : 'w-[230px]'
       }`}
     >
@@ -151,12 +151,12 @@ export default function Sidebar({
         {menuItems.map((item, idx) => {
           if (item.type === 'header') {
             if (collapsed) {
-              return <div key={`sep-${idx}`} className="border-t border-dark-200/80 dark:border-dark-700/80 my-2" />;
+              return <div key={`sep-${idx}`} className="border-t border-[#1d2d52] my-2" />;
             }
             return (
               <div
                 key={`hdr-${idx}`}
-                className="text-[10px] font-bold uppercase tracking-wider text-dark-400 dark:text-dark-400 px-3 pt-3 pb-1"
+                className="text-[10.5px] font-bold uppercase tracking-wider text-[#658fca] px-3 pt-3 pb-1"
               >
                 {item.label}
               </div>
@@ -198,19 +198,19 @@ export default function Sidebar({
               key={item.id}
               onClick={() => handleItemClick(item)}
               title={collapsed ? item.label : undefined}
-              className={`w-full flex items-center justify-between px-3 h-10 rounded-lg text-[14px] font-normal transition-colors cursor-pointer group ${
+              className={`w-full flex items-center justify-between px-3 h-10 rounded-lg text-[13.5px] transition-colors cursor-pointer group ${
                 isActive
-                  ? 'bg-primary-50 text-primary-600 dark:bg-primary-950/60 dark:text-primary-400 font-medium'
-                  : 'text-[rgba(0,0,0,0.88)] dark:text-dark-200 hover:bg-dark-50 dark:hover:bg-dark-800 hover:text-primary-600 dark:hover:text-white'
+                  ? 'bg-[#1f346c] text-white font-semibold shadow-xs'
+                  : 'text-slate-300 hover:bg-[#182647] hover:text-white'
               }`}
             >
               <div className="flex items-center gap-2.5 min-w-0">
                 <Icon
                   size={17}
-                  className={`flex-shrink-0 ${
+                  className={`flex-shrink-0 transition-colors ${
                     isActive
-                      ? 'text-primary-600 dark:text-primary-400'
-                      : 'text-dark-500 dark:text-dark-400 group-hover:text-dark-800 dark:group-hover:text-dark-200'
+                      ? 'text-[#658fca]'
+                      : 'text-slate-400 group-hover:text-white'
                   }`}
                 />
                 {!collapsed && (
@@ -219,7 +219,7 @@ export default function Sidebar({
               </div>
 
               {!collapsed && item.badge && (
-                <span className="px-1.5 py-0.5 text-[10px] font-semibold rounded bg-[#1890ff] text-white tracking-wide">
+                <span className="px-1.5 py-0.5 text-[10px] font-bold rounded bg-[#182647] border border-[#2a3a5e] text-[#658fca] tracking-wide">
                   {item.badge}
                 </span>
               )}

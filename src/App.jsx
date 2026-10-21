@@ -548,7 +548,7 @@ function AppLayout() {
   );
 
   return (
-    <div className="min-h-screen bg-[#fafbfd] dark:bg-dark-950 flex flex-col w-full max-w-full overflow-x-hidden">
+    <div className="min-h-screen bg-[#f1f5fa] dark:bg-[#0a1020] flex flex-col w-full max-w-full overflow-x-hidden">
       {/* Top Header */}
       <Header
         user={user}

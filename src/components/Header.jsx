@@ -130,13 +130,13 @@ export default function Header({
   const displayBalance = user?.balance !== undefined ? `₹${user.balance}` : null;
 
   return (
-    <header className="h-16 bg-white/95 dark:bg-dark-900/95 backdrop-blur-md border-b border-dark-200/80 dark:border-dark-700/80 flex items-center justify-between px-4 sm:px-6 sticky top-0 z-30 transition-all shadow-2xs">
+    <header className="h-16 bg-[#10192e] border-b border-[#1d2d52] flex items-center justify-between px-4 sm:px-6 sticky top-0 z-30 transition-all shadow-sm">
       {/* Left Section: Sidebar Toggle & Panel Badge */}
       <div className="flex items-center gap-3 sm:gap-4">
         <button
           onClick={onToggleSidebar}
           aria-label="Toggle sidebar"
-          className="p-1.5 rounded-lg hover:bg-dark-100 dark:hover:bg-dark-800 text-dark-600 dark:text-dark-300 transition-colors cursor-pointer"
+          className="p-1.5 rounded-lg hover:bg-[#182647] text-slate-300 hover:text-white transition-colors cursor-pointer"
           title="Toggle Sidebar"
         >
           <Menu size={18} />
@@ -175,10 +175,10 @@ export default function Header({
           return (
             <span
               onClick={() => onNavigate?.('home')}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold tracking-wider uppercase bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-900/60 shadow-2xs cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold tracking-wider uppercase bg-[#182647] text-sky-300 border border-[#2a3a5e] shadow-2xs cursor-pointer hover:bg-[#1f346c] hover:text-white transition-colors"
               title="Go to Member Workspace"
             >
-              <Phone size={13} className="text-blue-600 dark:text-blue-400" />
+              <Phone size={13} className="text-sky-400" />
               MEMBER PANEL
             </span>
           );
@@ -191,11 +191,11 @@ export default function Header({
         <button
           onClick={() => onNavigate?.('wallet')}
           title="Open Wallet & Recharges"
-          className="hidden sm:flex items-center gap-1.5 px-2 py-1 text-[13px] text-dark-700 dark:text-dark-300 transition-colors cursor-pointer"
+          className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 text-[13px] rounded-lg bg-[#182647] border border-[#2a3a5e] text-slate-200 hover:bg-[#1f346c] transition-colors cursor-pointer"
         >
-          <Wallet size={15} className="text-dark-800 dark:text-dark-100" />
-          <span className="font-normal text-[13px] text-[rgba(0,0,0,0.65)] dark:text-dark-400">AVL BAL :</span>
-          <span className="font-semibold text-[13px] text-blue-600 dark:text-blue-400">{displayBalance || '₹0.0'}</span>
+          <Wallet size={15} className="text-sky-400" />
+          <span className="font-medium text-[12px] text-slate-400">AVL BAL :</span>
+          <span className="font-semibold text-[13px] text-emerald-400">{displayBalance || '₹0.0'}</span>
         </button>
 
         {/* User Info (Name + Phone) */}
@@ -204,15 +204,15 @@ export default function Header({
           className="cursor-pointer text-right select-none group flex items-center gap-2"
         >
           <div className="hidden xs:block text-right">
-            <p className="text-[14px] font-semibold text-dark-900 dark:text-white uppercase tracking-tight leading-tight group-hover:text-blue-600 transition-colors">
+            <p className="text-[14px] font-semibold text-white uppercase tracking-tight leading-tight group-hover:text-sky-300 transition-colors">
               {displayName}
             </p>
             {displayPhone ? (
-              <p className="text-[12px] text-dark-400 font-normal leading-tight mt-0.5">
+              <p className="text-[12px] text-slate-400 font-normal leading-tight mt-0.5">
                 {displayPhone}
               </p>
             ) : user?.email ? (
-              <p className="text-[12px] text-dark-400 font-normal leading-tight mt-0.5">
+              <p className="text-[12px] text-slate-400 font-normal leading-tight mt-0.5">
                 {user.email}
               </p>
             ) : null}
@@ -222,7 +222,7 @@ export default function Header({
         {/* Logout Button */}
         <button
           onClick={onLogout}
-          className="px-3.5 py-1.5 text-xs sm:text-sm font-medium text-dark-700 dark:text-dark-200 border border-dark-300 dark:border-dark-700 rounded-lg hover:bg-dark-50 dark:hover:bg-dark-800 hover:text-dark-900 dark:hover:text-white transition-colors cursor-pointer"
+          className="px-3.5 py-1.5 text-xs sm:text-sm font-medium text-slate-200 border border-[#2a3a5e] rounded-lg hover:bg-[#182647] hover:text-white hover:border-slate-400 transition-colors cursor-pointer"
         >
           Logout
         </button>
@@ -235,8 +235,8 @@ export default function Header({
               setShowSettings(false);
               setShowProfile(false);
             }}
-            className={`p-1.5 rounded-lg text-dark-500 hover:bg-dark-100 dark:hover:bg-dark-800 transition-colors ${
-              showNotifications ? 'bg-blue-50 text-blue-600' : ''
+            className={`p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-[#182647] transition-colors cursor-pointer ${
+              showNotifications ? 'bg-[#182647] text-white' : ''
             }`}
             title="Notifications"
           >
@@ -312,7 +312,7 @@ export default function Header({
               setShowNotifications(false);
               setShowProfile(false);
             }}
-            className="p-1.5 rounded-lg text-dark-500 hover:bg-dark-100 dark:hover:bg-dark-800 transition-colors"
+            className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-[#182647] transition-colors cursor-pointer"
             title="Settings"
           >
             <Settings size={18} />

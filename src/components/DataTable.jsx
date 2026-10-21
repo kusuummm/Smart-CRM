@@ -65,15 +65,15 @@ export function DataTable({ data, columns, page, pageSize, onPageChange, onSearc
           </div>
         </div>
       )}
-      <div className="overflow-x-auto rounded-lg border border-dark-200 dark:border-dark-700">
+      <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-dark-700 bg-white dark:bg-dark-800 shadow-xs">
         <table className="w-full text-sm">
           <thead>
-            <tr className="bg-dark-50 dark:bg-dark-700">
+            <tr className="bg-slate-50 dark:bg-dark-900/60 border-b border-slate-200 dark:border-dark-700">
               {columns.map((col) => (
                 <th
                   key={col.key}
                   onClick={() => col.sortable !== false && handleSort(col.key)}
-                  className={`px-4 py-3 text-left text-xs font-semibold text-dark-500 uppercase tracking-wider ${col.sortable !== false ? 'cursor-pointer hover:bg-dark-100 dark:hover:bg-dark-600' : ''} dark:text-dark-400`}
+                  className={`px-4 py-3.5 text-left text-[11px] font-bold text-slate-600 uppercase tracking-wider ${col.sortable !== false ? 'cursor-pointer hover:bg-slate-100 dark:hover:bg-dark-800' : ''} dark:text-slate-300`}
                 >
                   <div className={`flex items-center gap-1 ${col.align === 'center' ? 'justify-center' : col.align === 'right' ? 'justify-end' : ''}`}>
                     {col.label}
