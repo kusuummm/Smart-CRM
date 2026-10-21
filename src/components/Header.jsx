@@ -175,7 +175,7 @@ export default function Header({
           return (
             <span
               onClick={() => onNavigate?.('home')}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold tracking-wider uppercase bg-[#182647] text-sky-300 border border-[#2a3a5e] shadow-2xs cursor-pointer hover:bg-[#1f346c] hover:text-white transition-colors"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold tracking-wider uppercase bg-gradient-to-r from-sky-500/20 via-[#182647] to-[#182647] text-sky-300 border border-sky-500/40 shadow-xs cursor-pointer hover:border-sky-400 hover:text-white transition-all"
               title="Go to Member Workspace"
             >
               <Phone size={13} className="text-sky-400" />
@@ -191,11 +191,16 @@ export default function Header({
         <button
           onClick={() => onNavigate?.('wallet')}
           title="Open Wallet & Recharges"
-          className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 text-[13px] rounded-lg bg-[#182647] border border-[#2a3a5e] text-slate-200 hover:bg-[#1f346c] transition-colors cursor-pointer"
+          className="hidden sm:flex items-center gap-2 px-3 py-1.5 text-[13px] rounded-lg bg-gradient-to-r from-[#182647] to-[#1a2d58] border border-[#2a3a5e] hover:border-sky-400/50 text-slate-200 transition-all cursor-pointer shadow-2xs group"
         >
-          <Wallet size={15} className="text-sky-400" />
-          <span className="font-medium text-[12px] text-slate-400">AVL BAL :</span>
-          <span className="font-semibold text-[13px] text-emerald-400">{displayBalance || '₹0.0'}</span>
+          <div className="w-5 h-5 rounded-md bg-sky-500/15 flex items-center justify-center text-sky-400 group-hover:scale-110 transition-transform">
+            <Wallet size={13} />
+          </div>
+          <span className="font-medium text-[11.5px] text-slate-300">AVL BAL :</span>
+          <span className="flex items-center gap-1.5 font-bold text-[13px] text-emerald-400">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            {displayBalance || '₹0.0'}
+          </span>
         </button>
 
         {/* User Info (Name + Phone) */}

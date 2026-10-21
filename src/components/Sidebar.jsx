@@ -153,12 +153,20 @@ export default function Sidebar({
             if (collapsed) {
               return <div key={`sep-${idx}`} className="border-t border-[#1d2d52] my-2" />;
             }
+            const headerColor =
+              item.label === 'CORE CRM'
+                ? 'text-sky-400'
+                : item.label === 'COMMUNICATIONS'
+                ? 'text-emerald-400'
+                : item.label === 'ADMIN CONTROLS' || item.label === 'MANAGER SUPERVISION'
+                ? 'text-violet-400'
+                : 'text-amber-400';
             return (
               <div
                 key={`hdr-${idx}`}
-                className="text-[10.5px] font-bold uppercase tracking-wider text-[#658fca] px-3 pt-3 pb-1"
+                className={`text-[10px] font-bold uppercase tracking-wider px-3 pt-3.5 pb-1 flex items-center justify-between ${headerColor}`}
               >
-                {item.label}
+                <span>{item.label}</span>
               </div>
             );
           }
@@ -198,9 +206,9 @@ export default function Sidebar({
               key={item.id}
               onClick={() => handleItemClick(item)}
               title={collapsed ? item.label : undefined}
-              className={`w-full flex items-center justify-between px-3 h-10 rounded-lg text-[13.5px] transition-colors cursor-pointer group ${
+              className={`w-full flex items-center justify-between px-3 h-10 rounded-lg text-[13.5px] transition-all cursor-pointer group ${
                 isActive
-                  ? 'bg-[#1f346c] text-white font-semibold shadow-xs'
+                  ? 'bg-gradient-to-r from-[#1f346c] to-[#15244c] border-l-3 border-sky-400 text-white font-semibold shadow-xs'
                   : 'text-slate-300 hover:bg-[#182647] hover:text-white'
               }`}
             >
@@ -209,8 +217,8 @@ export default function Sidebar({
                   size={17}
                   className={`flex-shrink-0 transition-colors ${
                     isActive
-                      ? 'text-[#658fca]'
-                      : 'text-slate-400 group-hover:text-white'
+                      ? 'text-sky-300'
+                      : 'text-slate-400 group-hover:text-sky-300'
                   }`}
                 />
                 {!collapsed && (
@@ -219,7 +227,7 @@ export default function Sidebar({
               </div>
 
               {!collapsed && item.badge && (
-                <span className="px-1.5 py-0.5 text-[10px] font-bold rounded bg-[#182647] border border-[#2a3a5e] text-[#658fca] tracking-wide">
+                <span className="px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-sky-500/15 border border-sky-400/30 text-sky-300 tracking-wide">
                   {item.badge}
                 </span>
               )}

@@ -319,35 +319,45 @@ export default function HomeDashboard({
         </div>
 
         {/* Call Insights Metrics Card */}
-        <div className="p-6 rounded-2xl bg-white dark:bg-dark-800 border border-dark-200/90 dark:border-dark-700 shadow-xs space-y-4">
+        <div className="p-6 rounded-2xl bg-white dark:bg-dark-800 border border-dark-200/90 dark:border-dark-700 border-t-4 border-t-indigo-500 shadow-xs space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-heading font-bold text-dark-900 dark:text-white">
-              Call Insights
-            </h3>
-            <span className="text-[11px] text-dark-400 font-medium">Real-time sync</span>
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-indigo-500 animate-pulse"></span>
+              <h3 className="text-sm font-heading font-bold text-dark-900 dark:text-white">
+                Call Insights
+              </h3>
+            </div>
+            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/40">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
+              Real-time sync
+            </span>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 pt-2">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-1">
             {/* Outgoing Calls */}
             <div
               onClick={() => onNavigate?.('call-history', 'outgoing')}
-              className="p-3.5 rounded-xl cursor-pointer hover:bg-blue-50/70 dark:hover:bg-blue-950/40 border border-transparent hover:border-blue-200/80 dark:hover:border-blue-900/60 transition-all duration-150 group shadow-none hover:shadow-2xs"
+              className="p-4 rounded-xl cursor-pointer bg-gradient-to-br from-indigo-50/90 via-blue-50/40 to-white dark:from-indigo-950/30 dark:via-dark-800 dark:to-dark-800 border border-indigo-100/90 dark:border-indigo-900/40 shadow-2xs hover:shadow-md hover:border-indigo-300 dark:hover:border-indigo-600 transition-all duration-200 group"
               title="Click to view all Outgoing calls in Call History"
             >
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5 text-xs text-dark-500 dark:text-dark-400 font-medium group-hover:text-blue-600 transition-colors">
-                  <PhoneOutgoing size={13} className="text-blue-500" />
-                  <span>Outgoing Calls</span>
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold shadow-2xs group-hover:scale-110 transition-transform">
+                    <PhoneOutgoing size={14} />
+                  </div>
+                  <span className="text-xs font-semibold text-dark-700 dark:text-dark-300 group-hover:text-indigo-600 transition-colors">
+                    Outgoing Calls
+                  </span>
                 </div>
                 <ArrowUpRight
-                  size={13}
-                  className="text-dark-300 dark:text-dark-600 group-hover:text-blue-600 transition-colors"
+                  size={14}
+                  className="text-dark-300 dark:text-dark-600 group-hover:text-indigo-600 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all"
                 />
               </div>
-              <p className="text-2xl sm:text-3xl font-heading font-extrabold text-dark-900 dark:text-white mt-2 group-hover:text-blue-600 transition-colors">
+              <p className="text-2xl sm:text-3xl font-heading font-extrabold text-indigo-950 dark:text-indigo-100 mt-3 group-hover:text-indigo-600 transition-colors">
                 {callStats.outgoing}
               </p>
-              <span className="text-[10px] text-dark-400 font-medium opacity-0 group-hover:opacity-100 transition-opacity mt-1 block">
+              <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-semibold opacity-0 group-hover:opacity-100 transition-opacity mt-1 block">
                 View calls →
               </span>
             </div>
@@ -355,23 +365,27 @@ export default function HomeDashboard({
             {/* Incoming Calls */}
             <div
               onClick={() => onNavigate?.('call-history', 'incoming')}
-              className="p-3.5 rounded-xl cursor-pointer hover:bg-emerald-50/70 dark:hover:bg-emerald-950/40 border border-transparent hover:border-emerald-200/80 dark:hover:border-emerald-900/60 transition-colors duration-150 group"
+              className="p-4 rounded-xl cursor-pointer bg-gradient-to-br from-emerald-50/90 via-teal-50/40 to-white dark:from-emerald-950/30 dark:via-dark-800 dark:to-dark-800 border border-emerald-100/90 dark:border-emerald-900/40 shadow-2xs hover:shadow-md hover:border-emerald-300 dark:hover:border-emerald-600 transition-all duration-200 group"
               title="Click to view all Incoming calls in Call History"
             >
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5 text-xs text-dark-500 dark:text-dark-400 font-medium group-hover:text-emerald-600 transition-colors">
-                  <PhoneIncoming size={13} className="text-emerald-500" />
-                  <span>Incoming Calls</span>
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold shadow-2xs group-hover:scale-110 transition-transform">
+                    <PhoneIncoming size={14} />
+                  </div>
+                  <span className="text-xs font-semibold text-dark-700 dark:text-dark-300 group-hover:text-emerald-600 transition-colors">
+                    Incoming Calls
+                  </span>
                 </div>
                 <ArrowUpRight
-                  size={13}
-                  className="text-dark-300 dark:text-dark-600 group-hover:text-emerald-600 transition-colors"
+                  size={14}
+                  className="text-dark-300 dark:text-dark-600 group-hover:text-emerald-600 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all"
                 />
               </div>
-              <p className="text-2xl sm:text-3xl font-heading font-extrabold text-dark-900 dark:text-white mt-2 group-hover:text-emerald-600 transition-colors">
+              <p className="text-2xl sm:text-3xl font-heading font-extrabold text-emerald-950 dark:text-emerald-100 mt-3 group-hover:text-emerald-600 transition-colors">
                 {callStats.incoming}
               </p>
-              <span className="text-[10px] text-dark-400 font-medium opacity-0 group-hover:opacity-100 transition-opacity mt-1 block">
+              <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold opacity-0 group-hover:opacity-100 transition-opacity mt-1 block">
                 View calls →
               </span>
             </div>
@@ -379,23 +393,27 @@ export default function HomeDashboard({
             {/* Connected Calls */}
             <div
               onClick={() => onNavigate?.('call-history', 'connected')}
-              className="p-3.5 rounded-xl cursor-pointer hover:bg-blue-50/70 dark:hover:bg-blue-950/40 border border-transparent hover:border-blue-200/80 dark:hover:border-blue-900/60 transition-colors duration-150 group"
+              className="p-4 rounded-xl cursor-pointer bg-gradient-to-br from-sky-50/90 via-blue-50/40 to-white dark:from-sky-950/30 dark:via-dark-800 dark:to-dark-800 border border-sky-100/90 dark:border-sky-900/40 shadow-2xs hover:shadow-md hover:border-sky-300 dark:hover:border-sky-600 transition-all duration-200 group"
               title="Click to view all Connected calls in Call History"
             >
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5 text-xs text-dark-500 dark:text-dark-400 font-medium group-hover:text-blue-600 transition-colors">
-                  <PhoneCall size={13} className="text-blue-500" />
-                  <span>Connected Calls</span>
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-sky-500/15 text-sky-600 dark:text-sky-400 flex items-center justify-center font-bold shadow-2xs group-hover:scale-110 transition-transform">
+                    <PhoneCall size={14} />
+                  </div>
+                  <span className="text-xs font-semibold text-dark-700 dark:text-dark-300 group-hover:text-sky-600 transition-colors">
+                    Connected Calls
+                  </span>
                 </div>
                 <ArrowUpRight
-                  size={13}
-                  className="text-dark-300 dark:text-dark-600 group-hover:text-blue-600 transition-colors"
+                  size={14}
+                  className="text-dark-300 dark:text-dark-600 group-hover:text-sky-600 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all"
                 />
               </div>
-              <p className="text-2xl sm:text-3xl font-heading font-extrabold text-dark-900 dark:text-white mt-2 group-hover:text-blue-600 transition-colors">
+              <p className="text-2xl sm:text-3xl font-heading font-extrabold text-sky-950 dark:text-sky-100 mt-3 group-hover:text-sky-600 transition-colors">
                 {callStats.connected}
               </p>
-              <span className="text-[10px] text-dark-400 font-medium opacity-0 group-hover:opacity-100 transition-opacity mt-1 block">
+              <span className="text-[10px] text-sky-600 dark:text-sky-400 font-semibold opacity-0 group-hover:opacity-100 transition-opacity mt-1 block">
                 View calls →
               </span>
             </div>
@@ -403,23 +421,27 @@ export default function HomeDashboard({
             {/* Received Calls */}
             <div
               onClick={() => onNavigate?.('call-history', 'received')}
-              className="p-3.5 rounded-xl cursor-pointer hover:bg-teal-50/70 dark:hover:bg-teal-950/40 border border-transparent hover:border-teal-200/80 dark:hover:border-teal-900/60 transition-colors duration-150 group"
+              className="p-4 rounded-xl cursor-pointer bg-gradient-to-br from-teal-50/90 via-cyan-50/40 to-white dark:from-teal-950/30 dark:via-dark-800 dark:to-dark-800 border border-teal-100/90 dark:border-teal-900/40 shadow-2xs hover:shadow-md hover:border-teal-300 dark:hover:border-teal-600 transition-all duration-200 group"
               title="Click to view all Received calls in Call History"
             >
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5 text-xs text-dark-500 dark:text-dark-400 font-medium group-hover:text-teal-600 transition-colors">
-                  <CheckCircle2 size={13} className="text-teal-500" />
-                  <span>Received Calls</span>
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-teal-500/15 text-teal-600 dark:text-teal-400 flex items-center justify-center font-bold shadow-2xs group-hover:scale-110 transition-transform">
+                    <CheckCircle2 size={14} />
+                  </div>
+                  <span className="text-xs font-semibold text-dark-700 dark:text-dark-300 group-hover:text-teal-600 transition-colors">
+                    Received Calls
+                  </span>
                 </div>
                 <ArrowUpRight
-                  size={13}
-                  className="text-dark-300 dark:text-dark-600 group-hover:text-teal-600 transition-colors"
+                  size={14}
+                  className="text-dark-300 dark:text-dark-600 group-hover:text-teal-600 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all"
                 />
               </div>
-              <p className="text-2xl sm:text-3xl font-heading font-extrabold text-dark-900 dark:text-white mt-2 group-hover:text-teal-600 transition-colors">
+              <p className="text-2xl sm:text-3xl font-heading font-extrabold text-teal-950 dark:text-teal-100 mt-3 group-hover:text-teal-600 transition-colors">
                 {callStats.received}
               </p>
-              <span className="text-[10px] text-dark-400 font-medium opacity-0 group-hover:opacity-100 transition-opacity mt-1 block">
+              <span className="text-[10px] text-teal-600 dark:text-teal-400 font-semibold opacity-0 group-hover:opacity-100 transition-opacity mt-1 block">
                 View calls →
               </span>
             </div>
@@ -428,35 +450,44 @@ export default function HomeDashboard({
       </div>
 
       {/* 5. Customer Insights Card */}
-      <div className="p-6 rounded-2xl bg-white dark:bg-dark-800 border border-dark-200/90 dark:border-dark-700 shadow-xs space-y-4">
+      <div className="p-6 rounded-2xl bg-white dark:bg-dark-800 border border-dark-200/90 dark:border-dark-700 border-t-4 border-t-violet-500 shadow-xs space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-heading font-bold text-dark-900 dark:text-white">
-            Customer Insights
-          </h3>
-          <span className="text-[11px] text-dark-400 font-medium">Active directory</span>
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-violet-500 animate-pulse"></span>
+            <h3 className="text-sm font-heading font-bold text-dark-900 dark:text-white">
+              Customer Insights
+            </h3>
+          </div>
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-violet-50 text-violet-700 dark:bg-violet-950/50 dark:text-violet-400 border border-violet-200/60 dark:border-violet-800/40">
+            Active directory
+          </span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
           {/* Unique Customers */}
           <div
             onClick={() => onNavigate?.('contacts')}
-            className="p-3.5 rounded-xl cursor-pointer hover:bg-blue-50/70 dark:hover:bg-blue-950/40 border border-transparent hover:border-blue-200/80 dark:hover:border-blue-900/60 transition-all duration-150 group shadow-none hover:shadow-2xs"
+            className="p-4 rounded-xl cursor-pointer bg-gradient-to-br from-violet-50/90 via-purple-50/40 to-white dark:from-violet-950/30 dark:via-dark-800 dark:to-dark-800 border border-violet-100/90 dark:border-violet-900/40 shadow-2xs hover:shadow-md hover:border-violet-300 dark:hover:border-violet-600 transition-all duration-200 group"
             title="Click to view all Customers in Contacts"
           >
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5 text-xs text-dark-500 dark:text-dark-400 font-medium group-hover:text-blue-600 transition-colors">
-                <Users size={13} className="text-blue-500" />
-                <span>Unique Customers</span>
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-violet-500/15 text-violet-600 dark:text-violet-400 flex items-center justify-center font-bold shadow-2xs group-hover:scale-110 transition-transform">
+                  <Users size={14} />
+                </div>
+                <span className="text-xs font-semibold text-dark-700 dark:text-dark-300 group-hover:text-violet-600 transition-colors">
+                  Unique Customers
+                </span>
               </div>
               <ArrowUpRight
-                size={13}
-                className="text-dark-300 dark:text-dark-600 group-hover:text-blue-600 transition-colors"
+                size={14}
+                className="text-dark-300 dark:text-dark-600 group-hover:text-violet-600 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all"
               />
             </div>
-            <p className="text-2xl sm:text-3xl font-heading font-extrabold text-dark-900 dark:text-white mt-2 group-hover:text-blue-600 transition-colors">
+            <p className="text-2xl sm:text-3xl font-heading font-extrabold text-violet-950 dark:text-violet-100 mt-3 group-hover:text-violet-600 transition-colors">
               {callStats.uniqueCustomers}
             </p>
-            <span className="text-[10px] text-dark-400 font-medium opacity-0 group-hover:opacity-100 transition-opacity mt-1 block">
+            <span className="text-[10px] text-violet-600 dark:text-violet-400 font-semibold opacity-0 group-hover:opacity-100 transition-opacity mt-1 block">
               View customer list →
             </span>
           </div>
@@ -464,23 +495,27 @@ export default function HomeDashboard({
           {/* Missed Customers */}
           <div
             onClick={() => onNavigate?.('call-history', 'missed')}
-            className="p-3.5 rounded-xl cursor-pointer hover:bg-rose-50/70 dark:hover:bg-rose-950/40 border border-transparent hover:border-rose-200/80 dark:hover:border-rose-900/60 transition-colors duration-150 group"
+            className="p-4 rounded-xl cursor-pointer bg-gradient-to-br from-rose-50/90 via-orange-50/40 to-white dark:from-rose-950/30 dark:via-dark-800 dark:to-dark-800 border border-rose-100/90 dark:border-rose-900/40 shadow-2xs hover:shadow-md hover:border-rose-300 dark:hover:border-rose-600 transition-all duration-200 group"
             title="Click to view Missed calls in Call History"
           >
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5 text-xs text-dark-500 dark:text-dark-400 font-medium group-hover:text-rose-600 transition-colors">
-                <Phone size={13} className="text-rose-500" />
-                <span>Missed Customers</span>
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-rose-500/15 text-rose-600 dark:text-rose-400 flex items-center justify-center font-bold shadow-2xs group-hover:scale-110 transition-transform">
+                  <Phone size={14} />
+                </div>
+                <span className="text-xs font-semibold text-dark-700 dark:text-dark-300 group-hover:text-rose-600 transition-colors">
+                  Missed Customers
+                </span>
               </div>
               <ArrowUpRight
-                size={13}
-                className="text-dark-300 dark:text-dark-600 group-hover:text-rose-600 transition-colors"
+                size={14}
+                className="text-dark-300 dark:text-dark-600 group-hover:text-rose-600 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all"
               />
             </div>
-            <p className="text-2xl sm:text-3xl font-heading font-extrabold text-dark-900 dark:text-white mt-2 group-hover:text-rose-600 transition-colors">
+            <p className="text-2xl sm:text-3xl font-heading font-extrabold text-rose-950 dark:text-rose-100 mt-3 group-hover:text-rose-600 transition-colors">
               {callStats.missedCustomers}
             </p>
-            <span className="text-[10px] text-dark-400 font-medium opacity-0 group-hover:opacity-100 transition-opacity mt-1 block">
+            <span className="text-[10px] text-rose-600 dark:text-rose-400 font-semibold opacity-0 group-hover:opacity-100 transition-opacity mt-1 block">
               View missed calls →
             </span>
           </div>
@@ -488,12 +523,13 @@ export default function HomeDashboard({
       </div>
 
       {/* 6. Staff Level Insights Accordion Card */}
-      <div className="rounded-2xl bg-white dark:bg-dark-800 border border-dark-200/90 dark:border-dark-700 shadow-xs overflow-hidden transition-all">
+      <div className="rounded-2xl bg-white dark:bg-dark-800 border border-dark-200/90 dark:border-dark-700 border-t-4 border-t-emerald-500 shadow-xs overflow-hidden transition-all">
         <div
           onClick={() => setShowStaffInsights(!showStaffInsights)}
           className="p-5 flex items-center justify-between cursor-pointer select-none hover:bg-dark-50/50 dark:hover:bg-dark-700/50 transition-colors"
         >
           <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
             <h3 className="text-sm font-heading font-bold text-dark-900 dark:text-white">
               Staff Level Insights
             </h3>
@@ -518,10 +554,20 @@ export default function HomeDashboard({
                 </tr>
               </thead>
               <tbody className="divide-y divide-dark-100 dark:divide-dark-700/40">
-                {staffData.map((st, idx) => (
+                {staffData.map((st, idx) => {
+                  const avatarGradients = [
+                    'bg-gradient-to-br from-blue-500 to-indigo-600',
+                    'bg-gradient-to-br from-emerald-500 to-teal-600',
+                    'bg-gradient-to-br from-violet-500 to-purple-600',
+                    'bg-gradient-to-br from-amber-500 to-orange-600',
+                    'bg-gradient-to-br from-rose-500 to-pink-600',
+                    'bg-gradient-to-br from-cyan-500 to-blue-600',
+                  ];
+                  const grad = avatarGradients[idx % avatarGradients.length];
+                  return (
                   <tr key={idx} className="hover:bg-dark-50/50 dark:hover:bg-dark-700/30">
                     <td className="py-3 font-bold text-dark-900 dark:text-white flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300 flex items-center justify-center font-bold text-xs shadow-2xs">
+                      <div className={`w-8 h-8 rounded-full ${grad} text-white flex items-center justify-center font-bold text-xs shadow-2xs`}>
                         {st.name.slice(0, 2).toUpperCase()}
                       </div>
                       <div>
@@ -570,12 +616,12 @@ export default function HomeDashboard({
         {/* Left Card: 2 Teams & Subscription overview (Clickable) */}
         <div
           onClick={() => onNavigate?.('teams')}
-          className="p-6 rounded-2xl bg-white dark:bg-dark-800 border border-dark-200/90 dark:border-dark-700 shadow-xs space-y-5 cursor-pointer hover:border-blue-300 dark:hover:border-blue-800 hover:shadow-md transition-all duration-200 group"
+          className="p-6 rounded-2xl bg-white dark:bg-dark-800 border border-dark-200/90 dark:border-dark-700 border-t-4 border-t-sky-500 shadow-xs space-y-5 cursor-pointer hover:border-sky-300 dark:hover:border-sky-800 hover:shadow-md transition-all duration-200 group"
           title="Click to view and manage Teams"
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center shadow-2xs">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500 to-blue-600 text-white flex items-center justify-center shadow-xs group-hover:scale-105 transition-transform">
                 <Users size={20} />
               </div>
               <div>
@@ -599,7 +645,7 @@ export default function HomeDashboard({
                 e.stopPropagation();
                 onOpenBuyNumber();
               }}
-              className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 transition-colors shadow-xs"
+              className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-blue-600 to-sky-600 hover:from-blue-700 hover:to-sky-700 transition-all shadow-xs"
             >
               Buy a new Number
             </button>
@@ -626,9 +672,9 @@ export default function HomeDashboard({
         </div>
 
         {/* Right Card: You're all set */}
-        <div className="p-6 rounded-2xl bg-white dark:bg-dark-800 border border-dark-200/90 dark:border-dark-700 shadow-xs flex flex-col justify-between space-y-4">
+        <div className="p-6 rounded-2xl bg-white dark:bg-dark-800 border border-dark-200/90 dark:border-dark-700 border-t-4 border-t-teal-500 shadow-xs flex flex-col justify-between space-y-4">
           <div className="space-y-3">
-            <div className="w-10 h-10 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-500 to-emerald-600 text-white flex items-center justify-center shadow-xs">
               <CheckCircle2 size={22} />
             </div>
             <div>
