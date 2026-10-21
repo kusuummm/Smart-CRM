@@ -124,9 +124,15 @@ export function useNotifications() {
   }, []);
 
   useEffect(() => {
-    refresh();
+    // Stagger initial check slightly to let current page load first without network competition
+    const timer = setTimeout(() => {
+      refresh();
+    }, 1200);
     const interval = setInterval(refresh, POLL_INTERVAL_MS);
-    return () => clearInterval(interval);
+    return () => {
+      clearTimeout(timer);
+      clearInterval(interval);
+    };
   }, [refresh]);
 
   const markRead = (id) => {

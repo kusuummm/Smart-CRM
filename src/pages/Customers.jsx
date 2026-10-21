@@ -166,31 +166,34 @@ export default function Customers({ onNavigate }) {
       .catch(() => {});
   }, []);
 
-  const filtered = customers.filter((c) => {
-    const searchMatch =
-      !searchTerm ||
-      c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.mobile.includes(searchTerm) ||
-      (c.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (c.company || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (c.city || '').toLowerCase().includes(searchTerm.toLowerCase());
+  const filtered = useMemo(() => {
+    const s = searchTerm.trim().toLowerCase();
+    return customers.filter((c) => {
+      const searchMatch =
+        !s ||
+        (c.name || '').toLowerCase().includes(s) ||
+        (c.mobile || '').includes(s) ||
+        (c.email || '').toLowerCase().includes(s) ||
+        (c.company || '').toLowerCase().includes(s) ||
+        (c.city || '').toLowerCase().includes(s);
 
-    if (!searchMatch) return false;
+      if (!searchMatch) return false;
 
-    if (filters.status && c.status !== filters.status) return false;
-    if (filters.city && !(c.city || '').toLowerCase().includes(filters.city.toLowerCase())) return false;
-    if (filters.source && c.leadSource !== filters.source) return false;
+      if (filters.status && c.status !== filters.status) return false;
+      if (filters.city && !(c.city || '').toLowerCase().includes(filters.city.toLowerCase())) return false;
+      if (filters.source && c.leadSource !== filters.source) return false;
 
-    if (filters.telecaller) {
-      if (filters.telecaller === 'unassigned') {
-        if (c.telecallerId || (c.assignedTelecaller && c.assignedTelecaller !== 'Unassigned')) return false;
-      } else if (c.assignedTelecaller !== filters.telecaller) {
-        return false;
+      if (filters.telecaller) {
+        if (filters.telecaller === 'unassigned') {
+          if (c.telecallerId || (c.assignedTelecaller && c.assignedTelecaller !== 'Unassigned')) return false;
+        } else if (c.assignedTelecaller !== filters.telecaller) {
+          return false;
+        }
       }
-    }
 
-    return true;
-  });
+      return true;
+    });
+  }, [customers, searchTerm, filters]);
 
   // Bulk Operations Handlers
   const handleSelectAll = (e) => {

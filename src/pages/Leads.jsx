@@ -161,19 +161,24 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
     return () => document.removeEventListener('click', handleClickOutside);
   }, []);
 
-  // Filter by status, agent, or search term
-  const filtered = leads.filter((l) => {
-    const statusMatch = !statusFilter || l.status === statusFilter;
-    const searchMatch = !searchTerm || (l.customerName || '').toLowerCase().includes(searchTerm.toLowerCase());
-    const telecallerMatch =
-      !telecallerFilter ||
-      (telecallerFilter === 'unassigned' ? !l.telecallerId : String(l.telecallerId) === String(telecallerFilter));
+  // Filter by status, agent, or search term (memoized for performance)
+  const filtered = useMemo(() => {
+    const s = searchTerm.trim().toLowerCase();
+    return leads.filter((l) => {
+      const statusMatch = !statusFilter || l.status === statusFilter;
+      const searchMatch = !s || (l.customerName || '').toLowerCase().includes(s);
+      const telecallerMatch =
+        !telecallerFilter ||
+        (telecallerFilter === 'unassigned' ? !l.telecallerId : String(l.telecallerId) === String(telecallerFilter));
 
-    return statusMatch && searchMatch && telecallerMatch;
-  });
+      return statusMatch && searchMatch && telecallerMatch;
+    });
+  }, [leads, statusFilter, searchTerm, telecallerFilter]);
 
   const totalPages = Math.ceil(filtered.length / pageSize);
-  const paginated = filtered.slice((page - 1) * pageSize, page * pageSize);
+  const paginated = useMemo(() => {
+    return filtered.slice((page - 1) * pageSize, page * pageSize);
+  }, [filtered, page, pageSize]);
 
   // Stage counts for clickable pipeline cards
   const pipelineStats = useMemo(() => {

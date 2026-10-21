@@ -10,6 +10,7 @@ import { getTodayFollowUps, getFollowUps } from '../api/followups';
 import { getCalls } from '../api/callHistory';
 import { getUpcomingEvents } from '../api/events';
 import { getUsers } from '../api/users';
+import { clearApiCache } from '../api/client';
 import { isAdminOrOwner, getRoleInfo } from '../utils/permissions';
 
 const COLORS = {
@@ -89,10 +90,10 @@ export default function Dashboard({ onNavigate }) {
       const params = isAdmin && selectedAgent !== 'all' ? { telecallerId: selectedAgent } : {};
       const [statsData, leadsData, todayData, callsData, allFollowUpsData, upcomingEventsData] = await Promise.all([
         getDashboardStats(params),
-        getLeads({ limit: 1000, ...params }),
+        getLeads({ limit: 200, ...params }),
         getTodayFollowUps(params),
         getCalls({ limit: 5, ...params }),
-        getFollowUps({ limit: 1000, ...params }),
+        getFollowUps({ limit: 200, ...params }),
         getUpcomingEvents(7),
       ]);
 
@@ -214,7 +215,10 @@ export default function Dashboard({ onNavigate }) {
               </select>
 
               <button
-                onClick={loadDashboard}
+                onClick={() => {
+                  clearApiCache();
+                  loadDashboard();
+                }}
                 title="Refresh dashboard stats"
                 className="p-2 bg-dark-50 dark:bg-dark-900 hover:bg-dark-100 dark:hover:bg-dark-700 text-dark-600 dark:text-dark-300 rounded-lg border border-dark-200 dark:border-dark-700 transition-colors cursor-pointer"
               >

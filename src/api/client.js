@@ -35,4 +35,56 @@ api.interceptors.response.use(
   }
 );
 
+// High-Speed In-Memory Client Cache & In-Flight Request Deduplication
+const cache = new Map();
+const inFlight = new Map();
+const CACHE_TTL_MS = 25000; // 25s TTL for lightning-fast tab navigation
+
+export const clearApiCache = () => {
+  cache.clear();
+};
+
+const originalGet = api.get.bind(api);
+
+api.get = function (url, config = {}) {
+  // If explicitly requested to skip cache (e.g. manual refresh button)
+  if (config.skipCache) {
+    return originalGet(url, config);
+  }
+
+  const key = `${url}?${JSON.stringify(config.params || {})}`;
+  const cached = cache.get(key);
+
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
+    return Promise.resolve(cached.response);
+  }
+
+  if (inFlight.has(key)) {
+    return inFlight.get(key);
+  }
+
+  const promise = originalGet(url, config)
+    .then((res) => {
+      cache.set(key, { response: res, timestamp: Date.now() });
+      inFlight.delete(key);
+      return res;
+    })
+    .catch((err) => {
+      inFlight.delete(key);
+      throw err;
+    });
+
+  inFlight.set(key, promise);
+  return promise;
+};
+
+// Automatically invalidate cache on data mutations so CRM stays 100% in sync
+['post', 'put', 'patch', 'delete'].forEach((method) => {
+  const originalMethod = api[method].bind(api);
+  api[method] = function (...args) {
+    cache.clear();
+    return originalMethod(...args);
+  };
+});
+
 export default api;

@@ -251,6 +251,28 @@ function AppLayout() {
     }
   }, [location.pathname, isAdmin, manager]);
 
+  // Preload primary routes during browser idle time so tab navigation is instantaneous
+  useEffect(() => {
+    const preload = () => {
+      import('./pages/Dashboard');
+      import('./pages/Customers');
+      import('./pages/Contacts');
+      import('./pages/Leads');
+      import('./pages/FollowUps');
+      import('./pages/ToDos');
+      import('./pages/CallHistory');
+      import('./pages/WhatsApp');
+      import('./pages/Settings');
+    };
+    if (typeof window !== 'undefined') {
+      if ('requestIdleCallback' in window) {
+        window.requestIdleCallback(preload, { timeout: 2000 });
+      } else {
+        setTimeout(preload, 1200);
+      }
+    }
+  }, []);
+
   // Sub-navigation filters & parameters
   const [selectedCustomer, setSelectedCustomer] = useState('');
   const [selectedLeadStatus, setSelectedLeadStatus] = useState('');
