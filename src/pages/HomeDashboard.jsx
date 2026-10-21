@@ -319,14 +319,11 @@ export default function HomeDashboard({
         </div>
 
         {/* Call Insights Metrics Card */}
-        <div className="p-6 rounded-2xl bg-white dark:bg-dark-800 border border-dark-200/90 dark:border-dark-700 border-t-4 border-t-indigo-500 shadow-xs space-y-4">
+        <div className="p-6 rounded-2xl bg-white dark:bg-dark-800 border border-dark-200/90 dark:border-dark-700 shadow-xs space-y-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-indigo-500 animate-pulse"></span>
-              <h3 className="text-sm font-heading font-bold text-dark-900 dark:text-white">
-                Call Insights
-              </h3>
-            </div>
+            <h3 className="text-sm font-heading font-bold text-dark-900 dark:text-white">
+              Call Insights
+            </h3>
             <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/40">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
               Real-time sync
@@ -450,14 +447,11 @@ export default function HomeDashboard({
       </div>
 
       {/* 5. Customer Insights Card */}
-      <div className="p-6 rounded-2xl bg-white dark:bg-dark-800 border border-dark-200/90 dark:border-dark-700 border-t-4 border-t-violet-500 shadow-xs space-y-4">
+      <div className="p-6 rounded-2xl bg-white dark:bg-dark-800 border border-dark-200/90 dark:border-dark-700 shadow-xs space-y-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-violet-500 animate-pulse"></span>
-            <h3 className="text-sm font-heading font-bold text-dark-900 dark:text-white">
-              Customer Insights
-            </h3>
-          </div>
+          <h3 className="text-sm font-heading font-bold text-dark-900 dark:text-white">
+            Customer Insights
+          </h3>
           <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-violet-50 text-violet-700 dark:bg-violet-950/50 dark:text-violet-400 border border-violet-200/60 dark:border-violet-800/40">
             Active directory
           </span>
@@ -523,13 +517,12 @@ export default function HomeDashboard({
       </div>
 
       {/* 6. Staff Level Insights Accordion Card */}
-      <div className="rounded-2xl bg-white dark:bg-dark-800 border border-dark-200/90 dark:border-dark-700 border-t-4 border-t-emerald-500 shadow-xs overflow-hidden transition-all">
+      <div className="rounded-2xl bg-white dark:bg-dark-800 border border-dark-200/90 dark:border-dark-700 shadow-xs overflow-hidden transition-all">
         <div
           onClick={() => setShowStaffInsights(!showStaffInsights)}
           className="p-5 flex items-center justify-between cursor-pointer select-none hover:bg-dark-50/50 dark:hover:bg-dark-700/50 transition-colors"
         >
           <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
             <h3 className="text-sm font-heading font-bold text-dark-900 dark:text-white">
               Staff Level Insights
             </h3>
@@ -617,7 +610,7 @@ export default function HomeDashboard({
         {/* Left Card: 2 Teams & Subscription overview (Clickable) */}
         <div
           onClick={() => onNavigate?.('teams')}
-          className="p-6 rounded-2xl bg-white dark:bg-dark-800 border border-dark-200/90 dark:border-dark-700 border-t-4 border-t-sky-500 shadow-xs space-y-5 cursor-pointer hover:border-sky-300 dark:hover:border-sky-800 hover:shadow-md transition-all duration-200 group"
+          className="p-6 rounded-2xl bg-white dark:bg-dark-800 border border-dark-200/90 dark:border-dark-700 shadow-xs space-y-5 cursor-pointer hover:border-sky-300 dark:hover:border-sky-800 hover:shadow-md transition-all duration-200 group"
           title="Click to view and manage Teams"
         >
           <div className="flex items-center justify-between">
@@ -673,7 +666,7 @@ export default function HomeDashboard({
         </div>
 
         {/* Right Card: You're all set */}
-        <div className="p-6 rounded-2xl bg-white dark:bg-dark-800 border border-dark-200/90 dark:border-dark-700 border-t-4 border-t-teal-500 shadow-xs flex flex-col justify-between space-y-4">
+        <div className="p-6 rounded-2xl bg-white dark:bg-dark-800 border border-dark-200/90 dark:border-dark-700 shadow-xs flex flex-col justify-between space-y-4">
           <div className="space-y-3">
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-500 to-emerald-600 text-white flex items-center justify-center shadow-xs">
               <CheckCircle2 size={22} />
