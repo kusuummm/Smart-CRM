@@ -604,7 +604,8 @@ export default function HomeDashboard({
                       </span>
                     </td>
                   </tr>
-                ))}
+                );
+              })}
               </tbody>
             </table>
           </div>
