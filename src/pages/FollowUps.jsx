@@ -204,7 +204,7 @@ export default function FollowUps({ onNavigate }) {
               }}
               className="px-3 py-2 border border-dark-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-dark-700 dark:bg-dark-800 dark:text-white"
             >
-              <option value="">All Leads</option>
+              <option value="">All Members</option>
               <option value="unassigned">Unassigned Clients Only</option>
               {telecallers.map((tc) => (
                 <option key={tc._id} value={tc._id}>
@@ -368,13 +368,13 @@ export default function FollowUps({ onNavigate }) {
           </div>
           {isAdmin && (
             <div>
-              <label className="block text-sm font-medium text-dark-700 mb-1 dark:text-gray-300">Assigned Lead (Admin Control)</label>
+              <label className="block text-sm font-medium text-dark-700 mb-1 dark:text-gray-300">Assigned Member (Admin Control)</label>
               <select
                 value={form.assignedTo}
                 onChange={(e) => setForm({ ...form, assignedTo: e.target.value })}
                 className="w-full px-3 py-2 border border-dark-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-dark-700 dark:bg-dark-700 dark:text-white"
               >
-                <option value="">Default (Current Lead)</option>
+                <option value="">Default (Current Member)</option>
                 {telecallers.map((tc) => (
                   <option key={tc._id} value={tc._id}>
                     {tc.name} ({tc.email})

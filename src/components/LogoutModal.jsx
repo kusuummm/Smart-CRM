@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { LogOut, X, AlertTriangle, Loader2 } from 'lucide-react';
+import { getRoleInfo } from '../utils/permissions';
 
 export default function LogoutModal({
   isOpen,
@@ -80,7 +81,7 @@ export default function LogoutModal({
                 </p>
               </div>
               <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300">
-                {user.role || 'User'}
+                {getRoleInfo(user?.role).badge || 'MEMBER'}
               </span>
             </div>
           )}

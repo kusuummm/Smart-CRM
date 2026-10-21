@@ -1133,20 +1133,20 @@ export default function ToDos({ onNavigate }) {
                 </select>
               </div>
 
-              {/* 2. Assign Task To (Caller / Lead) */}
+              {/* 2. Assign Task To (Member) */}
               <div>
                 <label className="block font-bold text-dark-700 dark:text-dark-300 mb-1">
-                  Assign Task To (Lead)
+                  Assign Task To (Member)
                 </label>
                 <select
                   value={newTaskForm.assignedTo}
                   onChange={(e) => setNewTaskForm({ ...newTaskForm, assignedTo: e.target.value })}
                   className="w-full px-3 py-2 text-xs rounded-xl bg-white dark:bg-dark-900 border border-dark-200 dark:border-dark-700 text-dark-900 dark:text-white focus:outline-none focus:border-blue-500 font-medium cursor-pointer"
                 >
-                  <option value="">Default (Me / Current Lead)</option>
+                  <option value="">Default (Me / Current Member)</option>
                   {telecallers.map((tc) => (
                     <option key={tc._id} value={tc._id}>
-                      {tc.name} {tc.email ? `(${tc.email})` : ''} — {tc.role}
+                      {tc.name} {tc.email ? `(${tc.email})` : ''} — {tc.role === 'telecaller' ? 'Member' : (tc.role || 'Member')}
                     </option>
                   ))}
                 </select>

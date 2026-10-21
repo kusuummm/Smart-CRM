@@ -856,7 +856,7 @@ export default function ContactDetailView({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-[#f0f0f0] dark:border-dark-700/60 pt-4">
               <div>
                 <label className="block text-[12px] font-normal text-[rgba(0,0,0,0.45)] dark:text-dark-400 uppercase tracking-wider mb-1.5">
-                  LEAD OWNER
+                  ASSIGNED MEMBER
                 </label>
                 <div className="relative">
                   <select
@@ -865,8 +865,8 @@ export default function ContactDetailView({
                       const newOwner = e.target.value;
                       if (newOwner === leadOwner) return;
                       const ok = await confirm({
-                        title: 'Change Lead Owner',
-                        message: `Are you sure you want to assign lead owner to "${newOwner}" for ${contactName}?`,
+                        title: 'Change Assigned Member',
+                        message: `Are you sure you want to assign member to "${newOwner}" for ${contactName}?`,
                         confirmText: `Assign to ${newOwner}`,
                         cancelText: 'Cancel',
                         type: 'primary',
@@ -877,7 +877,7 @@ export default function ContactDetailView({
                         updateCustomer(contact.id, { assignedTelecaller: newOwner }).catch(() => {});
                       }
                       onUpdateContact?.({ ...contact, assignedTelecaller: newOwner });
-                      addToast(`Lead Owner set to ${newOwner}`, 'success');
+                      addToast(`Assigned Member set to ${newOwner}`, 'success');
                     }}
                     className="w-full appearance-none px-3 py-2 text-[14px] font-normal rounded-md bg-white dark:bg-dark-900 border border-[#d9d9d9] dark:border-dark-700 text-[rgba(0,0,0,0.88)] dark:text-white focus:outline-none focus:border-[#1890ff] cursor-pointer"
                   >

@@ -136,7 +136,7 @@ export default function Teams({ onNavigate, onOpenBuyNumber }) {
                 : u.role === 'manager'
                 ? 'Manager'
                 : u.role === 'telecaller'
-                ? 'Lead'
+                ? 'Member'
                 : 'Member',
           }));
           setStaffList(apiMapped);

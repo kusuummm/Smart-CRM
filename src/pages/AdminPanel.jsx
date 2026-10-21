@@ -1832,7 +1832,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                   <option value="owner">Owners (Level 4)</option>
                   <option value="admin">Administrators (Level 3)</option>
                   <option value="manager">Managers (Level 2)</option>
-                  <option value="member">Members & Leads (Level 1)</option>
+                  <option value="member">Members (Level 1)</option>
                 </select>
 
                 <select
@@ -2227,8 +2227,8 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
       {(currentView === 'admin-agents' || currentView === 'agents') && (
         <div className="space-y-6">
           <PageHeader
-            title="Lead Live Presence"
-            subtitle="Real-time monitoring of lead availability, online/offline status, and assigned contact counts."
+            title="Member Live Presence"
+            subtitle="Real-time monitoring of member availability, online/offline status, and assigned contact counts."
             action={
               <div className="flex items-center gap-2.5">
                 <button
@@ -2244,7 +2244,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                   className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-sm font-semibold transition-colors shadow-sm"
                 >
                   <UserPlus size={17} />
-                  <span>Add Lead</span>
+                  <span>Add Member</span>
                 </button>
               </div>
             }
@@ -2254,14 +2254,14 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <h3 className="text-lg font-bold text-dark-900 dark:text-white flex items-center gap-2">
-                <span>Lead Live Roster & Presence</span>
+                <span>Member Live Roster & Presence</span>
                 <span className="px-2 py-0.5 rounded-full text-xs bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 font-semibold flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                   Live Presence
                 </span>
               </h3>
               <p className="text-xs text-dark-500 dark:text-dark-400">
-                Monitor online leads, workload distribution, and reassign contacts in real-time
+                Monitor online members, workload distribution, and reassign contacts in real-time
               </p>
             </div>
 
@@ -2276,7 +2276,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                     : 'bg-white dark:bg-dark-800 text-dark-600 dark:text-dark-300 border border-dark-200 dark:border-dark-700 hover:bg-dark-50'
                 }`}
               >
-                All Leads ({users.filter((u) => u.role === 'telecaller' || u.role === 'user').length})
+                All Members ({users.filter((u) => u.role === 'telecaller' || u.role === 'user').length})
               </button>
               <button
                 type="button"
@@ -4882,12 +4882,12 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                 onChange={(e) => setTaskFilterAgent(e.target.value)}
                 className="px-3 py-2 text-xs rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-900 text-dark-800 dark:text-dark-200 font-medium focus:outline-none focus:border-primary-500"
               >
-                <option value="all">All Leads ({users.filter((u) => u.role === 'telecaller').length})</option>
+                <option value="all">All Members ({users.filter((u) => u.role === 'telecaller').length})</option>
                 {users
                   .filter((u) => u.role === 'telecaller' || u.role === 'admin')
                   .map((u) => (
                     <option key={u._id} value={u._id}>
-                      {u.name} ({u.role})
+                      {u.name} ({u.role === 'telecaller' ? 'Member' : u.role})
                     </option>
                   ))}
               </select>
@@ -5690,12 +5690,12 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
       <Modal
         isOpen={isAddCustomerModalOpen}
         onClose={() => setIsAddCustomerModalOpen(false)}
-        title="Add New Customer & Assign Lead"
+        title="Add New Customer & Assign Member"
         size="lg"
       >
         <form onSubmit={handleCreateCustomerAndAssign} className="space-y-4">
           <p className="text-xs text-dark-500 dark:text-dark-400">
-            Create an individual customer account and automatically generate their pipeline lead with immediate assignment to a lead telecaller.
+            Create an individual customer account and automatically generate their pipeline lead with immediate assignment to a team member.
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
@@ -5789,7 +5789,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
           <div className="p-3.5 rounded-2xl bg-blue-50/70 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/60 space-y-2">
             <label className="block text-xs font-bold text-blue-900 dark:text-blue-300 flex items-center gap-1.5">
               <Users size={14} className="text-blue-600" />
-              <span>Assign to Lead / Telecaller</span>
+              <span>Assign to Member</span>
             </label>
             <select
               value={newCustomerForm.telecallerId}
@@ -5804,7 +5804,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
               ))}
             </select>
             <p className="text-[11px] text-blue-700 dark:text-blue-400">
-              Assigned telecaller will instantly see this contact in their personal Lead Panel and receive automated email dispatch.
+              Assigned member will instantly see this contact in their personal Member Panel and receive automated email dispatch.
             </p>
           </div>
 
@@ -5841,7 +5841,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
         </form>
       </Modal>
 
-      {/* GLOBAL MODAL: Assign Task to Caller / Lead */}
+      {/* GLOBAL MODAL: Assign Task to Member */}
       <Modal
         isOpen={isAssignTaskModalOpen}
         onClose={() => setIsAssignTaskModalOpen(false)}
@@ -5849,10 +5849,10 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
         size="lg"
       >
         <form onSubmit={handleCreateAssignTask} className="space-y-4">
-          {/* Target Telecaller Selector */}
+          {/* Target Member Selector */}
           <div>
             <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1.5">
-              Assign Task To (Lead / Team Member) <span className="text-red-500">*</span>
+              Assign Task To (Team Member) <span className="text-red-500">*</span>
             </label>
             <select
               value={assignTaskForm.assignedTo}
@@ -5860,12 +5860,12 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
               className="w-full px-3 py-2 text-xs rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-900 text-dark-900 dark:text-white font-medium focus:outline-none focus:border-primary-500"
               required
             >
-              <option value="" disabled>Select lead / team member...</option>
+              <option value="" disabled>Select team member...</option>
               {users
                 .filter((u) => u.role === 'telecaller' || u.role === 'admin')
                 .map((u) => (
                   <option key={u._id} value={u._id}>
-                    {u.name} — {u.role === 'admin' ? 'Administrator' : 'Lead'} ({u.assignedLeads || 0} leads, {u.assignedCustomers || 0} clients)
+                    {u.name} — {u.role === 'admin' ? 'Administrator' : 'Member'} ({u.assignedLeads || 0} leads, {u.assignedCustomers || 0} clients)
                   </option>
                 ))}
             </select>

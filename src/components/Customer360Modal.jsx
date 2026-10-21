@@ -525,7 +525,7 @@ export default function Customer360Modal({ isOpen, onClose, customer, onStartCal
         await updateLeadStatus(profile.leadId, {
           telecallerId: newTelecallerId || null,
           status: profile.status,
-          remark: `Assigned lead changed to ${newTelecallerName} by ${user?.name || 'User'}`,
+          remark: `Assigned member changed to ${newTelecallerName} by ${user?.name || 'User'}`,
         });
       } else if (profile.id && profile.id.length === 24) {
         // If not in lead pipeline yet, register lead with assigned caller
@@ -534,7 +534,7 @@ export default function Customer360Modal({ isOpen, onClose, customer, onStartCal
             customerId: profile.id,
             telecallerId: newTelecallerId || null,
             status: profile.status || 'new',
-            remark: `Assigned lead set to ${newTelecallerName}`,
+            remark: `Assigned member set to ${newTelecallerName}`,
           });
           if (newLeadRes?.lead?._id) {
             setProfile((prev) => ({ ...prev, leadId: newLeadRes.lead._id }));
@@ -547,7 +547,7 @@ export default function Customer360Modal({ isOpen, onClose, customer, onStartCal
         assignedLead: newTelecallerName,
       }));
 
-      addToast(`Customer lead changed to ${newTelecallerName}!`, 'success');
+      addToast(`Assigned member changed to ${newTelecallerName}!`, 'success');
       onUpdateContact?.({
         ...customer,
         telecallerId: newTelecallerId || null,
@@ -1564,7 +1564,7 @@ export default function Customer360Modal({ isOpen, onClose, customer, onStartCal
 
                     <div>
                       <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1">
-                        Assigned Lead
+                        Assigned Member
                       </label>
                       <select
                         value={editForm.telecallerId || ''}

@@ -121,13 +121,13 @@ export const getRoleInfo = (role) => {
 export const ROLE_DEFINITIONS = [
   {
     role: 'member',
-    title: 'Team Member (Lead Agent)',
+    title: 'Team Member',
     level: 1,
     tagline: 'Personal Operational Workspace',
     icon: Phone,
     color: 'sky',
     features: [
-      'Personal Home Dashboard & daily caller agenda',
+      'Personal Home Dashboard & daily agenda',
       'Access strictly to assigned customers & contacts',
       'Built-in Dialer, call logging & call recordings',
       'Follow-up reminders, tasks & pipeline stages',

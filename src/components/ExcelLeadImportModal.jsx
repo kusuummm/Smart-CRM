@@ -1499,11 +1499,11 @@ export default function ExcelLeadImportModal({ isOpen, onClose, onImportSuccess 
                   <div className="flex items-center justify-between flex-wrap gap-2">
                     <div>
                       <label className="text-xs font-semibold text-dark-700 dark:text-dark-300">
-                        Participating Leads ({selectedCallerIds.length} of {activeTelecallers.length} selected)
+                        Participating Members ({selectedCallerIds.length} of {activeTelecallers.length} selected)
                       </label>
                       {selectedCallerIds.length > 0 && rawData.length > 0 && (
                         <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
-                          Each lead will receive approx. ~{Math.ceil(rawData.length / selectedCallerIds.length)} contacts
+                          Each member will receive approx. ~{Math.ceil(rawData.length / selectedCallerIds.length)} contacts
                         </p>
                       )}
                     </div>
@@ -1528,7 +1528,7 @@ export default function ExcelLeadImportModal({ isOpen, onClose, onImportSuccess 
 
                   {activeTelecallers.length === 0 ? (
                     <p className="text-xs text-amber-600 dark:text-amber-400">
-                      No approved active leads found in system. Contacts will be imported as Unassigned.
+                      No approved active members found in system. Contacts will be imported as Unassigned.
                     </p>
                   ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-40 overflow-y-auto">
@@ -1569,7 +1569,7 @@ export default function ExcelLeadImportModal({ isOpen, onClose, onImportSuccess 
               {assignmentStrategy === 'direct' && (
                 <div className="p-3.5 rounded-xl bg-dark-50/60 dark:bg-dark-800/40 border border-dark-200 dark:border-dark-700">
                   <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1">
-                    Select Target Lead
+                    Select Target Member
                   </label>
                   <select
                     value={directCallerId}
@@ -1741,7 +1741,7 @@ export default function ExcelLeadImportModal({ isOpen, onClose, onImportSuccess 
                 <div className="p-4 rounded-xl border border-dark-200 dark:border-dark-700 bg-dark-50/50 dark:bg-dark-800/40 text-left space-y-2">
                   <span className="text-xs font-bold text-dark-700 dark:text-dark-300 flex items-center gap-1.5">
                     <Users size={14} className="text-emerald-600" />
-                    <span>Lead Distribution Breakdown</span>
+                    <span>Member Distribution Breakdown</span>
                   </span>
                   <div className="space-y-1.5 max-h-36 overflow-y-auto pt-1">
                     {Object.entries(progress.callerBreakdown).map(([name, count]) => (

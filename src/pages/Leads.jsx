@@ -525,8 +525,8 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
               onChange={(e) => setTelecallerFilter(e.target.value)}
               className="px-3 py-1.5 border border-dark-200 rounded-lg text-xs bg-white text-dark-800 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-dark-800 dark:border-dark-700 dark:text-white"
             >
-              <option value="">All Assigned Leads</option>
-              <option value="unassigned">Unassigned Leads</option>
+              <option value="">All Members</option>
+              <option value="unassigned">Unassigned</option>
               {telecallers.map((tc) => (
                 <option key={tc._id} value={tc._id}>
                   {tc.name}
@@ -565,7 +565,7 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
                   Follow-up Status
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-dark-500 uppercase tracking-wider dark:text-dark-400">
-                  Assigned Lead
+                  Assigned Member
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-dark-500 uppercase tracking-wider dark:text-dark-400">
                   Created
@@ -733,7 +733,7 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
                               setReassignSelectedTcId(lead.telecallerId ? String(lead.telecallerId) : '');
                             }}
                             className="p-1 rounded hover:bg-dark-100 dark:hover:bg-dark-700 text-dark-400 hover:text-primary-600 transition-colors cursor-pointer"
-                            title="Change Customer Lead"
+                            title="Change Assigned Member"
                           >
                             <ArrowRightLeft size={13} />
                           </button>
@@ -934,7 +934,7 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
 
             <div>
               <label className="block text-xs font-bold text-dark-700 dark:text-dark-300 mb-1">
-                Assign Lead Owner
+                Assign Member
               </label>
               <select
                 value={assignForm.telecallerId}
@@ -1157,7 +1157,7 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
 
           <div>
             <label className="block text-xs font-semibold text-dark-700 mb-1.5 dark:text-gray-300">
-              Assigned Lead
+              Assigned Member
             </label>
             <select
               value={form.telecallerId || ''}
@@ -1206,17 +1206,17 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
       <Modal
         isOpen={Boolean(reassignTargetLead)}
         onClose={() => setReassignTargetLead(null)}
-        title={`Change Lead for ${reassignTargetLead?.customerName || 'Customer'}`}
+        title={`Change Member for ${reassignTargetLead?.customerName || 'Customer'}`}
         size="sm"
       >
         <div className="space-y-4">
           <p className="text-xs text-dark-600 dark:text-dark-300">
-            Reassign this customer to an active lead/agent. Follow-up history and email notifications will be updated automatically.
+            Reassign this customer to an active team member. Follow-up history and email notifications will be updated automatically.
           </p>
 
           <div>
             <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1.5">
-              Select New Assigned Lead
+              Select New Assigned Member
             </label>
             <select
               value={reassignSelectedTcId}

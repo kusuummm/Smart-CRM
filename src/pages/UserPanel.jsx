@@ -34,6 +34,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/Toast';
 import { useApp } from '../context/AppContext';
+import { getRoleInfo } from '../utils/permissions';
 import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { useConfirm } from '../context/ConfirmContext';
@@ -1234,7 +1235,7 @@ export default function UserPanel({ onNavigate }) {
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-dark-500">Your User Role:</span>
-                <span className="font-semibold text-dark-900 dark:text-white capitalize">{user?.role || 'User'}</span>
+                <span className="font-semibold text-dark-900 dark:text-white capitalize">{getRoleInfo(user?.role).name || 'Member'}</span>
               </div>
             </div>
           </div>

@@ -43,7 +43,7 @@ export default function MyAccount({ onNavigate, onLogout }) {
   const [form, setForm] = useState({
     name: user?.name || '',
     email: user?.email || '',
-    role: user?.role || 'telecaller',
+    role: user?.role || 'member',
   });
 
   // Logout confirmation modal
@@ -274,7 +274,7 @@ export default function MyAccount({ onNavigate, onLogout }) {
               <label className="block text-sm font-medium text-dark-700 mb-1 dark:text-gray-300">Role</label>
               <div className="flex items-center gap-2 p-3 bg-dark-50 rounded-lg dark:bg-dark-700">
                 <Shield className="text-primary-600" size={18} />
-                <span className="text-sm font-medium text-dark-900 capitalize dark:text-white">{user?.role}</span>
+                <span className="text-sm font-medium text-dark-900 capitalize dark:text-white">{getRoleInfo(user?.role).name}</span>
               </div>
             </div>
 
