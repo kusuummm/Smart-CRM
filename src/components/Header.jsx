@@ -130,7 +130,7 @@ export default function Header({
   const displayBalance = user?.balance !== undefined ? `₹${user.balance}` : null;
 
   return (
-    <header className="h-16 bg-[#10192e] border-b border-[#1d2d52] flex items-center justify-between px-4 sm:px-6 sticky top-0 z-30 transition-all shadow-sm">
+    <header className="fixed top-0 left-0 right-0 h-16 w-full bg-[#10192e] border-b border-[#1d2d52] flex items-center justify-between px-4 sm:px-6 z-30 shadow-sm">
       {/* Left Section: Sidebar Toggle & Panel Badge */}
       <div className="flex items-center gap-3 sm:gap-4">
         <button

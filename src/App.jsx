@@ -582,7 +582,7 @@ function AppLayout() {
       />
 
       {/* Main Container with Sidebar */}
-      <div className="flex flex-1 w-full min-w-0 overflow-x-hidden">
+      <div className="flex flex-1 w-full min-w-0 pt-16 overflow-x-hidden">
         <Sidebar
           currentPage={currentPage}
           onNavigate={navigateToPage}

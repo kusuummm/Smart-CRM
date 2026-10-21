@@ -142,7 +142,7 @@ export default function Sidebar({
 
   return (
     <aside
-      className={`fixed top-16 left-0 z-20 h-[calc(100vh-4rem)] transition-all duration-300 ease-in-out bg-[#10192e] border-r border-[#1d2d52] flex flex-col ${
+      className={`fixed top-16 -mt-px left-0 z-20 h-[calc(100vh-4rem+1px)] transition-all duration-300 ease-in-out bg-[#10192e] border-r border-[#1d2d52] flex flex-col ${
         collapsed ? 'w-[72px]' : 'w-[230px]'
       }`}
     >
