@@ -232,9 +232,9 @@ export default function Login({ isAddingAccount = false, onCancelAdd }) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-900 dark:bg-dark-950 p-4 sm:p-6">
+    <div className="min-h-screen flex items-center justify-center bg-[#10192e] dark:bg-dark-950 p-4 sm:p-6">
       <div className="w-full max-w-md">
-        <div className="bg-white dark:bg-dark-900 rounded-2xl shadow-2xl p-6 sm:p-8 border border-dark-100 dark:border-dark-800 transition-all">
+        <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-2xl p-6 sm:p-8 border border-dark-100 dark:border-dark-700 transition-all">
           {/* Header Bar */}
           <div className="flex items-center justify-between mb-6 pb-4 border-b border-dark-100 dark:border-dark-800">
             <div className="flex items-center gap-3">

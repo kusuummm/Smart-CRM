@@ -353,16 +353,16 @@ export function AppProvider({ children }) {
   useEffect(() => {
     const colors = {
       blue: {
-        50: '#f0f7ff',
-        100: '#e0effe',
-        200: '#bae0fd',
-        300: '#7cc2fb',
-        400: '#389df6',
-        500: '#2563eb',
-        600: '#1d4ed8',
-        700: '#1e40af',
-        800: '#1e3a8a',
-        900: '#172554',
+        50: '#f0f4fa',
+        100: '#e2ebf6',
+        200: '#c7d7ed',
+        300: '#9fb9df',
+        400: '#658fca',
+        500: '#2b498a',
+        600: '#1f346c',
+        700: '#182955',
+        800: '#121f42',
+        900: '#0c142c',
       },
       slate: {
         50: '#f8fafc',

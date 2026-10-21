@@ -5,16 +5,16 @@
 @tailwind utilities;
 
 :root {
-  --color-primary-50: #f0f7ff;
-  --color-primary-100: #e0effe;
-  --color-primary-200: #bae0fd;
-  --color-primary-300: #7cc2fb;
-  --color-primary-400: #389df6;
-  --color-primary-500: #2563eb;
-  --color-primary-600: #1d4ed8;
-  --color-primary-700: #1e40af;
-  --color-primary-800: #1e3a8a;
-  --color-primary-900: #172554;
+  --color-primary-50: #f0f4fa;
+  --color-primary-100: #e2ebf6;
+  --color-primary-200: #c7d7ed;
+  --color-primary-300: #9fb9df;
+  --color-primary-400: #658fca;
+  --color-primary-500: #2b498a;
+  --color-primary-600: #1f346c;
+  --color-primary-700: #182955;
+  --color-primary-800: #121f42;
+  --color-primary-900: #0c142c;
   font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   font-size: 14px;
   line-height: 1.5;
@@ -70,8 +70,8 @@ body {
   font-size: 14px;
   line-height: 1.5;
   letter-spacing: -0.011em;
-  background-color: #f8fafc;
-  color: #0f172a;
+  background-color: #fafbfd;
+  color: #1a202c;
 }
 
 #root {
@@ -84,18 +84,18 @@ body {
 /* Dark mode */
 .dark body,
 body.dark {
-  background-color: #0f172a; /* dark-900 equivalent */
-  color: #e2e8f0; /* dark-200 equivalent */
+  background-color: #10192e; /* Paymanent deep navy dark */
+  color: #e2e8f0;
 }
 
 /* Ensure html also gets dark mode */
 html.dark body {
-  background-color: #0f172a;
+  background-color: #10192e;
   color: #e2e8f0;
 }
 
 html.dark #root {
-  background-color: #0f172a;
+  background-color: #10192e;
 }
 
 /* When dark class is on html element */
@@ -105,11 +105,11 @@ html.dark {
 
 /* Main app background - syncs with dark mode */
 html:not(.dark) .app-bg {
-  background-color: #f1f5f9;
+  background-color: #f0f4fa;
 }
 
 html.dark .app-bg {
-  background-color: #0f172a;
+  background-color: #10192e;
 }
 
 html:not(.dark) .app-card {
@@ -118,8 +118,8 @@ html:not(.dark) .app-card {
 }
 
 html.dark .app-card {
-  background-color: #1e293b;
-  border-color: #334155;
+  background-color: #182647;
+  border-color: #2a3a5e;
 }
 
 html:not(.dark) .app-text {

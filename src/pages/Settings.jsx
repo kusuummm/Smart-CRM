@@ -75,7 +75,7 @@ export default function Settings() {
   };
 
   const themeColors = [
-    { key: 'blue', label: 'Alpine Blue', class: 'bg-blue-600' },
+    { key: 'blue', label: 'Paymanent Navy', class: 'bg-[#1f346c]' },
     { key: 'slate', label: 'Slate Monochrome', class: 'bg-slate-700' },
     { key: 'green', label: 'Sage Emerald', class: 'bg-emerald-600' },
     { key: 'red', label: 'Crimson', class: 'bg-rose-600' },
