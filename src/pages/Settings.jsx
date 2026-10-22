@@ -376,10 +376,14 @@ export default function Settings({ onNavigate }) {
           </button>
           <button
             onClick={handleSaveSettings}
+            style={{
+              backgroundColor: 'var(--color-primary-600)',
+              boxShadow: hasChanges
+                ? '0 4px 16px 0 rgba(var(--color-primary-500-rgb, 43, 73, 138), 0.55)'
+                : undefined,
+            }}
             className={`px-5 py-2 text-xs sm:text-sm font-bold text-white rounded-xl shadow-sm transition-all flex items-center gap-2 cursor-pointer ${
-              hasChanges
-                ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20 animate-bounce'
-                : 'bg-primary-600 hover:bg-primary-700'
+              hasChanges ? 'animate-bounce' : 'hover:opacity-90'
             }`}
           >
             <Save size={15} />
@@ -397,9 +401,17 @@ export default function Settings({ onNavigate }) {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
+              style={
+                isActive
+                  ? {
+                      backgroundColor: 'var(--color-primary-600)',
+                      boxShadow: '0 2px 10px -1px rgba(var(--color-primary-500-rgb, 43, 73, 138), 0.45)',
+                    }
+                  : undefined
+              }
               className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-2 transition-all shrink-0 cursor-pointer ${
                 isActive
-                  ? 'bg-primary-600 text-white shadow-xs'
+                  ? 'text-white shadow-xs'
                   : 'bg-white dark:bg-dark-800 text-dark-600 dark:text-dark-300 border border-dark-200 dark:border-dark-700 hover:bg-dark-50 dark:hover:bg-dark-700/60'
               }`}
             >
@@ -432,7 +444,14 @@ export default function Settings({ onNavigate }) {
                 <div className="absolute right-0 top-0 bottom-0 w-64 bg-radial from-blue-500/20 to-transparent pointer-events-none" />
                 <div className="relative z-10 flex items-start justify-between gap-4">
                   <div>
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/20 border border-blue-400/30 text-sky-300 uppercase tracking-wider mb-2">
+                    <span
+                      style={{
+                        backgroundColor: 'rgba(var(--color-primary-500-rgb, 43, 73, 138), 0.22)',
+                        borderColor: 'rgba(var(--color-primary-400-rgb, 101, 143, 202), 0.45)',
+                        color: 'var(--color-primary-300, #7dd3fc)',
+                      }}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold border uppercase tracking-wider mb-2"
+                    >
                       <Sparkles size={11} />
                       {isAdmin ? 'ADMINISTRATOR ENVIRONMENT' : 'TEAM MEMBER WORKSPACE'}
                     </span>
@@ -605,8 +624,9 @@ export default function Settings({ onNavigate }) {
                         }
                         setHasChanges(true);
                       }}
+                      style={adminSettings.mandatoryRecording ? { backgroundColor: 'var(--color-primary-600)' } : undefined}
                       className={`relative w-12 h-6.5 rounded-full transition-colors duration-200 shrink-0 cursor-pointer ${
-                        adminSettings.mandatoryRecording ? 'bg-blue-600' : 'bg-dark-200 dark:bg-dark-600'
+                        adminSettings.mandatoryRecording ? 'bg-primary-600' : 'bg-dark-200 dark:bg-dark-600'
                       }`}
                     >
                       <span className={`absolute top-0.5 w-5.5 h-5.5 bg-white rounded-full shadow-xs transition-transform duration-200 ${
@@ -634,8 +654,9 @@ export default function Settings({ onNavigate }) {
                         setAdminSettings(prev => ({ ...prev, maskPhoneNumbers: !prev.maskPhoneNumbers }));
                         setHasChanges(true);
                       }}
+                      style={adminSettings.maskPhoneNumbers ? { backgroundColor: 'var(--color-primary-600)' } : undefined}
                       className={`relative w-12 h-6.5 rounded-full transition-colors duration-200 shrink-0 cursor-pointer ${
-                        adminSettings.maskPhoneNumbers ? 'bg-emerald-600' : 'bg-dark-200 dark:bg-dark-600'
+                        adminSettings.maskPhoneNumbers ? 'bg-primary-600' : 'bg-dark-200 dark:bg-dark-600'
                       }`}
                     >
                       <span className={`absolute top-0.5 w-5.5 h-5.5 bg-white rounded-full shadow-xs transition-transform duration-200 ${
@@ -664,8 +685,9 @@ export default function Settings({ onNavigate }) {
                           setAdminSettings(prev => ({ ...prev, autoRecycleDormantLeads: !prev.autoRecycleDormantLeads }));
                           setHasChanges(true);
                         }}
+                        style={adminSettings.autoRecycleDormantLeads ? { backgroundColor: 'var(--color-primary-600)' } : undefined}
                         className={`relative w-12 h-6.5 rounded-full transition-colors duration-200 shrink-0 cursor-pointer ${
-                          adminSettings.autoRecycleDormantLeads ? 'bg-amber-600' : 'bg-dark-200 dark:bg-dark-600'
+                          adminSettings.autoRecycleDormantLeads ? 'bg-primary-600' : 'bg-dark-200 dark:bg-dark-600'
                         }`}
                       >
                         <span className={`absolute top-0.5 w-5.5 h-5.5 bg-white rounded-full shadow-xs transition-transform duration-200 ${
@@ -713,8 +735,9 @@ export default function Settings({ onNavigate }) {
                         setAdminSettings(prev => ({ ...prev, restrictDataExport: !prev.restrictDataExport }));
                         setHasChanges(true);
                       }}
+                      style={adminSettings.restrictDataExport ? { backgroundColor: 'var(--color-primary-600)' } : undefined}
                       className={`relative w-12 h-6.5 rounded-full transition-colors duration-200 shrink-0 cursor-pointer ${
-                        adminSettings.restrictDataExport ? 'bg-violet-600' : 'bg-dark-200 dark:bg-dark-600'
+                        adminSettings.restrictDataExport ? 'bg-primary-600' : 'bg-dark-200 dark:bg-dark-600'
                       }`}
                     >
                       <span className={`absolute top-0.5 w-5.5 h-5.5 bg-white rounded-full shadow-xs transition-transform duration-200 ${
@@ -742,8 +765,9 @@ export default function Settings({ onNavigate }) {
                         setAdminSettings(prev => ({ ...prev, duplicateMobileGuard: !prev.duplicateMobileGuard }));
                         setHasChanges(true);
                       }}
+                      style={adminSettings.duplicateMobileGuard ? { backgroundColor: 'var(--color-primary-600)' } : undefined}
                       className={`relative w-12 h-6.5 rounded-full transition-colors duration-200 shrink-0 cursor-pointer ${
-                        adminSettings.duplicateMobileGuard ? 'bg-sky-600' : 'bg-dark-200 dark:bg-dark-600'
+                        adminSettings.duplicateMobileGuard ? 'bg-primary-600' : 'bg-dark-200 dark:bg-dark-600'
                       }`}
                     >
                       <span className={`absolute top-0.5 w-5.5 h-5.5 bg-white rounded-full shadow-xs transition-transform duration-200 ${
@@ -959,8 +983,9 @@ export default function Settings({ onNavigate }) {
                         setMemberSettings(prev => ({ ...prev, autoAdvanceFollowup: !prev.autoAdvanceFollowup }));
                         setHasChanges(true);
                       }}
+                      style={memberSettings.autoAdvanceFollowup ? { backgroundColor: 'var(--color-primary-600)' } : undefined}
                       className={`relative w-12 h-6.5 rounded-full transition-colors duration-200 shrink-0 cursor-pointer ${
-                        memberSettings.autoAdvanceFollowup ? 'bg-amber-500' : 'bg-dark-200 dark:bg-dark-600'
+                        memberSettings.autoAdvanceFollowup ? 'bg-primary-600' : 'bg-dark-200 dark:bg-dark-600'
                       }`}
                     >
                       <span className={`absolute top-0.5 w-5.5 h-5.5 bg-white rounded-full shadow-xs transition-transform duration-200 ${
@@ -1095,6 +1120,7 @@ export default function Settings({ onNavigate }) {
                     type="button"
                     onClick={() => handleToggleCallRecording('enabled')}
                     disabled={adminSettings.mandatoryRecording && !isAdmin}
+                    style={callRecording.enabled ? { backgroundColor: 'var(--color-primary-600)' } : undefined}
                     className={`relative w-14 h-8 rounded-full transition-colors duration-300 shrink-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-60 disabled:cursor-not-allowed ${
                       callRecording.enabled ? 'bg-primary-600' : 'bg-dark-200 dark:bg-dark-600'
                     }`}
@@ -1125,6 +1151,7 @@ export default function Settings({ onNavigate }) {
                     <button
                       type="button"
                       onClick={() => handleToggleCallRecording('consentBeep')}
+                      style={callRecording.consentBeep ? { backgroundColor: 'var(--color-primary-600)' } : undefined}
                       className={`relative w-11 h-6 rounded-full transition-colors duration-300 shrink-0 cursor-pointer ${
                         callRecording.consentBeep ? 'bg-primary-600' : 'bg-dark-200 dark:bg-dark-600'
                       }`}
@@ -1151,6 +1178,7 @@ export default function Settings({ onNavigate }) {
                     <button
                       type="button"
                       onClick={() => handleToggleCallRecording('noiseSuppression')}
+                      style={callRecording.noiseSuppression ? { backgroundColor: 'var(--color-primary-600)' } : undefined}
                       className={`relative w-11 h-6 rounded-full transition-colors duration-300 shrink-0 cursor-pointer ${
                         callRecording.noiseSuppression ? 'bg-primary-600' : 'bg-dark-200 dark:bg-dark-600'
                       }`}
@@ -1177,6 +1205,7 @@ export default function Settings({ onNavigate }) {
                     <button
                       type="button"
                       onClick={() => handleToggleCallRecording('waveformVisuals')}
+                      style={callRecording.waveformVisuals ? { backgroundColor: 'var(--color-primary-600)' } : undefined}
                       className={`relative w-11 h-6 rounded-full transition-colors duration-300 shrink-0 cursor-pointer ${
                         callRecording.waveformVisuals ? 'bg-primary-600' : 'bg-dark-200 dark:bg-dark-600'
                       }`}
@@ -1275,6 +1304,7 @@ export default function Settings({ onNavigate }) {
                   </div>
                   <button
                     onClick={toggleDarkMode}
+                    style={darkMode ? { backgroundColor: 'var(--color-primary-600)' } : undefined}
                     className={`relative w-14 h-8 rounded-full transition-colors duration-300 cursor-pointer ${
                       darkMode ? 'bg-primary-600' : 'bg-dark-200 dark:bg-dark-600'
                     }`}
@@ -1303,6 +1333,14 @@ export default function Settings({ onNavigate }) {
                           setThemeColor(color.key);
                           setHasChanges(true);
                         }}
+                        style={
+                          isCurrent
+                            ? {
+                                borderColor: 'var(--color-primary-500)',
+                                boxShadow: '0 0 14px -2px rgba(var(--color-primary-500-rgb, 43, 73, 138), 0.5)',
+                              }
+                            : undefined
+                        }
                         className={`p-3 rounded-xl border flex items-center gap-3 cursor-pointer transition-all ${
                           isCurrent
                             ? 'border-dark-900 dark:border-white shadow-xs bg-dark-50 dark:bg-dark-900/50 ring-2 ring-primary-500/30'
@@ -1330,7 +1368,7 @@ export default function Settings({ onNavigate }) {
               <div className="px-6 py-4 border-b border-dark-200 dark:border-dark-700 flex items-center justify-between">
                 <div>
                   <h3 className="text-base font-bold text-dark-900 dark:text-white flex items-center gap-2">
-                    <Bell size={18} className="text-primary-600" />
+                    <Bell size={18} style={{ color: 'var(--color-primary-500)' }} />
                     <span>Notification Channels &amp; Reminders</span>
                   </h3>
                   <p className="text-xs text-dark-500 dark:text-dark-400 mt-0.5">
@@ -1340,7 +1378,12 @@ export default function Settings({ onNavigate }) {
                 <button
                   type="button"
                   onClick={playTestChime}
-                  className="px-3 py-1.5 rounded-xl text-xs font-bold bg-dark-100 hover:bg-dark-200 dark:bg-dark-700 dark:hover:bg-dark-600 text-dark-700 dark:text-dark-200 transition-colors flex items-center gap-1.5 cursor-pointer"
+                  style={{
+                    color: 'var(--color-primary-500)',
+                    borderColor: 'rgba(var(--color-primary-500-rgb, 43, 73, 138), 0.35)',
+                    backgroundColor: 'rgba(var(--color-primary-500-rgb, 43, 73, 138), 0.12)',
+                  }}
+                  className="px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors flex items-center gap-1.5 cursor-pointer hover:opacity-85"
                 >
                   <Volume2 size={13} />
                   <span>Test Chime</span>
@@ -1366,6 +1409,7 @@ export default function Settings({ onNavigate }) {
                             setNotifications(prev => ({ ...prev, [item.key]: e.target.checked }));
                             setHasChanges(true);
                           }}
+                          style={{ accentColor: 'var(--color-primary-500)' }}
                           className="w-4.5 h-4.5 text-primary-600 rounded border-dark-300 focus:ring-primary-500 cursor-pointer"
                         />
                         <item.Icon size={18} className="text-dark-500 shrink-0" />

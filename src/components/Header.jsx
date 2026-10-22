@@ -175,10 +175,16 @@ export default function Header({
           return (
             <span
               onClick={() => onNavigate?.('home')}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold tracking-wider uppercase bg-gradient-to-r from-sky-500/20 via-[#182647] to-[#182647] text-sky-300 border border-sky-500/40 shadow-xs cursor-pointer hover:border-sky-400 hover:text-white transition-all"
+              style={{
+                borderColor: 'var(--color-primary-400, #38bdf8)',
+                background:
+                  'linear-gradient(90deg, rgba(var(--color-primary-500-rgb, 43, 73, 138), 0.25) 0%, rgba(24, 38, 71, 0.9) 100%)',
+                color: 'var(--color-primary-300, #7dd3fc)',
+              }}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold tracking-wider uppercase border shadow-xs cursor-pointer hover:border-primary-400 hover:text-white transition-all"
               title="Go to Member Workspace"
             >
-              <Phone size={13} className="text-sky-400" />
+              <Phone size={13} style={{ color: 'var(--color-primary-400, #38bdf8)' }} />
               MEMBER PANEL
             </span>
           );
@@ -191,9 +197,15 @@ export default function Header({
         <button
           onClick={() => onNavigate?.('wallet')}
           title="Open Wallet & Recharges"
-          className="hidden sm:flex items-center gap-2 px-3 py-1.5 text-[13px] rounded-lg bg-gradient-to-r from-[#182647] to-[#1a2d58] border border-[#2a3a5e] hover:border-sky-400/50 text-slate-200 transition-all cursor-pointer shadow-2xs group"
+          className="hidden sm:flex items-center gap-2 px-3 py-1.5 text-[13px] rounded-lg bg-gradient-to-r from-[#182647] to-[#1a2d58] border border-[#2a3a5e] hover:border-primary-400 text-slate-200 transition-all cursor-pointer shadow-2xs group"
         >
-          <div className="w-5 h-5 rounded-md bg-sky-500/15 flex items-center justify-center text-sky-400 group-hover:scale-110 transition-transform">
+          <div
+            style={{
+              backgroundColor: 'rgba(var(--color-primary-500-rgb, 43, 73, 138), 0.22)',
+              color: 'var(--color-primary-400, #38bdf8)',
+            }}
+            className="w-5 h-5 rounded-md flex items-center justify-center group-hover:scale-110 transition-transform"
+          >
             <Wallet size={13} />
           </div>
           <span className="font-medium text-[11.5px] text-slate-300">AVL BAL :</span>

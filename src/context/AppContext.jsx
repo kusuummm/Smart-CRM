@@ -349,6 +349,20 @@ export function AppProvider({ children }) {
     localStorage.setItem('darkMode', JSON.stringify(darkMode));
   }, [darkMode]);
 
+  // Helper to convert hex to RGB triplets for CSS opacity functions
+  const hexToRgb = (hex) => {
+    if (!hex) return '31, 52, 108';
+    const clean = hex.replace('#', '');
+    if (clean.length === 3) {
+      const r = parseInt(clean[0] + clean[0], 16);
+      const g = parseInt(clean[1] + clean[1], 16);
+      const b = parseInt(clean[2] + clean[2], 16);
+      return `${r}, ${g}, ${b}`;
+    }
+    const num = parseInt(clean, 16);
+    return `${(num >> 16) & 255}, ${(num >> 8) & 255}, ${num & 255}`;
+  };
+
   // Apply theme color
   useEffect(() => {
     const colors = {
@@ -363,6 +377,7 @@ export function AppProvider({ children }) {
         700: '#182955',
         800: '#121f42',
         900: '#0c142c',
+        950: '#080d1e',
       },
       slate: {
         50: '#f8fafc',
@@ -370,11 +385,12 @@ export function AppProvider({ children }) {
         200: '#e2e8f0',
         300: '#cbd5e1',
         400: '#94a3b8',
-        500: '#475569',
-        600: '#334155',
-        700: '#1e293b',
-        800: '#0f172a',
-        900: '#020617',
+        500: '#64748b',
+        600: '#475569',
+        700: '#334155',
+        800: '#1e293b',
+        900: '#0f172a',
+        950: '#020617',
       },
       green: {
         50: '#f0fdf4',
@@ -387,18 +403,20 @@ export function AppProvider({ children }) {
         700: '#047857',
         800: '#065f46',
         900: '#064e3b',
+        950: '#022c22',
       },
       red: {
-        50: '#fef2f2',
-        100: '#fee2e2',
-        200: '#fecaca',
-        300: '#fca5a5',
-        400: '#f87171',
-        500: '#ef4444',
-        600: '#dc2626',
-        700: '#b91c1c',
-        800: '#991b1b',
-        900: '#7f1d1d',
+        50: '#fff1f2',
+        100: '#ffe4e6',
+        200: '#fecdd3',
+        300: '#fda4af',
+        400: '#fb7185',
+        500: '#f43f5e',
+        600: '#e11d48',
+        700: '#be123c',
+        800: '#9f1239',
+        900: '#881337',
+        950: '#4c0519',
       },
       orange: {
         50: '#fff7ed',
@@ -406,11 +424,12 @@ export function AppProvider({ children }) {
         200: '#fed7aa',
         300: '#fdba74',
         400: '#fb923c',
-        500: '#f97316',
-        600: '#ea580c',
-        700: '#c2410c',
-        800: '#9a3412',
-        900: '#7c2d12',
+        500: '#f59e0b',
+        600: '#d97706',
+        700: '#b45309',
+        800: '#92400e',
+        900: '#78350f',
+        950: '#451a03',
       },
       indigo: {
         50: '#eef2ff',
@@ -423,6 +442,7 @@ export function AppProvider({ children }) {
         700: '#4338ca',
         800: '#3730a3',
         900: '#312e81',
+        950: '#1e1b4b',
       },
       cyan: {
         50: '#ecfeff',
@@ -435,6 +455,7 @@ export function AppProvider({ children }) {
         700: '#0e7490',
         800: '#155e75',
         900: '#164e63',
+        950: '#083344',
       },
       violet: {
         50: '#f5f3ff',
@@ -447,13 +468,26 @@ export function AppProvider({ children }) {
         700: '#6d28d9',
         800: '#5b21b6',
         900: '#4c1d95',
+        950: '#2e1065',
       },
     };
     const activeColor = themeColor === 'purple' ? 'blue' : themeColor;
     const c = colors[activeColor] || colors.blue;
     Object.entries(c).forEach(([shade, hex]) => {
       document.documentElement.style.setProperty(`--color-primary-${shade}`, hex);
+      document.documentElement.style.setProperty(`--color-primary-${shade}-rgb`, hexToRgb(hex));
     });
+    // System-wide root accent variables for all controls, buttons & toggles
+    document.documentElement.style.setProperty('--color-primary', c[500]);
+    document.documentElement.style.setProperty('--color-primary-rgb', hexToRgb(c[500]));
+    document.documentElement.style.setProperty('--color-primary-500', c[500]);
+    document.documentElement.style.setProperty('--color-primary-600', c[600]);
+    document.documentElement.style.setProperty('--color-primary-500-rgb', hexToRgb(c[500]));
+    document.documentElement.style.setProperty('--color-primary-600-rgb', hexToRgb(c[600]));
+    document.documentElement.style.setProperty('--color-accent', c[500]);
+    document.documentElement.style.setProperty('--color-accent-rgb', hexToRgb(c[500]));
+    document.documentElement.style.setProperty('accent-color', c[500]);
+    document.documentElement.setAttribute('data-theme', activeColor);
     try {
       localStorage.setItem('themeColor', activeColor);
     } catch {}

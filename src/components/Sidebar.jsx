@@ -26,6 +26,7 @@ import {
   LayoutDashboard,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useApp } from '../context/AppContext';
 import { isOwner, isAdmin, isManager, isAdminOrOwner } from '../utils/permissions';
 
 export default function Sidebar({
@@ -35,6 +36,7 @@ export default function Sidebar({
   onToggle,
 }) {
   const { user } = useAuth();
+  const { themeColor } = useApp();
   const sidebarRef = useRef(null);
   const scrollContainerRef = useRef(null);
 
@@ -238,10 +240,14 @@ export default function Sidebar({
                 : item.label === 'ADMIN CONTROLS' || item.label === 'MANAGER SUPERVISION'
                 ? 'text-violet-400'
                 : 'text-amber-400';
+            const isMainSection = item.label === 'CORE CRM' || item.label.includes('CONTROL') || item.label.includes('SUPERVISION');
             return (
               <div
                 key={`hdr-${idx}`}
-                className={`text-[10px] font-bold uppercase tracking-wider px-3 pt-3.5 pb-1 flex items-center justify-between ${headerColor}`}
+                style={isMainSection ? { color: 'var(--color-primary-400, #38bdf8)' } : undefined}
+                className={`text-[10px] font-bold uppercase tracking-wider px-3 pt-3.5 pb-1 flex items-center justify-between ${
+                  isMainSection ? '' : headerColor
+                }`}
               >
                 <span>{item.label}</span>
               </div>
@@ -283,19 +289,31 @@ export default function Sidebar({
               key={item.id}
               onClick={() => handleItemClick(item)}
               title={collapsed ? item.label : undefined}
+              style={
+                isActive
+                  ? {
+                      borderLeftWidth: '3.5px',
+                      borderLeftColor: 'var(--color-primary-400, #38bdf8)',
+                      background:
+                        'linear-gradient(90deg, rgba(var(--color-primary-500-rgb, 43, 73, 138), 0.32) 0%, rgba(21, 36, 76, 0.95) 100%)',
+                      boxShadow: '0 2px 12px -2px rgba(var(--color-primary-500-rgb, 43, 73, 138), 0.45)',
+                    }
+                  : undefined
+              }
               className={`w-full flex items-center justify-between px-3 h-10 rounded-lg text-[13.5px] transition-all cursor-pointer group ${
                 isActive
-                  ? 'bg-gradient-to-r from-[#1f346c] to-[#15244c] border-l-3 border-sky-400 text-white font-semibold shadow-xs'
+                  ? 'text-white font-semibold shadow-xs'
                   : 'text-slate-300 hover:bg-[#182647] hover:text-white'
               }`}
             >
               <div className="flex items-center gap-2.5 min-w-0">
                 <Icon
                   size={17}
+                  style={isActive ? { color: 'var(--color-primary-300, #7dd3fc)' } : undefined}
                   className={`flex-shrink-0 transition-colors ${
                     isActive
-                      ? 'text-sky-300'
-                      : 'text-slate-400 group-hover:text-sky-300'
+                      ? ''
+                      : 'text-slate-400 group-hover:text-slate-200'
                   }`}
                 />
                 {!collapsed && (
@@ -304,7 +322,14 @@ export default function Sidebar({
               </div>
 
               {!collapsed && item.badge && (
-                <span className="px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-sky-500/15 border border-sky-400/30 text-sky-300 tracking-wide">
+                <span
+                  style={{
+                    backgroundColor: 'rgba(var(--color-primary-500-rgb, 43, 73, 138), 0.22)',
+                    borderColor: 'rgba(var(--color-primary-400-rgb, 101, 143, 202), 0.45)',
+                    color: 'var(--color-primary-300, #7dd3fc)',
+                  }}
+                  className="px-1.5 py-0.5 text-[10px] font-bold rounded-full border tracking-wide"
+                >
                   {item.badge}
                 </span>
               )}

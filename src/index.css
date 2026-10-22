@@ -15,6 +15,12 @@
   --color-primary-700: #182955;
   --color-primary-800: #121f42;
   --color-primary-900: #0c142c;
+  --color-primary-950: #080d1e;
+  --color-primary-500-rgb: 43, 73, 138;
+  --color-primary-600-rgb: 31, 52, 108;
+  --color-primary: #2b498a;
+  --color-accent: #2b498a;
+  accent-color: var(--color-primary-500);
   font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   font-size: 14px;
   line-height: 1.5;
@@ -24,6 +30,13 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Global browser accent-color for all checkboxes, radios, sliders */
+input[type="checkbox"],
+input[type="radio"],
+input[type="range"] {
+  accent-color: var(--color-primary-500) !important;
 }
 
 *,
