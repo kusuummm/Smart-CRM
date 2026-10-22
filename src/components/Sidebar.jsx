@@ -292,42 +292,49 @@ export default function Sidebar({
               style={
                 isActive
                   ? {
-                      borderLeftWidth: '3.5px',
-                      borderLeftColor: 'var(--color-primary-400, #38bdf8)',
-                      background:
-                        'linear-gradient(90deg, rgba(var(--color-primary-500-rgb, 43, 73, 138), 0.32) 0%, rgba(21, 36, 76, 0.95) 100%)',
-                      boxShadow: '0 2px 12px -2px rgba(var(--color-primary-500-rgb, 43, 73, 138), 0.45)',
+                      backgroundColor: 'var(--color-primary-600)',
+                      borderLeft: '4px solid var(--color-primary-300)',
+                      boxShadow: '0 4px 14px -1px rgba(0, 0, 0, 0.35)',
                     }
                   : undefined
               }
               className={`w-full flex items-center justify-between px-3 h-10 rounded-lg text-[13.5px] transition-all cursor-pointer group ${
                 isActive
-                  ? 'text-white font-semibold shadow-xs'
+                  ? 'text-white font-bold'
                   : 'text-slate-300 hover:bg-[#182647] hover:text-white'
               }`}
             >
               <div className="flex items-center gap-2.5 min-w-0">
                 <Icon
                   size={17}
-                  style={isActive ? { color: 'var(--color-primary-300, #7dd3fc)' } : undefined}
                   className={`flex-shrink-0 transition-colors ${
                     isActive
-                      ? ''
-                      : 'text-slate-400 group-hover:text-slate-200'
+                      ? 'text-white'
+                      : 'text-slate-400 group-hover:text-white'
                   }`}
                 />
                 {!collapsed && (
-                  <span className="truncate text-left">{item.label}</span>
+                  <span className={`truncate text-left ${isActive ? 'text-white font-bold' : ''}`}>
+                    {item.label}
+                  </span>
                 )}
               </div>
 
               {!collapsed && item.badge && (
                 <span
-                  style={{
-                    backgroundColor: 'rgba(var(--color-primary-500-rgb, 43, 73, 138), 0.22)',
-                    borderColor: 'rgba(var(--color-primary-400-rgb, 101, 143, 202), 0.45)',
-                    color: 'var(--color-primary-300, #7dd3fc)',
-                  }}
+                  style={
+                    isActive
+                      ? {
+                          backgroundColor: 'rgba(255, 255, 255, 0.22)',
+                          borderColor: 'rgba(255, 255, 255, 0.4)',
+                          color: '#ffffff',
+                        }
+                      : {
+                          backgroundColor: 'rgba(var(--color-primary-500-rgb, 43, 73, 138), 0.22)',
+                          borderColor: 'rgba(var(--color-primary-400-rgb, 101, 143, 202), 0.45)',
+                          color: 'var(--color-primary-300, #7dd3fc)',
+                        }
+                  }
                   className="px-1.5 py-0.5 text-[10px] font-bold rounded-full border tracking-wide"
                 >
                   {item.badge}

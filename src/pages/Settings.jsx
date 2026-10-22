@@ -340,7 +340,13 @@ export default function Settings({ onNavigate }) {
       {/* 1. Header with Role Badge and Save Alert */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 shadow-xs">
         <div className="flex items-center gap-3.5">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white flex items-center justify-center shadow-md shadow-blue-500/20 shrink-0">
+          <div
+            style={{
+              backgroundColor: 'var(--color-primary-600)',
+              boxShadow: '0 4px 14px -2px rgba(0, 0, 0, 0.25)',
+            }}
+            className="w-12 h-12 rounded-xl text-white flex items-center justify-center shadow-md shrink-0"
+          >
             <Sliders size={24} />
           </div>
           <div>
@@ -348,7 +354,14 @@ export default function Settings({ onNavigate }) {
               <h1 className="text-xl sm:text-2xl font-bold text-dark-900 dark:text-white">
                 Settings &amp; Preferences
               </h1>
-              <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider border shadow-2xs ${roleInfo.badgeClass}`}>
+              <span
+                style={{
+                  borderColor: 'var(--color-primary-400)',
+                  color: 'var(--color-primary-700, #047857)',
+                  backgroundColor: 'rgba(var(--color-primary-500-rgb, 16 185 129), 0.14)',
+                }}
+                className="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider border shadow-2xs dark:text-white"
+              >
                 {roleInfo.badge} PANEL
               </span>
               {hasChanges && (
@@ -440,25 +453,43 @@ export default function Settings({ onNavigate }) {
           {activeTab === 'overview' && (
             <div className="space-y-6">
               {/* Role Context Welcome Banner */}
-              <div className="p-5 rounded-2xl bg-gradient-to-r from-blue-900/90 via-[#182647] to-indigo-950 text-white shadow-lg relative overflow-hidden border border-blue-800/40">
-                <div className="absolute right-0 top-0 bottom-0 w-64 bg-radial from-blue-500/20 to-transparent pointer-events-none" />
+              {/* Role Context Welcome Banner */}
+              <div
+                style={{
+                  backgroundColor: '#0c1322',
+                  backgroundImage:
+                    'linear-gradient(135deg, #0c1322 0%, #162444 50%, #0c1322 100%)',
+                  borderColor: '#1e293b',
+                }}
+                className="p-6 rounded-2xl text-white shadow-xl relative overflow-hidden border"
+              >
+                {/* Dynamic theme accent radial glow */}
+                <div
+                  style={{
+                    background:
+                      'radial-gradient(circle at 100% 0%, var(--color-primary-500) 0%, transparent 70%)',
+                    opacity: 0.25,
+                  }}
+                  className="absolute -right-10 -top-10 w-80 h-80 pointer-events-none rounded-full blur-2xl"
+                />
+
                 <div className="relative z-10 flex items-start justify-between gap-4">
                   <div>
                     <span
                       style={{
-                        backgroundColor: 'rgba(var(--color-primary-500-rgb, 43, 73, 138), 0.22)',
-                        borderColor: 'rgba(var(--color-primary-400-rgb, 101, 143, 202), 0.45)',
-                        color: 'var(--color-primary-300, #7dd3fc)',
+                        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                        borderColor: 'var(--color-primary-400)',
+                        color: 'var(--color-primary-300)',
                       }}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold border uppercase tracking-wider mb-2"
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold border uppercase tracking-wider mb-2.5 shadow-xs"
                     >
-                      <Sparkles size={11} />
+                      <Sparkles size={12} style={{ color: 'var(--color-primary-400)' }} />
                       {isAdmin ? 'ADMINISTRATOR ENVIRONMENT' : 'TEAM MEMBER WORKSPACE'}
                     </span>
-                    <h2 className="text-xl font-bold">
+                    <h2 className="text-2xl font-black text-white tracking-tight">
                       Welcome, {user?.name || 'CRM User'}!
                     </h2>
-                    <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-xl leading-relaxed">
+                    <p className="text-xs sm:text-sm text-slate-200 mt-1.5 max-w-xl leading-relaxed font-normal">
                       {isAdmin
                         ? 'You have complete administrative privilege. Configure organization-wide security rules, customer data masking, dormant lead distribution, and call recording compliance below.'
                         : 'Your personal member desk is optimized for high-volume customer calling, fast follow-up pacing, and WebRTC audio telemetry.'}
@@ -467,24 +498,44 @@ export default function Settings({ onNavigate }) {
                 </div>
 
                 {/* Quick status pills */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-4 pt-4 border-t border-white/10 text-xs">
-                  <div className="p-2.5 rounded-xl bg-white/5 border border-white/10">
-                    <span className="text-[10px] text-slate-400 block uppercase">Dialer Mode</span>
-                    <span className="font-bold text-white capitalize">{memberSettings.dialerMode.replace('_', ' ')}</span>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5 pt-4 border-t border-white/15 text-xs relative z-10">
+                  <div className="p-3 rounded-xl bg-white/10 backdrop-blur-xs border border-white/15">
+                    <span className="text-[10px] text-slate-300 block uppercase font-bold tracking-wider">
+                      Dialer Mode
+                    </span>
+                    <span className="font-bold text-white text-sm capitalize">
+                      {memberSettings.dialerMode.replace('_', ' ')}
+                    </span>
                   </div>
-                  <div className="p-2.5 rounded-xl bg-white/5 border border-white/10">
-                    <span className="text-[10px] text-slate-400 block uppercase">Call Recording</span>
-                    <span className="font-bold text-emerald-400">
+                  <div className="p-3 rounded-xl bg-white/10 backdrop-blur-xs border border-white/15">
+                    <span className="text-[10px] text-slate-300 block uppercase font-bold tracking-wider">
+                      Call Recording
+                    </span>
+                    <span
+                      style={{ color: 'var(--color-primary-300)' }}
+                      className="font-bold text-sm flex items-center gap-1.5"
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                       {callRecording.enabled ? 'Enabled (Active)' : 'Disabled'}
                     </span>
                   </div>
-                  <div className="p-2.5 rounded-xl bg-white/5 border border-white/10">
-                    <span className="text-[10px] text-slate-400 block uppercase">Daily Goal</span>
-                    <span className="font-bold text-sky-300">{memberSettings.dailyCallGoal} Calls/Day</span>
+                  <div className="p-3 rounded-xl bg-white/10 backdrop-blur-xs border border-white/15">
+                    <span className="text-[10px] text-slate-300 block uppercase font-bold tracking-wider">
+                      Daily Goal
+                    </span>
+                    <span style={{ color: 'var(--color-primary-300)' }} className="font-bold text-sm">
+                      {memberSettings.dailyCallGoal} Calls/Day
+                    </span>
                   </div>
-                  <div className="p-2.5 rounded-xl bg-white/5 border border-white/10">
-                    <span className="text-[10px] text-slate-400 block uppercase">Data Masking</span>
-                    <span className={`font-bold ${adminSettings.maskPhoneNumbers ? 'text-emerald-400' : 'text-slate-300'}`}>
+                  <div className="p-3 rounded-xl bg-white/10 backdrop-blur-xs border border-white/15">
+                    <span className="text-[10px] text-slate-300 block uppercase font-bold tracking-wider">
+                      Data Masking
+                    </span>
+                    <span
+                      className={`font-bold text-sm ${
+                        adminSettings.maskPhoneNumbers ? 'text-emerald-300' : 'text-slate-200'
+                      }`}
+                    >
                       {adminSettings.maskPhoneNumbers ? 'Enforced' : 'Visible'}
                     </span>
                   </div>

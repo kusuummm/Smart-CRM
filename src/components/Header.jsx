@@ -151,10 +151,16 @@ export default function Header({
               <div className="flex items-center gap-2">
                 <span
                   onClick={() => onNavigate?.('admin-panel')}
-                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold tracking-wider uppercase border shadow-2xs cursor-pointer transition-colors ${roleInfo.badgeClass}`}
+                  style={{
+                    borderColor: 'var(--color-primary-400, #38bdf8)',
+                    background:
+                      'linear-gradient(90deg, rgba(var(--color-primary-500-rgb, 43, 73, 138), 0.25) 0%, rgba(24, 38, 71, 0.9) 100%)',
+                    color: 'var(--color-primary-300, #7dd3fc)',
+                  }}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold tracking-wider uppercase border shadow-2xs cursor-pointer hover:border-primary-400 hover:text-white transition-all"
                   title={`Go to ${roleInfo.name} Control Center`}
                 >
-                  <RoleIcon size={13} />
+                  <RoleIcon size={13} style={{ color: 'var(--color-primary-400, #38bdf8)' }} />
                   {roleInfo.badge} DESK
                 </span>
               </div>
@@ -164,10 +170,16 @@ export default function Header({
             return (
               <span
                 onClick={() => onNavigate?.('teams')}
-                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold tracking-wider uppercase border shadow-2xs cursor-pointer transition-colors ${roleInfo.badgeClass}`}
+                style={{
+                  borderColor: 'var(--color-primary-400, #38bdf8)',
+                  background:
+                    'linear-gradient(90deg, rgba(var(--color-primary-500-rgb, 43, 73, 138), 0.25) 0%, rgba(24, 38, 71, 0.9) 100%)',
+                  color: 'var(--color-primary-300, #7dd3fc)',
+                }}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold tracking-wider uppercase border shadow-2xs cursor-pointer hover:border-primary-400 hover:text-white transition-all"
                 title="Go to Team Manager Supervision"
               >
-                <RoleIcon size={13} />
+                <RoleIcon size={13} style={{ color: 'var(--color-primary-400, #38bdf8)' }} />
                 MANAGER DESK
               </span>
             );
