@@ -1420,19 +1420,25 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                           className="hover:bg-dark-50/50 dark:hover:bg-dark-750/30 transition-colors"
                         >
                           <td className="py-3 px-4">
-                            <div className="flex items-center gap-2.5">
-                              <div className="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-950/60 text-primary-700 dark:text-primary-300 font-bold text-xs flex items-center justify-center flex-shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => openInspector(tc)}
+                              className="flex items-center gap-2.5 text-left group cursor-pointer w-full focus:outline-none"
+                              title={`View ${tc.name}'s complete portfolio, workload & reports`}
+                            >
+                              <div className="w-8 h-8 rounded-full bg-primary-100 group-hover:bg-primary-600 dark:bg-primary-950/60 text-primary-700 group-hover:text-white dark:text-primary-300 font-bold text-xs flex items-center justify-center flex-shrink-0 transition-all group-hover:scale-110 shadow-2xs">
                                 {initials(tc.name)}
                               </div>
-                              <div>
-                                <span className="font-semibold text-dark-900 dark:text-white block">
-                                  {tc.name}
+                              <div className="min-w-0">
+                                <span className="font-semibold text-dark-900 dark:text-white block truncate group-hover:text-primary-600 dark:group-hover:text-primary-400 group-hover:underline transition-colors flex items-center gap-1.5">
+                                  <span>{tc.name}</span>
+                                  <ExternalLink size={10} className="opacity-0 group-hover:opacity-75 transition-opacity shrink-0" />
                                 </span>
-                                <span className="text-[11px] text-dark-400">
+                                <span className="text-[11px] text-dark-400 block truncate group-hover:text-dark-600 dark:group-hover:text-dark-300">
                                   {tc.email}
                                 </span>
                               </div>
-                            </div>
+                            </button>
                           </td>
 
                           <td className="py-3 px-4">
@@ -1453,27 +1459,49 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                           </td>
 
                           <td className="py-3 px-4 text-center">
-                            <span className="inline-flex items-center px-2.5 py-1 rounded-xl text-xs font-bold bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
-                              {custCount} Customers
-                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setInspectorTab('workload');
+                                openInspector(tc);
+                              }}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/40 dark:hover:bg-blue-900/60 text-blue-700 hover:text-blue-900 dark:text-blue-300 border border-blue-200 dark:border-blue-800 transition-all cursor-pointer hover:scale-105 shadow-2xs group"
+                              title={`Click to inspect ${tc.name}'s assigned customers (${custCount})`}
+                            >
+                              <span>{custCount} Customers</span>
+                              <ExternalLink size={10} className="opacity-40 group-hover:opacity-100 transition-opacity" />
+                            </button>
                           </td>
 
                           <td className="py-3 px-4 text-center">
-                            <span className="inline-flex items-center px-2.5 py-1 rounded-xl text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                              {leadCount} Leads
-                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setInspectorTab('report');
+                                openInspector(tc);
+                              }}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-semibold bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/60 text-emerald-700 hover:text-emerald-900 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 transition-all cursor-pointer hover:scale-105 shadow-2xs group"
+                              title={`Click to inspect ${tc.name}'s lead pipeline and performance graph`}
+                            >
+                              <span>{leadCount} Leads</span>
+                              <ExternalLink size={10} className="opacity-40 group-hover:opacity-100 transition-opacity" />
+                            </button>
                           </td>
 
                           <td className="py-3 px-4">
-                            <div className="space-y-1">
+                            <div
+                              onClick={() => openInspector(tc)}
+                              className="space-y-1 cursor-pointer group"
+                              title={`Click to view ${tc.name}'s workload distribution`}
+                            >
                               <div className="flex items-center justify-between text-[11px]">
-                                <span className="font-medium text-dark-600 dark:text-dark-300">
+                                <span className="font-medium text-dark-600 dark:text-dark-300 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
                                   {sharePct}% of assigned base
                                 </span>
                               </div>
                               <div className="w-full h-1.5 rounded-full bg-dark-100 dark:bg-dark-700 overflow-hidden">
                                 <div
-                                  className="h-full bg-blue-600 rounded-full transition-all"
+                                  className="h-full bg-blue-600 rounded-full transition-all group-hover:brightness-110"
                                   style={{ width: `${Math.min(100, Math.max(sharePct, 2))}%` }}
                                 />
                               </div>
@@ -1505,20 +1533,32 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                   {/* Summary row for Unassigned accounts */}
                   <tr className="bg-amber-50/50 dark:bg-amber-950/20 font-medium">
                     <td className="py-3 px-4">
-                      <div className="flex items-center gap-2">
-                        <AlertTriangle size={15} className="text-amber-600" />
-                        <span className="font-bold text-amber-900 dark:text-amber-200">
-                          Unassigned Customer Queue
+                      <button
+                        type="button"
+                        onClick={() => handleNavigate('admin-workload')}
+                        className="flex items-center gap-2 text-left cursor-pointer group hover:underline focus:outline-none"
+                        title="Click to open Workload Balancer and allocate unassigned customers"
+                      >
+                        <AlertTriangle size={15} className="text-amber-600 group-hover:scale-110 transition-transform" />
+                        <span className="font-bold text-amber-900 dark:text-amber-200 group-hover:text-amber-700 dark:group-hover:text-amber-100 flex items-center gap-1.5">
+                          <span>Unassigned Customer Queue</span>
+                          <ExternalLink size={10} className="opacity-0 group-hover:opacity-75 transition-opacity" />
                         </span>
-                      </div>
+                      </button>
                     </td>
                     <td className="py-3 px-4 text-dark-500 text-[11px]">
                       Awaiting allocation
                     </td>
                     <td className="py-3 px-4 text-center">
-                      <span className="inline-flex items-center px-2.5 py-1 rounded-xl text-xs font-bold bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
-                        {unassignedList.length} Unassigned
-                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleNavigate('admin-workload')}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold bg-amber-100 hover:bg-amber-200 dark:bg-amber-950 dark:hover:bg-amber-900 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800 transition-all cursor-pointer hover:scale-105 shadow-2xs group"
+                        title="Click to distribute unassigned customers in Workload Balancer"
+                      >
+                        <span>{unassignedList.length} Unassigned</span>
+                        <ExternalLink size={10} className="opacity-40 group-hover:opacity-100 transition-opacity" />
+                      </button>
                     </td>
                     <td className="py-3 px-4 text-center text-dark-400 text-xs">—</td>
                     <td className="py-3 px-4 text-dark-500 text-[11px]">
@@ -1533,7 +1573,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                       {unassignedList.length > 0 && (
                         <button
                           type="button"
-                          onClick={() => onNavigate?.('admin-workload')}
+                          onClick={() => handleNavigate('admin-workload')}
                           className="px-2.5 py-1 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-[11px] transition-colors cursor-pointer shadow-2xs"
                         >
                           Distribute
@@ -1933,9 +1973,13 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                           <tr key={u._id} className="hover:bg-dark-50/60 dark:hover:bg-dark-700/50 transition-colors">
                             {/* Name, Email & Presence */}
                             <td className="px-5 py-4">
-                              <div className="flex items-center gap-3">
+                              <div
+                                onClick={() => openInspector(u)}
+                                className="flex items-center gap-3 cursor-pointer group"
+                                title={`Click to inspect ${u.name}'s performance & portfolio`}
+                              >
                                 <div className="relative">
-                                  <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-primary-600 to-primary-500 text-white font-bold text-sm flex items-center justify-center shadow-xs">
+                                  <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-primary-600 to-primary-500 text-white font-bold text-sm flex items-center justify-center shadow-xs group-hover:scale-105 transition-transform">
                                     {initials(u.name)}
                                   </div>
                                   <span
@@ -1947,8 +1991,9 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                                 </div>
                                 <div className="min-w-0">
                                   <div className="flex items-center gap-2">
-                                    <span className="font-bold text-dark-900 dark:text-white truncate">
-                                      {u.name}
+                                    <span className="font-bold text-dark-900 dark:text-white truncate group-hover:text-primary-600 dark:group-hover:text-primary-400 group-hover:underline transition-colors flex items-center gap-1.5">
+                                      <span>{u.name}</span>
+                                      <ExternalLink size={11} className="opacity-0 group-hover:opacity-75 transition-opacity" />
                                     </span>
                                     {isSelf && (
                                       <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-primary-100 dark:bg-primary-950/60 text-primary-700 dark:text-primary-300">
