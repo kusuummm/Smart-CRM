@@ -1409,6 +1409,47 @@ export default function Settings({ onNavigate }) {
                     );
                   })}
                 </div>
+
+                {/* Live Color Accent Interactive Showcase */}
+                <div className="mt-5 p-4 rounded-xl bg-dark-50 dark:bg-dark-900/60 border border-dark-200 dark:border-dark-700/80 flex flex-col md:flex-row items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <span className="w-9 h-9 rounded-xl flex items-center justify-center bg-primary-50 dark:bg-primary-950/60 text-primary-600 dark:text-primary-400 font-bold shrink-0">
+                      <Sparkles size={17} />
+                    </span>
+                    <div>
+                      <p className="text-xs font-bold text-dark-900 dark:text-white">
+                        Live Accent Preview
+                      </p>
+                      <p className="text-[11px] text-dark-500 dark:text-dark-400">
+                        Selected color instantly powers all buttons, scrollbars, glowing focus rings &amp; toggles across CRM.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 flex-wrap">
+                    {/* Live Sample Button */}
+                    <button
+                      type="button"
+                      className="px-4 py-1.5 rounded-xl text-xs font-bold text-white bg-primary-600 hover:bg-primary-700 shadow-xs cursor-pointer flex items-center gap-1.5 active:scale-95 transition-all"
+                    >
+                      <Check size={13} />
+                      Sample Button
+                    </button>
+
+                    {/* Live Sample Badge */}
+                    <span className="px-2.5 py-1 rounded-full text-[10px] font-bold border border-primary-400 text-primary-600 dark:text-primary-300 bg-primary-50 dark:bg-primary-950/60 uppercase tracking-wide">
+                      Active Theme
+                    </span>
+
+                    {/* Live Pulse Glow Indicator */}
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-dark-100 dark:bg-dark-800 text-xs">
+                      <span className="w-2 h-2 rounded-full bg-primary-500 theme-pulse-glow" />
+                      <span className="text-[11px] font-medium text-dark-700 dark:text-dark-300 capitalize">
+                        {themeColor} Accent
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           )}

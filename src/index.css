@@ -16,10 +16,21 @@
   --color-primary-800: #121f42;
   --color-primary-900: #0c142c;
   --color-primary-950: #080d1e;
+  --color-primary-50-rgb: 240, 244, 250;
+  --color-primary-100-rgb: 226, 235, 246;
+  --color-primary-200-rgb: 199, 215, 237;
+  --color-primary-300-rgb: 159, 185, 223;
+  --color-primary-400-rgb: 101, 143, 202;
   --color-primary-500-rgb: 43, 73, 138;
   --color-primary-600-rgb: 31, 52, 108;
+  --color-primary-700-rgb: 24, 41, 85;
+  --color-primary-800-rgb: 18, 31, 66;
+  --color-primary-900-rgb: 12, 20, 44;
+  --color-primary-950-rgb: 8, 13, 30;
   --color-primary: #2b498a;
+  --color-primary-rgb: 43, 73, 138;
   --color-accent: #2b498a;
+  --color-accent-rgb: 43, 73, 138;
   accent-color: var(--color-primary-500);
   font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   font-size: 14px;
@@ -151,20 +162,85 @@ html.dark .app-text-muted {
   color: #94a3b8;
 }
 
+/* =========================================================================
+   DYNAMIC THEME ACCENT SCROLLBAR ENGINE
+   Applies across window, containers, tables, modals & .scrollbar-thin
+   ========================================================================= */
+
+/* Firefox standard scrollbars */
+html,
+body,
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(var(--color-primary-500-rgb, 43, 73, 138), 0.5) transparent;
+}
+
+/* Chrome, Edge, Safari, Opera (WebKit / Chromium) */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: rgba(var(--color-primary-500-rgb, 43, 73, 138), 0.45);
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  background-clip: padding-box;
+  transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-primary-500);
+  box-shadow: 0 0 10px rgba(var(--color-primary-500-rgb, 43, 73, 138), 0.65);
+}
+
+::-webkit-scrollbar-thumb:active {
+  background-color: var(--color-primary-600);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Dark mode scrollbars */
+html.dark,
+html.dark body,
+html.dark * {
+  scrollbar-color: rgba(var(--color-primary-400-rgb, 101, 143, 202), 0.55) rgba(16, 25, 46, 0.4);
+}
+
+html.dark ::-webkit-scrollbar-track {
+  background: rgba(16, 25, 46, 0.35);
+}
+
+html.dark ::-webkit-scrollbar-thumb {
+  background-color: rgba(var(--color-primary-400-rgb, 101, 143, 202), 0.5);
+}
+
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-primary-400);
+  box-shadow: 0 0 12px rgba(var(--color-primary-400-rgb, 101, 143, 202), 0.75);
+}
+
 @layer utilities {
   .scrollbar-thin {
-    scrollbar-width: thin;
+    scrollbar-width: thin !important;
   }
   .scrollbar-thin::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 6px !important;
+    height: 6px !important;
   }
   .scrollbar-thin::-webkit-scrollbar-thumb {
-    background-color: #cbd5e1;
-    border-radius: 3px;
+    background-color: rgba(var(--color-primary-500-rgb, 43, 73, 138), 0.5) !important;
+    border-radius: 9999px !important;
   }
   .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-    background-color: #94a3b8;
+    background-color: var(--color-primary-500) !important;
+    box-shadow: 0 0 8px rgba(var(--color-primary-500-rgb, 43, 73, 138), 0.6) !important;
   }
   .line-clamp-2 {
     display: -webkit-box;
@@ -174,13 +250,17 @@ html.dark .app-text-muted {
   }
 }
 
-/* Scrollbar dark mode */
 html.dark .scrollbar-thin::-webkit-scrollbar-thumb {
-  background-color: #475569;
+  background-color: rgba(var(--color-primary-400-rgb, 101, 143, 202), 0.5) !important;
+}
+
+html.dark .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-primary-400) !important;
+  box-shadow: 0 0 10px rgba(var(--color-primary-400-rgb, 101, 143, 202), 0.7) !important;
 }
 
 html.dark .scrollbar-thin::-webkit-scrollbar-track {
-  background-color: #1e293b;
+  background-color: rgba(16, 25, 46, 0.4) !important;
 }
 
 /* =========================================================================
@@ -231,4 +311,232 @@ html.dark select option {
   background-color: #1e293b !important;
   color: #f8fafc !important;
 }
+
+/* =========================================================================
+   DYNAMIC THEME ACCENT BUTTON & INTERACTIVE CONTROLS ENGINE
+   Automatically applies selected theme color to all buttons, pills,
+   active tabs, toggles, badges, and focus borders across the CRM.
+   ========================================================================= */
+
+/* Primary Buttons: Default, Hover, and Active Press Feedback */
+button.bg-primary-600,
+button.bg-blue-600,
+.bg-primary-600,
+.bg-blue-600 {
+  background-color: var(--color-primary-600) !important;
+  transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.15s ease !important;
+}
+
+button.bg-primary-600:hover,
+button.bg-blue-600:hover,
+button.hover\:bg-primary-700:hover,
+button.hover\:bg-blue-700:hover,
+.hover\:bg-primary-700:hover,
+.hover\:bg-blue-700:hover {
+  background-color: var(--color-primary-700) !important;
+  box-shadow: 0 4px 14px -2px rgba(var(--color-primary-500-rgb, 43, 73, 138), 0.45) !important;
+}
+
+button.bg-primary-600:active,
+button.bg-blue-600:active,
+button:not([disabled]).active\:scale-95:active {
+  transform: scale(0.97) !important;
+  background-color: var(--color-primary-800) !important;
+}
+
+/* Secondary & Medium-Tone Buttons */
+button.bg-primary-500,
+button.bg-blue-500,
+.bg-primary-500,
+.bg-blue-500 {
+  background-color: var(--color-primary-500) !important;
+}
+
+button.hover\:bg-primary-600:hover,
+button.hover\:bg-blue-600:hover,
+.hover\:bg-primary-600:hover,
+.hover\:bg-blue-600:hover {
+  background-color: var(--color-primary-600) !important;
+}
+
+/* Soft / Light Pill Buttons & Badges */
+.bg-primary-50,
+.bg-blue-50 {
+  background-color: var(--color-primary-50) !important;
+}
+
+.hover\:bg-primary-50:hover,
+.hover\:bg-blue-50:hover {
+  background-color: var(--color-primary-100) !important;
+}
+
+.bg-primary-100,
+.bg-blue-100 {
+  background-color: var(--color-primary-100) !important;
+}
+
+/* Dark mode soft backgrounds */
+html.dark .dark\:bg-primary-950\/60,
+html.dark .dark\:bg-blue-950\/60,
+html.dark .dark\:bg-primary-950\/40,
+html.dark .dark\:bg-blue-950\/40 {
+  background-color: rgba(var(--color-primary-950-rgb, 8, 13, 30), 0.6) !important;
+}
+
+html.dark .dark\:bg-primary-900\/60,
+html.dark .dark\:bg-blue-900\/60 {
+  background-color: rgba(var(--color-primary-900-rgb, 12, 20, 44), 0.6) !important;
+}
+
+/* Toggles & Checkbox Peers */
+.peer:checked ~ .peer-checked\:bg-primary-600,
+.peer:checked ~ .peer-checked\:bg-blue-600,
+input[type="checkbox"]:checked + div,
+.peer:checked ~ div.peer-checked\:bg-blue-600 {
+  background-color: var(--color-primary-600) !important;
+  box-shadow: 0 0 10px rgba(var(--color-primary-500-rgb, 43, 73, 138), 0.5) !important;
+}
+
+/* Dynamic Accent Borders */
+.border-primary-600,
+.border-blue-600 {
+  border-color: var(--color-primary-600) !important;
+}
+
+.border-primary-500,
+.border-blue-500 {
+  border-color: var(--color-primary-500) !important;
+}
+
+.border-primary-400,
+.border-blue-400 {
+  border-color: var(--color-primary-400) !important;
+}
+
+.border-primary-200,
+.border-blue-200 {
+  border-color: var(--color-primary-200) !important;
+}
+
+.hover\:border-primary-400:hover,
+.hover\:border-blue-400:hover,
+.hover\:border-primary-500:hover,
+.hover\:border-blue-500:hover {
+  border-color: var(--color-primary-400) !important;
+}
+
+/* Dynamic Accent Text & Links */
+button.text-primary-600,
+button.text-blue-600,
+a.text-primary-600,
+a.text-blue-600,
+.text-primary-600,
+.text-blue-600 {
+  color: var(--color-primary-600) !important;
+}
+
+button.hover\:text-primary-700:hover,
+button.hover\:text-blue-700:hover,
+a.hover\:text-primary-700:hover,
+a.hover\:text-blue-700:hover,
+.hover\:text-primary-700:hover,
+.hover\:text-blue-700:hover {
+  color: var(--color-primary-700) !important;
+}
+
+.text-primary-700,
+.text-blue-700 {
+  color: var(--color-primary-700) !important;
+}
+
+.text-primary-500,
+.text-blue-500 {
+  color: var(--color-primary-500) !important;
+}
+
+html.dark button.dark\:text-primary-400,
+html.dark button.dark\:text-blue-400,
+html.dark a.dark\:text-primary-400,
+html.dark a.dark\:text-blue-400,
+html.dark .dark\:text-primary-400,
+html.dark .dark\:text-blue-400,
+html.dark .dark\:text-primary-300,
+html.dark .dark\:text-blue-300 {
+  color: var(--color-primary-300) !important;
+}
+
+/* =========================================================================
+   DYNAMIC THEME ANIMATIONS & TRANSITIONS ENGINE
+   Smooth color morphing, focus glow rings, pulse animations, loaders & sliders
+   ========================================================================= */
+
+/* Smooth Color Morphing for Interactive Elements */
+button,
+a,
+input,
+select,
+textarea,
+.transition-colors,
+.transition-all {
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Glowing Focus Rings on Inputs, Selects, & Interactive Elements */
+input:focus,
+select:focus,
+textarea:focus,
+.focus\:ring-primary-500:focus,
+.focus\:ring-blue-500:focus {
+  border-color: var(--color-primary-500) !important;
+  --tw-ring-color: rgba(var(--color-primary-500-rgb, 43, 73, 138), 0.35) !important;
+  box-shadow: 0 0 0 3px rgba(var(--color-primary-500-rgb, 43, 73, 138), 0.25) !important;
+  outline: none !important;
+}
+
+/* Spinners, Refreshers & Loading Animations */
+.animate-spin.text-primary-600,
+.animate-spin.text-blue-600,
+.border-blue-600.animate-spin {
+  color: var(--color-primary-500) !important;
+  border-color: var(--color-primary-500) !important;
+  border-top-color: transparent !important;
+}
+
+/* Themed Pulse Keyframe Animation */
+@keyframes themePulseRing {
+  0% {
+    box-shadow: 0 0 0 0 rgba(var(--color-primary-500-rgb, 43, 73, 138), 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 9px rgba(var(--color-primary-500-rgb, 43, 73, 138), 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(var(--color-primary-500-rgb, 43, 73, 138), 0);
+  }
+}
+
+.theme-pulse-glow {
+  animation: themePulseRing 2.2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+}
+
+/* Range Sliders */
+input[type="range"]::-webkit-slider-thumb {
+  background-color: var(--color-primary-500);
+  box-shadow: 0 0 8px rgba(var(--color-primary-500-rgb, 43, 73, 138), 0.6);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 0 14px rgba(var(--color-primary-500-rgb, 43, 73, 138), 0.85);
+}
+
+input[type="range"]::-moz-range-thumb {
+  background-color: var(--color-primary-500);
+  box-shadow: 0 0 8px rgba(var(--color-primary-500-rgb, 43, 73, 138), 0.6);
+}
+
 

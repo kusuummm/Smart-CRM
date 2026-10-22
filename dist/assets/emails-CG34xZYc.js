@@ -1,1 +1,0 @@
-import{o as a}from"./index-dj4ZdJ84.js";const o=(t={})=>a.get("/emails",{params:t}).then(s=>s.data),i=t=>a.post("/emails/send",t).then(s=>s.data),m=t=>a.post("/emails/test",t).then(s=>s.data);export{o as g,i as s,m as t};
