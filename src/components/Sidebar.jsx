@@ -1,3 +1,4 @@
+import { useRef, useEffect } from 'react';
 import {
   Home,
   Users,
@@ -34,6 +35,76 @@ export default function Sidebar({
   onToggle,
 }) {
   const { user } = useAuth();
+  const sidebarRef = useRef(null);
+  const scrollContainerRef = useRef(null);
+
+  // Prevent scroll propagation from sidebar to the underlying main page
+  useEffect(() => {
+    const sidebarEl = sidebarRef.current;
+    if (!sidebarEl) return;
+
+    const handleWheel = (e) => {
+      const scrollEl = scrollContainerRef.current;
+      if (!scrollEl) {
+        e.preventDefault();
+        return;
+      }
+
+      const { scrollTop, scrollHeight, clientHeight } = scrollEl;
+      const maxScrollTop = scrollHeight - clientHeight;
+
+      // If sidebar does not need to scroll (fits completely on screen),
+      // prevent wheel scroll entirely so the underlying page doesn't scroll
+      if (maxScrollTop <= 1) {
+        e.preventDefault();
+        return;
+      }
+
+      // If cursor is on the sidebar outside the scrollable inner container (e.g., borders, padding, headers),
+      // scroll the inner container instead and block window scroll
+      if (!scrollEl.contains(e.target)) {
+        scrollEl.scrollTop = Math.max(0, Math.min(maxScrollTop, scrollEl.scrollTop + e.deltaY));
+        e.preventDefault();
+        return;
+      }
+
+      const isScrollingUp = e.deltaY < 0;
+      const isScrollingDown = e.deltaY > 0;
+
+      // If scrolled to top and scrolling up -> stop window/home page from scrolling
+      if (isScrollingUp && scrollTop <= 0) {
+        e.preventDefault();
+        return;
+      }
+
+      // If scrolled to bottom and scrolling down -> stop window/home page from scrolling
+      if (isScrollingDown && scrollTop >= maxScrollTop - 1) {
+        e.preventDefault();
+        return;
+      }
+
+      // Clamping: If a single large wheel tick exceeds top or bottom boundary,
+      // manually apply the remaining scroll distance to the sidebar and prevent
+      // the browser from chaining the excess delta to the window/home page!
+      if (isScrollingDown && scrollTop + e.deltaY > maxScrollTop) {
+        scrollEl.scrollTop = maxScrollTop;
+        e.preventDefault();
+        return;
+      }
+
+      if (isScrollingUp && scrollTop + e.deltaY < 0) {
+        scrollEl.scrollTop = 0;
+        e.preventDefault();
+        return;
+      }
+    };
+
+    sidebarEl.addEventListener('wheel', handleWheel, { passive: false });
+    return () => {
+      sidebarEl.removeEventListener('wheel', handleWheel);
+    };
+  }, [collapsed]);
+
   const userIsOwner = isOwner(user);
   const userIsAdmin = isAdmin(user);
   const userIsManager = isManager(user);
@@ -142,12 +213,18 @@ export default function Sidebar({
 
   return (
     <aside
-      className={`fixed top-16 -mt-px left-0 z-20 h-[calc(100vh-4rem+1px)] transition-all duration-300 ease-in-out bg-[#10192e] border-r border-[#1d2d52] flex flex-col ${
+      ref={sidebarRef}
+      style={{ overscrollBehavior: 'contain', overscrollBehaviorY: 'contain' }}
+      className={`fixed top-16 -mt-px left-0 z-20 h-[calc(100vh-4rem+1px)] transition-all duration-300 ease-in-out bg-[#10192e] border-r border-[#1d2d52] flex flex-col overscroll-contain ${
         collapsed ? 'w-[72px]' : 'w-[230px]'
       }`}
     >
       {/* Scrollable Navigation Menu */}
-      <div className="flex-1 overflow-y-auto py-3 px-2.5 space-y-1 scrollbar-thin">
+      <div
+        ref={scrollContainerRef}
+        style={{ overscrollBehavior: 'contain', overscrollBehaviorY: 'contain' }}
+        className="flex-1 overflow-y-auto py-3 px-2.5 space-y-1 scrollbar-thin overscroll-contain"
+      >
         {menuItems.map((item, idx) => {
           if (item.type === 'header') {
             if (collapsed) {
