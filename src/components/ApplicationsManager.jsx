@@ -52,12 +52,12 @@ const getFullUrl = (url) => {
 };
 
 const STATUS_CONFIG = {
-  new: { label: 'New Application', hindi: 'नया आवेदन', bg: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20' },
-  pending_documents: { label: 'Pending Documents', hindi: 'पेंडिंग दस्तावेज़', bg: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20' },
-  under_review: { label: 'Under Review', hindi: 'समीक्षाधीन', bg: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20' },
-  approved: { label: 'Approved', hindi: 'स्वीकृत', bg: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20' },
-  rejected: { label: 'Rejected', hindi: 'अस्वीकृत', bg: 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20' },
-  resubmission_required: { label: 'Resubmit Required', hindi: 'पुनः जमा आवश्यक', bg: 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20' },
+  new: { label: 'New Application', bg: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20' },
+  pending_documents: { label: 'Pending Documents', bg: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20' },
+  under_review: { label: 'Under Review', bg: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20' },
+  approved: { label: 'Approved', bg: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20' },
+  rejected: { label: 'Rejected', bg: 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20' },
+  resubmission_required: { label: 'Resubmit Required', bg: 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20' },
 };
 
 export default function ApplicationsManager({ onNavigateToCustomers }) {
@@ -451,7 +451,7 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
             <User size={16} />
           </div>
           <div className="text-2xl font-bold text-dark-900 dark:text-white">{stats.totalCustomers}</div>
-          <p className="text-[10px] text-dark-500 dark:text-dark-400 mt-1">कुल पंजीकृत ग्राहक</p>
+          <p className="text-[10px] text-dark-500 dark:text-dark-400 mt-1">Total registered customers</p>
         </div>
 
         {/* 2. New Applications */}
@@ -468,7 +468,7 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
             <FileText size={16} />
           </div>
           <div className="text-2xl font-bold text-dark-900 dark:text-white">{stats.newApplications}</div>
-          <p className="text-[10px] text-dark-500 dark:text-dark-400 mt-1">नए आवेदन (आरंभिक)</p>
+          <p className="text-[10px] text-dark-500 dark:text-dark-400 mt-1">Initial submissions</p>
         </div>
 
         {/* 3. Pending Documents */}
@@ -485,7 +485,7 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
             <Clock size={16} />
           </div>
           <div className="text-2xl font-bold text-dark-900 dark:text-white">{stats.pendingDocuments}</div>
-          <p className="text-[10px] text-dark-500 dark:text-dark-400 mt-1">पेंडिंग दस्तावेज़</p>
+          <p className="text-[10px] text-dark-500 dark:text-dark-400 mt-1">Awaiting document upload</p>
         </div>
 
         {/* 4. Documents Under Review */}
@@ -502,7 +502,7 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
             <Eye size={16} />
           </div>
           <div className="text-2xl font-bold text-dark-900 dark:text-white">{stats.documentsUnderReview}</div>
-          <p className="text-[10px] text-dark-500 dark:text-dark-400 mt-1">समीक्षाधीन दस्तावेज़</p>
+          <p className="text-[10px] text-dark-500 dark:text-dark-400 mt-1">Documents under verification</p>
         </div>
 
         {/* 5. Approved Applications */}
@@ -519,7 +519,7 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
             <CheckCircle2 size={16} />
           </div>
           <div className="text-2xl font-bold text-dark-900 dark:text-white">{stats.approvedApplications}</div>
-          <p className="text-[10px] text-dark-500 dark:text-dark-400 mt-1">स्वीकृत आवेदन (प्रमाणपत्र हेतु तैयार)</p>
+          <p className="text-[10px] text-dark-500 dark:text-dark-400 mt-1">Ready for final certificate</p>
         </div>
 
         {/* 6. Rejected / Resubmission Required */}
@@ -537,7 +537,7 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
           </div>
           <div className="text-2xl font-bold text-dark-900 dark:text-white">{stats.rejectedOrResubmission}</div>
           <p className="text-[10px] text-dark-500 dark:text-dark-400 mt-1">
-            {stats.resubmissionRequired} सुधार, {stats.rejectedApplications} अस्वीकृत
+            {stats.resubmissionRequired} resubmit, {stats.rejectedApplications} rejected
           </p>
         </div>
 
@@ -563,7 +563,7 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
             <span className="text-xs text-dark-400">/</span>
             <span className="text-sm font-semibold text-amber-600 dark:text-amber-400">{stats.paymentPending} Pend</span>
           </div>
-          <p className="text-[10px] text-dark-500 dark:text-dark-400 mt-1">भुगतान स्थिति (पेंडिंग / पूर्ण)</p>
+          <p className="text-[10px] text-dark-500 dark:text-dark-400 mt-1">Payment Status (Pending / Completed)</p>
         </div>
       </div>
 
@@ -576,7 +576,7 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
           <Search className="absolute left-3 top-2.5 text-dark-400" size={16} />
           <input
             type="text"
-            placeholder="खोजें: Application #, Customer Name, Mobile, या Certificate #..."
+            placeholder="Search: Application #, Customer Name, Mobile, or Certificate #..."
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
@@ -596,13 +596,13 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
             }}
             className="px-3 py-2 bg-dark-50 dark:bg-[#0c1427] border border-dark-200 dark:border-[#213259] rounded-xl text-xs text-dark-900 dark:text-white focus:outline-none"
           >
-            <option value="all">सभी स्थितियाँ (All Statuses)</option>
-            <option value="new">New Applications (नए आवेदन)</option>
-            <option value="pending_documents">Pending Documents (पेंडिंग दस्तावेज़)</option>
-            <option value="under_review">Documents Under Review (समीक्षाधीन)</option>
-            <option value="approved">Approved (स्वीकृत आवेदन)</option>
-            <option value="resubmission_required">Resubmit Required (पुनः जमा आवश्यक)</option>
-            <option value="rejected">Rejected (अस्वीकृत)</option>
+            <option value="all">All Statuses</option>
+            <option value="new">New Applications</option>
+            <option value="pending_documents">Pending Documents</option>
+            <option value="under_review">Documents Under Review</option>
+            <option value="approved">Approved Applications</option>
+            <option value="resubmission_required">Resubmit Required</option>
+            <option value="rejected">Rejected</option>
             <option value="rejected_or_resubmission">Rejected / Resubmission</option>
           </select>
 
@@ -614,9 +614,9 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
             }}
             className="px-3 py-2 bg-dark-50 dark:bg-[#0c1427] border border-dark-200 dark:border-[#213259] rounded-xl text-xs text-dark-900 dark:text-white focus:outline-none"
           >
-            <option value="all">सभी भुगतान (All Payments)</option>
-            <option value="completed">Payment Completed (भुगतान पूर्ण)</option>
-            <option value="pending">Payment Pending (भुगतान पेंडिंग)</option>
+            <option value="all">All Payments</option>
+            <option value="completed">Payment Completed</option>
+            <option value="pending">Payment Pending</option>
           </select>
 
           <button
@@ -724,12 +724,12 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
                         </span>
                         {app.status === 'rejected' && app.rejectionReason && (
                           <div className="text-[10px] text-red-500 dark:text-red-400 truncate max-w-[150px] mt-0.5" title={app.rejectionReason}>
-                            कारण: {app.rejectionReason}
+                            Reason: {app.rejectionReason}
                           </div>
                         )}
                         {app.status === 'resubmission_required' && app.resubmissionNotes && (
                           <div className="text-[10px] text-orange-500 dark:text-orange-400 truncate max-w-[150px] mt-0.5" title={app.resubmissionNotes}>
-                            नोट: {app.resubmissionNotes}
+                            Note: {app.resubmissionNotes}
                           </div>
                         )}
                       </td>
@@ -805,7 +805,7 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
                           {/* Communication History */}
                           <button
                             onClick={() => openCommunicationHistory(app)}
-                            title="Customer Communication History (कॉल, व्हाट्सएप, ईमेल टाइमलाइन)"
+                            title="Customer Communication History (Calls, WhatsApp, Emails, Notes)"
                             className="p-1.5 bg-dark-50 dark:bg-[#0c1427] hover:bg-dark-100 dark:hover:bg-[#1e2e54] border border-dark-200 dark:border-[#213259] rounded-lg text-teal-600 dark:text-teal-400 hover:text-teal-700"
                           >
                             <MessageSquare size={14} />
@@ -814,7 +814,7 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
                           {/* Status & Review Modal */}
                           <button
                             onClick={() => openStatusModal(app)}
-                            title="Update Status & Payment (स्वीकृत/अस्वीकृत/पेमेंट)"
+                            title="Update Status & Payment"
                             className="p-1.5 bg-dark-50 dark:bg-[#0c1427] hover:bg-dark-100 dark:hover:bg-[#1e2e54] border border-dark-200 dark:border-[#213259] rounded-lg text-blue-600 dark:text-blue-400 hover:text-blue-700"
                           >
                             <ShieldCheck size={14} />
@@ -870,7 +870,7 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
                 </div>
                 <div>
                   <h3 className="text-sm font-bold text-dark-900 dark:text-white">
-                    Application Document Folder (आवेदन दस्तावेज़ फ़ोल्डर)
+                    Application Document Folder
                   </h3>
                   <p className="text-xs text-dark-500 dark:text-dark-400">
                     {selectedApp.applicationNumber} • {selectedApp.customerName}
@@ -948,7 +948,7 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
                           <button
                             onClick={() => handleDocStatusChange(doc._id, 'verified')}
                             className="p-1.5 bg-emerald-50 dark:bg-emerald-500/10 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 border border-emerald-200 dark:border-emerald-500/30 rounded-lg text-emerald-600 dark:text-emerald-400"
-                            title="Verify Document (दस्तावेज़ स्वीकृत करें)"
+                            title="Verify Document"
                           >
                             <CheckCircle2 size={14} />
                           </button>
@@ -957,7 +957,7 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
                           <button
                             onClick={() => handleDocStatusChange(doc._id, 'resubmission_required')}
                             className="p-1.5 bg-orange-50 dark:bg-orange-500/10 hover:bg-orange-100 dark:hover:bg-orange-500/20 border border-orange-200 dark:border-orange-500/30 rounded-lg text-orange-600 dark:text-orange-400"
-                            title="Request Resubmission (दोबारा जमा करने का अनुरोध)"
+                            title="Request Resubmission"
                           >
                             <RefreshCw size={14} />
                           </button>
@@ -966,7 +966,7 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
                           <button
                             onClick={() => handleDocStatusChange(doc._id, 'rejected')}
                             className="p-1.5 bg-red-50 dark:bg-red-500/10 hover:bg-red-100 dark:hover:bg-red-500/20 border border-red-200 dark:border-red-500/30 rounded-lg text-red-600 dark:text-red-400"
-                            title="Reject Document (अस्वीकृत करें)"
+                            title="Reject Document"
                           >
                             <XCircle size={14} />
                           </button>
@@ -993,7 +993,7 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
               >
                 <h5 className="text-xs font-semibold text-dark-900 dark:text-white flex items-center gap-1.5">
                   <Upload size={14} className="text-blue-600 dark:text-blue-400" />
-                  <span>Upload Document to this Folder (नया दस्तावेज़ जोड़ें)</span>
+                  <span>Upload Document to this Folder</span>
                 </h5>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1061,7 +1061,7 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
                   <Award size={18} />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-dark-900 dark:text-white">Final Certificate (अंतिम प्रमाणपत्र)</h3>
+                  <h3 className="text-sm font-bold text-dark-900 dark:text-white">Final Certificate</h3>
                   <p className="text-xs text-dark-500 dark:text-dark-400">{selectedApp.customerName}</p>
                 </div>
               </div>
@@ -1079,7 +1079,7 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
                 <div className="bg-emerald-50/50 dark:bg-[#15203b] border border-emerald-500/30 rounded-2xl p-4 space-y-3">
                   <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 font-semibold text-xs">
                     <CheckCircle2 size={16} />
-                    <span>Certificate Officially Issued (प्रमाणपत्र जारी किया गया)</span>
+                    <span>Certificate Officially Issued</span>
                   </div>
                   <div className="text-xs space-y-1">
                     <div className="text-dark-900 dark:text-white font-medium">
@@ -1103,7 +1103,7 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
                       className="flex-1 flex items-center justify-center gap-2 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-xl shadow-xs"
                     >
                       <Download size={14} />
-                      <span>Download Certificate (प्रमाणपत्र डाउनलोड करें)</span>
+                      <span>Download Certificate</span>
                     </a>
                     <button
                       type="button"
@@ -1191,7 +1191,7 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
                 </div>
                 <div>
                   <h3 className="text-sm font-bold text-dark-900 dark:text-white">
-                    Customer Communication History (ग्राहक संचार इतिहास)
+                    Customer Communication History
                   </h3>
                   <p className="text-xs text-dark-500 dark:text-dark-400">
                     {selectedApp.customerName} • {selectedApp.customerMobile}
@@ -1305,7 +1305,7 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
             <div className="px-6 py-4 bg-dark-50 dark:bg-[#14203d] border-b border-dark-200 dark:border-[#233560] flex items-center justify-between">
               <h3 className="text-sm font-bold text-dark-900 dark:text-white flex items-center gap-2">
                 <Plus size={16} className="text-blue-600 dark:text-blue-400" />
-                <span>Initiate New Customer Application (नया आवेदन बनाएँ)</span>
+                <span>Initiate New Customer Application</span>
               </h3>
               <button
                 onClick={() => setIsNewAppModalOpen(false)}
@@ -1318,7 +1318,7 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
             <form onSubmit={handleCreateApplication} className="p-6 space-y-4">
               <div>
                 <label className="text-xs text-dark-700 dark:text-dark-300 font-semibold block mb-1">
-                  Select Registered Customer (पंजीकृत ग्राहक चुनें) *
+                  Select Registered Customer *
                 </label>
                 {loadingCustomers ? (
                   <div className="text-xs text-dark-400 py-2">Loading customer directory...</div>
@@ -1341,24 +1341,24 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs text-dark-700 dark:text-dark-300 font-semibold block mb-1">Application Type (प्रकार)</label>
+                  <label className="text-xs text-dark-700 dark:text-dark-300 font-semibold block mb-1">Application Type</label>
                   <select
                     value={newAppForm.applicationType}
                     onChange={(e) => setNewAppForm({ ...newAppForm, applicationType: e.target.value })}
                     className="w-full px-3 py-2 bg-white dark:bg-[#15203b] border border-dark-200 dark:border-[#233560] rounded-xl text-xs text-dark-900 dark:text-white"
                   >
-                    <option value="membership">Society Membership (सोसायटी सदस्यता)</option>
-                    <option value="cooperative_loan">Cooperative Loan (सहकारी ऋण)</option>
-                    <option value="fixed_deposit">Fixed Deposit (सावधि जमा)</option>
-                    <option value="recurring_deposit">Recurring Deposit (आवर्ती जमा)</option>
-                    <option value="society_registration">Society Registration (पंजीकरण)</option>
-                    <option value="certificate_issue">Certificate Issue (प्रमाणपत्र)</option>
-                    <option value="general_service">General Service (सामान्य सेवा)</option>
+                    <option value="membership">Society Membership</option>
+                    <option value="cooperative_loan">Cooperative Loan</option>
+                    <option value="fixed_deposit">Fixed Deposit</option>
+                    <option value="recurring_deposit">Recurring Deposit</option>
+                    <option value="society_registration">Society Registration</option>
+                    <option value="certificate_issue">Certificate Issue</option>
+                    <option value="general_service">General Service</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="text-xs text-dark-700 dark:text-dark-300 font-semibold block mb-1">Fee Amount (शुल्क ₹)</label>
+                  <label className="text-xs text-dark-700 dark:text-dark-300 font-semibold block mb-1">Fee Amount (₹)</label>
                   <input
                     type="number"
                     value={newAppForm.paymentAmount}
@@ -1370,14 +1370,14 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs text-dark-700 dark:text-dark-300 font-semibold block mb-1">Payment Status (भुगतान स्थिति)</label>
+                  <label className="text-xs text-dark-700 dark:text-dark-300 font-semibold block mb-1">Payment Status</label>
                   <select
                     value={newAppForm.paymentStatus}
                     onChange={(e) => setNewAppForm({ ...newAppForm, paymentStatus: e.target.value })}
                     className="w-full px-3 py-2 bg-white dark:bg-[#15203b] border border-dark-200 dark:border-[#233560] rounded-xl text-xs text-dark-900 dark:text-white"
                   >
-                    <option value="pending">Payment Pending (भुगतान पेंडिंग)</option>
-                    <option value="completed">Payment Completed (भुगतान पूर्ण)</option>
+                    <option value="pending">Payment Pending</option>
+                    <option value="completed">Payment Completed</option>
                   </select>
                 </div>
 
@@ -1394,7 +1394,7 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
               </div>
 
               <div>
-                <label className="text-xs text-dark-700 dark:text-dark-300 font-semibold block mb-1">Initial Notes (टिप्पणी)</label>
+                <label className="text-xs text-dark-700 dark:text-dark-300 font-semibold block mb-1">Initial Notes</label>
                 <textarea
                   rows={2}
                   value={newAppForm.remarks}
@@ -1423,7 +1423,7 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
           <div className="bg-white dark:bg-[#10192e] border border-dark-200 dark:border-[#233560] rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
             <div className="px-6 py-4 bg-dark-50 dark:bg-[#14203d] border-b border-dark-200 dark:border-[#233560] flex items-center justify-between">
               <div>
-                <h3 className="text-sm font-bold text-dark-900 dark:text-white">Review & Update Status (स्थिति अपडेट करें)</h3>
+                <h3 className="text-sm font-bold text-dark-900 dark:text-white">Review & Update Status</h3>
                 <p className="text-xs text-dark-500 dark:text-dark-400">{selectedApp.applicationNumber}</p>
               </div>
               <button
@@ -1437,25 +1437,25 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
             <form onSubmit={handleUpdateStatusSubmit} className="p-6 space-y-4">
               <div>
                 <label className="text-xs text-dark-700 dark:text-dark-300 font-semibold block mb-1">
-                  Application Lifecycle Status (स्थिति)
+                  Application Lifecycle Status
                 </label>
                 <select
                   value={statusUpdateForm.status}
                   onChange={(e) => setStatusUpdateForm({ ...statusUpdateForm, status: e.target.value })}
                   className="w-full px-3 py-2 bg-white dark:bg-[#15203b] border border-dark-200 dark:border-[#233560] rounded-xl text-xs text-dark-900 dark:text-white font-medium"
                 >
-                  <option value="new">New Application (नया आवेदन)</option>
-                  <option value="pending_documents">Pending Documents (पेंडिंग दस्तावेज़)</option>
-                  <option value="under_review">Documents Under Review (समीक्षाधीन)</option>
-                  <option value="approved">Approved (स्वीकृत)</option>
-                  <option value="resubmission_required">Rejected / Resubmission Required (पुनः जमा आवश्यक)</option>
-                  <option value="rejected">Rejected (अस्वीकृत)</option>
+                  <option value="new">New Application</option>
+                  <option value="pending_documents">Pending Documents</option>
+                  <option value="under_review">Documents Under Review</option>
+                  <option value="approved">Approved</option>
+                  <option value="resubmission_required">Rejected / Resubmission Required</option>
+                  <option value="rejected">Rejected</option>
                 </select>
               </div>
 
               {statusUpdateForm.status === 'rejected' && (
                 <div>
-                  <label className="text-xs text-red-500 font-semibold block mb-1">Rejection Reason (अस्वीकृति का कारण) *</label>
+                  <label className="text-xs text-red-500 font-semibold block mb-1">Rejection Reason *</label>
                   <textarea
                     rows={2}
                     value={statusUpdateForm.rejectionReason}
@@ -1470,7 +1470,7 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
               {statusUpdateForm.status === 'resubmission_required' && (
                 <div>
                   <label className="text-xs text-orange-500 font-semibold block mb-1">
-                    Resubmission Instructions (सुधार निर्देश) *
+                    Resubmission Instructions *
                   </label>
                   <textarea
                     rows={2}
@@ -1491,8 +1491,8 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
                     onChange={(e) => setStatusUpdateForm({ ...statusUpdateForm, paymentStatus: e.target.value })}
                     className="w-full px-3 py-1.5 bg-white dark:bg-[#15203b] border border-dark-200 dark:border-[#233560] rounded-xl text-xs text-dark-900 dark:text-white"
                   >
-                    <option value="pending">Pending (पेंडिंग)</option>
-                    <option value="completed">Completed (पूर्ण)</option>
+                    <option value="pending">Pending</option>
+                    <option value="completed">Completed</option>
                   </select>
                 </div>
                 <div>
@@ -1521,7 +1521,7 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
                 type="submit"
                 className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-xl transition-all shadow-xs"
               >
-                Save Changes (अपडेट करें)
+                Save Changes
               </button>
             </form>
           </div>

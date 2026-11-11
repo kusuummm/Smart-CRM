@@ -1161,7 +1161,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
               <div>
                 <h3 className="text-base font-bold text-dark-900 dark:text-white flex items-center gap-2">
                   <Award className="text-blue-600 dark:text-blue-400" size={20} />
-                  <span>Customer Applications & Document Management (आवेदन व दस्तावेज़ प्रबंधन)</span>
+                  <span>Customer Applications & Document Management</span>
                 </h3>
                 <p className="text-xs text-dark-500 dark:text-dark-400 mt-0.5">
                   10 Core Requirements: Registered Customers, New Apps, Pending Docs, Reviews, Approvals, Rejections, Payments, Folder, Timeline & Certificates
