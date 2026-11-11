@@ -90,6 +90,7 @@ const pathToPage = {
   '/my-account': 'my-account',
   '/admin': 'admin-panel',
   '/admin/overview': 'admin-panel',
+  '/admin/applications': 'admin-applications',
   '/admin/users': 'admin-users',
   '/admin/agents': 'admin-agents',
   '/admin/workload': 'admin-workload',
@@ -146,6 +147,7 @@ const pageToPath = {
   'my-account': '/my-account',
   'admin-panel': '/admin',
   'admin-overview': '/admin',
+  'admin-applications': '/admin/applications',
   'admin-users': '/admin/users',
   'admin-agents': '/admin/agents',
   'admin-workload': '/admin/workload',
@@ -500,6 +502,7 @@ function AppLayout() {
           />
         );
       case 'admin-panel':
+      case 'admin-applications':
       case 'admin-users':
       case 'admin-agents':
       case 'admin-workload':

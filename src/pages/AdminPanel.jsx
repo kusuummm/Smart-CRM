@@ -58,6 +58,7 @@ import {
   CheckCircle,
 } from 'lucide-react';
 import { PageHeader } from '../components/Common';
+import ApplicationsManager from '../components/ApplicationsManager';
 import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { useToast } from '../components/Toast';
@@ -287,6 +288,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
           emails: '/emails',
           'admin-users': '/admin/users',
           'admin-agents': '/admin/agents',
+          'admin-applications': '/admin/applications',
           'admin-workload': '/admin/workload',
           'admin-reports': '/admin/reports',
           reports: '/admin/reports',
@@ -1103,7 +1105,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
       {(currentView === 'admin-panel' ||
         currentView === 'overview' ||
         currentView === 'admin' ||
-        !['admin-users', 'users', 'admin-agents', 'agents', 'admin-workload', 'workload', 'admin-reports', 'reports', 'admin-portfolio', 'portfolio', 'admin-audit', 'audit', 'admin-system', 'system', 'admin-system-smtp', 'admin-system-whatsapp', 'admin-system-database', 'admin-tasks', 'tasks'].includes(currentView)) && (
+        !['admin-users', 'users', 'admin-agents', 'agents', 'admin-workload', 'workload', 'admin-reports', 'reports', 'admin-portfolio', 'portfolio', 'admin-audit', 'audit', 'admin-system', 'system', 'admin-system-smtp', 'admin-system-whatsapp', 'admin-system-database', 'admin-tasks', 'tasks', 'admin-applications', 'applications'].includes(currentView)) && (
         <div className="space-y-6">
           <PageHeader
             title="Admin Control Center"
@@ -5232,6 +5234,26 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
 
 
 
+
+      {/* MODAL: Add / Edit User */}
+      {(currentView === 'admin-applications' || currentView === 'applications') && (
+        <div className="space-y-6">
+          <PageHeader
+            title="Customer Applications & Document Management"
+            subtitle="Track new applications, document reviews, approvals, payments, and issue final certificates."
+            action={
+              <button
+                onClick={() => handleNavigate('contacts')}
+                className="inline-flex items-center gap-2 px-3.5 py-2.5 border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 hover:bg-dark-50 dark:hover:bg-dark-700 text-dark-700 dark:text-dark-200 rounded-xl text-sm font-medium transition-colors shadow-xs"
+              >
+                <Users size={16} />
+                <span>Registered Customers</span>
+              </button>
+            }
+          />
+          <ApplicationsManager onNavigateToCustomers={() => handleNavigate('contacts')} />
+        </div>
+      )}
 
       {/* MODAL: Add / Edit User */}
       <Modal

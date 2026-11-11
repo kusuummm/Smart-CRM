@@ -161,6 +161,7 @@ export default function Sidebar({
   const adminMenuItems = [
     { type: 'header', label: 'ADMIN CONTROL CENTER' },
     { id: 'admin-panel', label: 'Dashboard Overview', icon: Shield },
+    { id: 'admin-applications', label: 'Applications & Docs', icon: FileText },
     { id: 'admin-users', label: 'Users & Approvals', icon: UserCheck },
     { id: 'admin-tasks', label: 'Lead Tasks & Schedules', icon: CheckSquare },
     { id: 'admin-agents', label: 'Lead Presence', icon: Activity },
@@ -180,6 +181,7 @@ export default function Sidebar({
   const ownerMenuItems = [
     { type: 'header', label: 'OWNER CONTROL CENTER' },
     { id: 'admin-panel', label: 'Dashboard Overview', icon: Shield },
+    { id: 'admin-applications', label: 'Applications & Docs', icon: FileText },
     { id: 'admin-users', label: 'Users & Approvals', icon: UserCheck },
     { id: 'admin-tasks', label: 'Lead Tasks & Schedules', icon: CheckSquare },
     { id: 'admin-agents', label: 'Lead Presence', icon: Activity },
