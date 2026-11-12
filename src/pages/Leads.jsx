@@ -371,7 +371,7 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
 
       await createMeeting(payload);
       addToast(
-        `Meeting scheduled! Confirmation sent to ${meetingForm.customerEmail} and 1-hour reminder armed.`,
+        `Meeting scheduled! Confirmation sent to ${meetingForm.customerEmail} and multi-stage reminders armed (3h -> 2h -> every 30m).`,
         'success'
       );
       setMeetingModalLead(null);
@@ -1012,9 +1012,9 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
           <div className="p-3.5 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/60 flex items-start gap-3 text-xs text-blue-900 dark:text-blue-200 shadow-2xs">
             <Bell size={18} className="text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="font-bold text-sm">Automated 1-Hour Prior Email Reminder Guarantee</p>
+              <p className="font-bold text-sm">Automated Multi-Stage Meeting Reminders Cadence</p>
               <p className="mt-0.5 text-blue-800 dark:text-blue-300 leading-relaxed">
-                An invitation confirmation email will be dispatched to both client and lead immediately. Smart CRM&apos;s background scheduler will automatically send an email reminder to both parties <strong>1 hour before the meeting starts</strong> with the agenda and joining link.
+                An invitation confirmation notice is dispatched immediately. Smart CRM&apos;s automated scheduler sends reminders: <strong>3 hours before</strong>, then an hour later at <strong>2 hours before</strong>, and then <strong>every 30 minutes</strong> (90m, 60m, 30m, and when starting) with join links via Email & WhatsApp.
               </p>
             </div>
           </div>
