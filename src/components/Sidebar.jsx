@@ -1,6 +1,7 @@
 import { useRef, useEffect } from 'react';
 import {
   Home,
+  Bell,
   Users,
   Phone,
   Clock,
@@ -131,6 +132,7 @@ export default function Sidebar({
     { id: 'notes', label: 'Notes', icon: FileText },
 
     { type: 'header', label: 'WORKSPACE' },
+    { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'wallet', label: 'Wallet', icon: Wallet },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
@@ -153,6 +155,7 @@ export default function Sidebar({
     { id: 'broadcast', label: 'Broadcast', icon: Radio },
 
     { type: 'header', label: 'PREFERENCES' },
+    { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'wallet', label: 'Wallet', icon: Wallet },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
@@ -173,6 +176,7 @@ export default function Sidebar({
     { id: 'teams', label: 'Teams', icon: Users },
     { id: 'automations', label: 'Automations', icon: Cpu },
     { id: 'broadcast', label: 'Broadcast', icon: Radio },
+    { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'wallet', label: 'Wallet', icon: Wallet },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
@@ -194,6 +198,7 @@ export default function Sidebar({
     { id: 'teams', label: 'Teams', icon: Users },
     { id: 'automations', label: 'Automations', icon: Cpu },
     { id: 'broadcast', label: 'Broadcast', icon: Radio },
+    { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'wallet', label: 'Wallet', icon: Wallet },
     { id: 'plans-billing', label: 'Plans & Billing', icon: CreditCard },
     { id: 'settings', label: 'Settings', icon: Settings },

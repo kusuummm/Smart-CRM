@@ -266,23 +266,26 @@ export default function Header({
           Logout
         </button>
 
-        {/* Notifications & Quick Settings Menu (Subtle Dropdown / Drawer) */}
-        <div className="relative" ref={notifRef}>
+        {/* Notifications Icon Button - Opens Dedicated Notifications Page */}
+        <div className="relative">
           <button
             onClick={() => {
-              setShowNotifications(!showNotifications);
+              setShowNotifications(false);
               setShowSettings(false);
               setShowProfile(false);
+              if (onNavigate) {
+                onNavigate('notifications');
+              }
             }}
-            className={`p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-[#182647] transition-colors cursor-pointer ${
-              showNotifications ? 'bg-[#182647] text-white' : ''
+            className={`p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-[#182647] transition-colors cursor-pointer relative ${
+              currentPage === 'notifications' ? 'bg-[#182647] text-white ring-1 ring-sky-400' : ''
             }`}
-            title="Notifications"
+            title="Open Notifications Center"
           >
             <Bell size={18} />
             {unreadCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 bg-rose-500 text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
-                {unreadCount}
+              <span className="absolute -top-0.5 -right-0.5 bg-rose-500 text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center animate-pulse">
+                {unreadCount > 99 ? '99+' : unreadCount}
               </span>
             )}
           </button>

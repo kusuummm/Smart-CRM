@@ -39,6 +39,7 @@ const UserPanel = lazy(() => import('./pages/UserPanel'));
 const SearchPage = lazy(() => import('./pages/SearchPage'));
 const MyAccount = lazy(() => import('./pages/MyAccount'));
 const Settings = lazy(() => import('./pages/Settings'));
+const Notifications = lazy(() => import('./pages/Notifications'));
 
 function PageLoadingFallback() {
   return (
@@ -79,6 +80,8 @@ const pathToPage = {
   '/plans': 'plans-billing',
   '/billing': 'plans-billing',
   '/settings': 'settings',
+  '/notifications': 'notifications',
+  '/alerts': 'notifications',
   '/team-members': 'team-members',
   '/team': 'team-members',
   '/notes': 'notes',
@@ -137,6 +140,7 @@ const pageToPath = {
   events: '/events',
   'tc-events': '/events',
   settings: '/settings',
+  notifications: '/notifications',
   'team-members': '/team-members',
   team: '/team-members',
   notes: '/notes',
@@ -491,6 +495,8 @@ function AppLayout() {
         return <WhatsApp onNavigate={navigateToPage} />;
       case 'broadcast':
         return <Broadcast onNavigate={navigateToPage} />;
+      case 'notifications':
+        return <Notifications onNavigate={navigateToPage} />;
       case 'wallet':
         return <WalletPage onNavigate={navigateToPage} />;
       case 'plans-billing':
