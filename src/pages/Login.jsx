@@ -102,7 +102,7 @@ export default function Login({ isAddingAccount = false, onCancelAdd }) {
     setLoading(true);
     const result = await login(email.trim().toLowerCase(), password);
     if (result.success) {
-      toast.success(t('loginSuccess') || (language === 'hi' ? 'स्वागत है!' : 'Welcome back!'));
+      toast.success(t('loginSuccess') || 'Welcome back!');
       setApprovalNotice('');
     } else {
       if (

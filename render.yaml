@@ -3,7 +3,7 @@ services:
     name: smart-crm-frontend
     env: static
     plan: free
-    buildCommand: npm install --include=dev && npm run build
+    buildCommand: npm install && npm run build
     staticPublishPath: dist
     routes:
       - type: rewrite
@@ -11,6 +11,6 @@ services:
         destination: /index.html
     envVars:
       - key: NODE_VERSION
-        value: 20.18.0
+        value: 20
       - key: VITE_API_URL
         sync: false
