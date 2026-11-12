@@ -213,16 +213,31 @@ export default function Sidebar({
     } else {
       onNavigate(item.id);
     }
+    if (typeof window !== 'undefined' && window.innerWidth < 768 && !collapsed) {
+      onToggle();
+    }
   };
 
   return (
-    <aside
-      ref={sidebarRef}
-      style={{ overscrollBehavior: 'contain', overscrollBehaviorY: 'contain' }}
-      className={`fixed top-16 -mt-px left-0 z-20 h-[calc(100vh-4rem+1px)] transition-all duration-300 ease-in-out bg-[#10192e] border-r border-[#1d2d52] flex flex-col overscroll-contain ${
-        collapsed ? 'w-[72px]' : 'w-[230px]'
-      }`}
-    >
+    <>
+      {/* Mobile Drawer Backdrop Overlay */}
+      {!collapsed && (
+        <div
+          onClick={onToggle}
+          className="fixed inset-0 top-16 bg-black/60 z-30 md:hidden backdrop-blur-xs transition-opacity duration-300"
+          aria-hidden="true"
+        />
+      )}
+
+      <aside
+        ref={sidebarRef}
+        style={{ overscrollBehavior: 'contain', overscrollBehaviorY: 'contain' }}
+        className={`fixed top-16 -mt-px left-0 z-40 md:z-20 h-[calc(100vh-4rem+1px)] transition-all duration-300 ease-in-out bg-[#10192e] border-r border-[#1d2d52] flex flex-col overscroll-contain ${
+          collapsed
+            ? '-translate-x-full md:translate-x-0 md:w-[72px]'
+            : 'translate-x-0 w-[240px] md:w-[230px] shadow-2xl md:shadow-none'
+        }`}
+      >
       {/* Scrollable Navigation Menu */}
       <div
         ref={scrollContainerRef}
@@ -347,5 +362,7 @@ export default function Sidebar({
         })}
       </div>
     </aside>
+    </>
   );
 }
+

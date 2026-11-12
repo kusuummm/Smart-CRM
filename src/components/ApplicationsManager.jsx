@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   FileText,
   Folder,
@@ -25,8 +25,20 @@ import {
   ChevronRight,
   ShieldCheck,
   FileCheck,
+  ArrowUpDown,
+  FileSpreadsheet,
+  Check,
+  Calendar,
+  Send,
+  Sparkles,
+  ChevronDown,
+  Layers,
+  ChevronLeft,
+  Smartphone,
+  SlidersHorizontal,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import * as XLSX from 'xlsx';
 import {
   getApplicationStats,
   getApplications,
@@ -52,12 +64,36 @@ const getFullUrl = (url) => {
 };
 
 const STATUS_CONFIG = {
-  new: { label: 'New Application', bg: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20' },
-  pending_documents: { label: 'Pending Documents', bg: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20' },
-  under_review: { label: 'Under Review', bg: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20' },
-  approved: { label: 'Approved', bg: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20' },
-  rejected: { label: 'Rejected', bg: 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20' },
-  resubmission_required: { label: 'Resubmit Required', bg: 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20' },
+  new: {
+    label: 'New Application',
+    bg: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
+    dot: 'bg-blue-500',
+  },
+  pending_documents: {
+    label: 'Pending Documents',
+    bg: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
+    dot: 'bg-amber-500',
+  },
+  under_review: {
+    label: 'Under Review',
+    bg: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20',
+    dot: 'bg-purple-500',
+  },
+  approved: {
+    label: 'Approved',
+    bg: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
+    dot: 'bg-emerald-500',
+  },
+  rejected: {
+    label: 'Rejected',
+    bg: 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20',
+    dot: 'bg-red-500',
+  },
+  resubmission_required: {
+    label: 'Resubmit Required',
+    bg: 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20',
+    dot: 'bg-orange-500',
+  },
 };
 
 export default function ApplicationsManager({ onNavigateToCustomers }) {
@@ -76,15 +112,20 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
     paymentCompleted: 0,
   });
 
-  // Applications Table State
+  // Applications Table & Sorting State
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [paymentFilter, setPaymentFilter] = useState('all');
+  const [sortBy, setSortBy] = useState('date_desc');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+
+  // Dynamic Live Sync State
+  const [autoSync, setAutoSync] = useState(true);
+  const [lastSyncTime, setLastSyncTime] = useState(new Date());
 
   // Modals State
   const [selectedApp, setSelectedApp] = useState(null);
@@ -103,7 +144,7 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
   const [customersList, setCustomersList] = useState([]);
   const [loadingCustomers, setLoadingCustomers] = useState(false);
 
-  // Form states
+  // Forms State
   const [newAppForm, setNewAppForm] = useState({
     customerId: '',
     applicationType: 'membership',
@@ -150,33 +191,50 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
   }, []);
 
   // Load Applications
-  const fetchApplications = useCallback(async () => {
-    setLoading(true);
-    try {
-      const params = {
-        page,
-        limit: 10,
-        search: search.trim() || undefined,
-        status: statusFilter !== 'all' ? statusFilter : undefined,
-        paymentStatus: paymentFilter !== 'all' ? paymentFilter : undefined,
-      };
-      const res = await getApplications(params);
-      if (res.success) {
-        setApplications(res.applications || []);
-        setTotalPages(res.totalPages || 1);
-        setTotalCount(res.total || 0);
+  const fetchApplications = useCallback(
+    async (isSilent = false) => {
+      if (!isSilent) setLoading(true);
+      try {
+        const params = {
+          page,
+          limit: 12,
+          search: search.trim() || undefined,
+          status: statusFilter !== 'all' ? statusFilter : undefined,
+          paymentStatus: paymentFilter !== 'all' ? paymentFilter : undefined,
+        };
+        const res = await getApplications(params);
+        if (res.success) {
+          setApplications(res.applications || []);
+          setTotalPages(res.totalPages || 1);
+          setTotalCount(res.total || 0);
+          setLastSyncTime(new Date());
+        }
+      } catch (err) {
+        if (!isSilent) {
+          toast.error('Failed to load applications: ' + err.message);
+        }
+      } finally {
+        if (!isSilent) setLoading(false);
       }
-    } catch (err) {
-      toast.error('Failed to load applications: ' + err.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [page, search, statusFilter, paymentFilter]);
+    },
+    [page, search, statusFilter, paymentFilter]
+  );
 
+  // Initial load & search/filter watcher
   useEffect(() => {
     fetchStats();
     fetchApplications();
   }, [fetchStats, fetchApplications]);
+
+  // Dynamic Live Sync Heartbeat: silent poll every 20s
+  useEffect(() => {
+    if (!autoSync) return;
+    const timer = setInterval(() => {
+      fetchStats();
+      fetchApplications(true);
+    }, 20000);
+    return () => clearInterval(timer);
+  }, [autoSync, fetchStats, fetchApplications]);
 
   // Load customer list for dropdown
   const loadCustomers = async () => {
@@ -255,36 +313,16 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
     setIsStatusModalOpen(true);
   };
 
-  // Submit New Application
-  const handleCreateApplication = async (e) => {
-    e.preventDefault();
-    if (!newAppForm.customerId) {
-      toast.error('Please select a customer');
-      return;
-    }
-    try {
-      const res = await createApplication(newAppForm);
-      if (res.success) {
-        toast.success(`Application ${res.application.applicationNumber} created!`);
-        setIsNewAppModalOpen(false);
-        fetchStats();
-        fetchApplications();
-      }
-    } catch (err) {
-      toast.error(err.response?.data?.message || err.message);
-    }
-  };
-
   // Handle Document Upload
   const handleUploadDocument = async (e) => {
     e.preventDefault();
     if (!docUploadForm.file) {
-      toast.error('Please select a document file to upload');
+      toast.error('Please select a file to upload');
       return;
     }
 
     const formData = new FormData();
-    formData.append('file', docUploadForm.file);
+    formData.append('document', docUploadForm.file);
     formData.append('name', docUploadForm.name);
     formData.append('type', docUploadForm.type);
     formData.append('remarks', docUploadForm.remarks);
@@ -292,7 +330,7 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
     try {
       const res = await uploadApplicationDocument(selectedApp._id, formData);
       if (res.success) {
-        toast.success('Document uploaded to folder!');
+        toast.success(`Document "${docUploadForm.name}" uploaded successfully!`);
         setSelectedApp(res.application);
         setDocUploadForm({
           name: 'PAN Card',
@@ -301,31 +339,25 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
           file: null,
         });
         fetchStats();
-        fetchApplications();
+        fetchApplications(true);
       }
     } catch (err) {
       toast.error(err.response?.data?.message || err.message);
     }
   };
 
-  // Handle Document Status Change (Verify, Reject, Resubmit)
+  // Handle Document Status Change
   const handleDocStatusChange = async (docId, newStatus) => {
-    let remarks = '';
-    if (newStatus === 'rejected' || newStatus === 'resubmission_required') {
-      remarks = window.prompt(`Enter reason for marking this document as '${newStatus}':`);
-      if (remarks === null) return;
-    }
-
     try {
       const res = await updateDocumentStatus(selectedApp._id, docId, {
         status: newStatus,
-        remarks,
+        remarks: newStatus === 'verified' ? 'Verified by Administrator' : 'Needs attention',
       });
       if (res.success) {
-        toast.success(`Document marked as ${newStatus}`);
+        toast.success(`Document marked as ${newStatus.replace('_', ' ')}`);
         setSelectedApp(res.application);
         fetchStats();
-        fetchApplications();
+        fetchApplications(true);
       }
     } catch (err) {
       toast.error(err.response?.data?.message || err.message);
@@ -334,16 +366,14 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
 
   // Handle Delete Document
   const handleDeleteDocument = async (docId) => {
-    if (!window.confirm('Are you sure you want to delete this document from the application folder?')) {
-      return;
-    }
+    if (!window.confirm('Are you sure you want to delete this document?')) return;
     try {
       const res = await deleteApplicationDocument(selectedApp._id, docId);
       if (res.success) {
-        toast.success('Document removed from folder');
+        toast.success('Document deleted');
         setSelectedApp(res.application);
         fetchStats();
-        fetchApplications();
+        fetchApplications(true);
       }
     } catch (err) {
       toast.error(err.response?.data?.message || err.message);
@@ -396,11 +426,10 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
     }
   };
 
-  // Handle Status Update Submit
+  // Handle Status & Payment Update Submit
   const handleUpdateStatusSubmit = async (e) => {
     e.preventDefault();
     try {
-      // 1. Update status
       await updateApplicationStatus(selectedApp._id, {
         status: statusUpdateForm.status,
         rejectionReason: statusUpdateForm.rejectionReason,
@@ -408,11 +437,14 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
         remarks: statusUpdateForm.remarks,
       });
 
-      // 2. Update payment if changed
-      if (statusUpdateForm.paymentStatus !== selectedApp.paymentStatus || statusUpdateForm.paymentAmount !== selectedApp.paymentAmount) {
+      if (
+        statusUpdateForm.paymentStatus !== selectedApp.paymentStatus ||
+        Number(statusUpdateForm.paymentAmount) !== Number(selectedApp.paymentAmount) ||
+        statusUpdateForm.paymentReference !== selectedApp.paymentReference
+      ) {
         await updatePaymentStatus(selectedApp._id, {
           paymentStatus: statusUpdateForm.paymentStatus,
-          paymentAmount: statusUpdateForm.paymentAmount,
+          paymentAmount: Number(statusUpdateForm.paymentAmount),
           paymentReference: statusUpdateForm.paymentReference,
         });
       }
@@ -426,6 +458,98 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
     }
   };
 
+  // Handle Create Application Submit
+  const handleCreateApplication = async (e) => {
+    e.preventDefault();
+    if (!newAppForm.customerId) {
+      toast.error('Please choose a customer');
+      return;
+    }
+    try {
+      const res = await createApplication({
+        customerId: newAppForm.customerId,
+        applicationType: newAppForm.applicationType,
+        paymentAmount: Number(newAppForm.paymentAmount) || 0,
+        paymentStatus: newAppForm.paymentStatus,
+        paymentReference: newAppForm.paymentReference,
+        remarks: newAppForm.remarks,
+      });
+      if (res.success) {
+        toast.success(`Application ${res.application?.applicationNumber || ''} created successfully!`);
+        setIsNewAppModalOpen(false);
+        setNewAppForm({
+          customerId: '',
+          applicationType: 'membership',
+          paymentAmount: 500,
+          paymentStatus: 'pending',
+          paymentReference: '',
+          remarks: '',
+        });
+        fetchStats();
+        fetchApplications();
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message);
+    }
+  };
+
+  // Dynamic Client-side Sorting of Applications
+  const sortedApplications = useMemo(() => {
+    const list = [...applications];
+    switch (sortBy) {
+      case 'date_asc':
+        return list.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+      case 'date_desc':
+        return list.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      case 'name_asc':
+        return list.sort((a, b) => (a.customerName || '').localeCompare(b.customerName || ''));
+      case 'name_desc':
+        return list.sort((a, b) => (b.customerName || '').localeCompare(a.customerName || ''));
+      case 'amount_desc':
+        return list.sort((a, b) => (b.paymentAmount || 0) - (a.paymentAmount || 0));
+      case 'amount_asc':
+        return list.sort((a, b) => (a.paymentAmount || 0) - (b.paymentAmount || 0));
+      default:
+        return list;
+    }
+  }, [applications, sortBy]);
+
+  // Dynamic Excel / CSV Export
+  const handleExportExcel = () => {
+    if (applications.length === 0) {
+      toast.error('No applications to export');
+      return;
+    }
+    try {
+      const dataToExport = applications.map((app, idx) => ({
+        '#': idx + 1,
+        'Application Number': app.applicationNumber,
+        'Customer Name': app.customerName,
+        'Mobile': app.customerMobile || '',
+        'Email': app.customerEmail || '',
+        'Type': app.applicationType?.replace('_', ' ').toUpperCase(),
+        'Lifecycle Status': app.status?.replace('_', ' ').toUpperCase(),
+        'Payment Status': app.paymentStatus?.toUpperCase(),
+        'Payment Amount (INR)': app.paymentAmount || 0,
+        'Payment Ref': app.paymentReference || '',
+        'Total Documents': app.documents?.length || 0,
+        'Verified Documents': app.documents?.filter((d) => d.status === 'verified').length || 0,
+        'Final Certificate Issued': app.finalCertificate?.fileUrl ? 'YES' : 'NO',
+        'Certificate Number': app.finalCertificate?.certificateNumber || '-',
+        'Created Date': new Date(app.createdAt).toLocaleDateString(),
+      }));
+
+      const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Applications');
+      const filename = `applications_registry_${new Date().toISOString().slice(0, 10)}.xlsx`;
+      XLSX.writeFile(workbook, filename);
+      toast.success(`Exported ${applications.length} applications to ${filename}!`);
+    } catch (err) {
+      toast.error('Export failed: ' + err.message);
+    }
+  };
+
   // Filtered timeline
   const filteredTimeline = useMemo(() => {
     if (!timelineData?.timeline) return [];
@@ -434,109 +558,124 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
   }, [timelineData, timelineFilter]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 max-w-full">
       {/* ============================================================== */}
-      {/* 1. TOP METRIC DASHBOARD (THE 10 ESSENTIAL ADMIN REQUIREMENTS)   */}
+      {/* 1. TOP DYNAMIC METRIC DASHBOARD (THE 10 ESSENTIAL FEATURES)     */}
       {/* ============================================================== */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-7 gap-2.5 sm:gap-3.5">
         {/* 1. Total Registered Customers */}
         <div
           onClick={() => {
             if (onNavigateToCustomers) onNavigateToCustomers();
           }}
-          className="cursor-pointer bg-white dark:bg-[#15203b] hover:bg-dark-50 dark:hover:bg-[#1c2a4d] border border-blue-200 dark:border-blue-500/20 hover:border-blue-400 dark:hover:border-blue-500/40 rounded-2xl p-4 transition-all shadow-xs"
+          className="cursor-pointer bg-white dark:bg-[#15203b] hover:bg-blue-50/50 dark:hover:bg-[#1c2a4d] border border-blue-200 dark:border-blue-500/20 hover:border-blue-400 dark:hover:border-blue-500/40 rounded-xl sm:rounded-2xl p-3 sm:p-4 transition-all shadow-xs group"
         >
           <div className="flex items-center justify-between text-xs text-blue-600 dark:text-blue-400 font-semibold mb-1">
-            <span>Total Customers</span>
-            <User size={16} />
+            <span className="truncate">Total Customers</span>
+            <User size={15} className="group-hover:scale-110 transition-transform shrink-0" />
           </div>
-          <div className="text-2xl font-bold text-dark-900 dark:text-white">{stats.totalCustomers}</div>
-          <p className="text-[10px] text-dark-500 dark:text-dark-400 mt-1">Total registered customers</p>
+          <div className="text-xl sm:text-2xl font-bold text-dark-900 dark:text-white">{stats.totalCustomers}</div>
+          <p className="text-[10px] text-dark-500 dark:text-dark-400 mt-0.5 truncate">Registered customer base</p>
         </div>
 
         {/* 2. New Applications */}
         <div
-          onClick={() => setStatusFilter('new')}
-          className={`cursor-pointer rounded-2xl p-4 border transition-all shadow-xs ${
+          onClick={() => {
+            setStatusFilter(statusFilter === 'new' ? 'all' : 'new');
+            setPage(1);
+          }}
+          className={`cursor-pointer rounded-xl sm:rounded-2xl p-3 sm:p-4 border transition-all shadow-xs ${
             statusFilter === 'new'
               ? 'bg-blue-50 dark:bg-blue-600/20 border-blue-500 text-blue-700 dark:text-white ring-2 ring-blue-500/40'
               : 'bg-white dark:bg-[#15203b] hover:bg-dark-50 dark:hover:bg-[#1c2a4d] border-dark-200 dark:border-blue-500/20'
           }`}
         >
           <div className="flex items-center justify-between text-xs text-blue-600 dark:text-blue-400 font-semibold mb-1">
-            <span>New Applications</span>
-            <FileText size={16} />
+            <span className="truncate">New Applications</span>
+            <FileText size={15} className="shrink-0" />
           </div>
-          <div className="text-2xl font-bold text-dark-900 dark:text-white">{stats.newApplications}</div>
-          <p className="text-[10px] text-dark-500 dark:text-dark-400 mt-1">Initial submissions</p>
+          <div className="text-xl sm:text-2xl font-bold text-dark-900 dark:text-white">{stats.newApplications}</div>
+          <p className="text-[10px] text-dark-500 dark:text-dark-400 mt-0.5 truncate">Initial submissions</p>
         </div>
 
         {/* 3. Pending Documents */}
         <div
-          onClick={() => setStatusFilter('pending_documents')}
-          className={`cursor-pointer rounded-2xl p-4 border transition-all shadow-xs ${
+          onClick={() => {
+            setStatusFilter(statusFilter === 'pending_documents' ? 'all' : 'pending_documents');
+            setPage(1);
+          }}
+          className={`cursor-pointer rounded-xl sm:rounded-2xl p-3 sm:p-4 border transition-all shadow-xs ${
             statusFilter === 'pending_documents'
               ? 'bg-amber-50 dark:bg-amber-600/20 border-amber-500 text-amber-800 dark:text-white ring-2 ring-amber-500/40'
               : 'bg-white dark:bg-[#15203b] hover:bg-dark-50 dark:hover:bg-[#1c2a4d] border-dark-200 dark:border-amber-500/20'
           }`}
         >
           <div className="flex items-center justify-between text-xs text-amber-600 dark:text-amber-400 font-semibold mb-1">
-            <span>Pending Documents</span>
-            <Clock size={16} />
+            <span className="truncate">Pending Docs</span>
+            <Clock size={15} className="shrink-0" />
           </div>
-          <div className="text-2xl font-bold text-dark-900 dark:text-white">{stats.pendingDocuments}</div>
-          <p className="text-[10px] text-dark-500 dark:text-dark-400 mt-1">Awaiting document upload</p>
+          <div className="text-xl sm:text-2xl font-bold text-dark-900 dark:text-white">{stats.pendingDocuments}</div>
+          <p className="text-[10px] text-dark-500 dark:text-dark-400 mt-0.5 truncate">Awaiting upload</p>
         </div>
 
         {/* 4. Documents Under Review */}
         <div
-          onClick={() => setStatusFilter('under_review')}
-          className={`cursor-pointer rounded-2xl p-4 border transition-all shadow-xs ${
+          onClick={() => {
+            setStatusFilter(statusFilter === 'under_review' ? 'all' : 'under_review');
+            setPage(1);
+          }}
+          className={`cursor-pointer rounded-xl sm:rounded-2xl p-3 sm:p-4 border transition-all shadow-xs ${
             statusFilter === 'under_review'
               ? 'bg-purple-50 dark:bg-purple-600/20 border-purple-500 text-purple-800 dark:text-white ring-2 ring-purple-500/40'
               : 'bg-white dark:bg-[#15203b] hover:bg-dark-50 dark:hover:bg-[#1c2a4d] border-dark-200 dark:border-purple-500/20'
           }`}
         >
           <div className="flex items-center justify-between text-xs text-purple-600 dark:text-purple-400 font-semibold mb-1">
-            <span>Under Review</span>
-            <Eye size={16} />
+            <span className="truncate">Under Review</span>
+            <Eye size={15} className="shrink-0" />
           </div>
-          <div className="text-2xl font-bold text-dark-900 dark:text-white">{stats.documentsUnderReview}</div>
-          <p className="text-[10px] text-dark-500 dark:text-dark-400 mt-1">Documents under verification</p>
+          <div className="text-xl sm:text-2xl font-bold text-dark-900 dark:text-white">{stats.documentsUnderReview}</div>
+          <p className="text-[10px] text-dark-500 dark:text-dark-400 mt-0.5 truncate">Verification active</p>
         </div>
 
         {/* 5. Approved Applications */}
         <div
-          onClick={() => setStatusFilter('approved')}
-          className={`cursor-pointer rounded-2xl p-4 border transition-all shadow-xs ${
+          onClick={() => {
+            setStatusFilter(statusFilter === 'approved' ? 'all' : 'approved');
+            setPage(1);
+          }}
+          className={`cursor-pointer rounded-xl sm:rounded-2xl p-3 sm:p-4 border transition-all shadow-xs ${
             statusFilter === 'approved'
               ? 'bg-emerald-50 dark:bg-emerald-600/20 border-emerald-500 text-emerald-800 dark:text-white ring-2 ring-emerald-500/40'
               : 'bg-white dark:bg-[#15203b] hover:bg-dark-50 dark:hover:bg-[#1c2a4d] border-dark-200 dark:border-emerald-500/20'
           }`}
         >
           <div className="flex items-center justify-between text-xs text-emerald-600 dark:text-emerald-400 font-semibold mb-1">
-            <span>Approved</span>
-            <CheckCircle2 size={16} />
+            <span className="truncate">Approved</span>
+            <CheckCircle2 size={15} className="shrink-0" />
           </div>
-          <div className="text-2xl font-bold text-dark-900 dark:text-white">{stats.approvedApplications}</div>
-          <p className="text-[10px] text-dark-500 dark:text-dark-400 mt-1">Ready for final certificate</p>
+          <div className="text-xl sm:text-2xl font-bold text-dark-900 dark:text-white">{stats.approvedApplications}</div>
+          <p className="text-[10px] text-dark-500 dark:text-dark-400 mt-0.5 truncate">Ready for certificate</p>
         </div>
 
         {/* 6. Rejected / Resubmission Required */}
         <div
-          onClick={() => setStatusFilter('rejected_or_resubmission')}
-          className={`cursor-pointer rounded-2xl p-4 border transition-all shadow-xs ${
+          onClick={() => {
+            setStatusFilter(statusFilter === 'rejected_or_resubmission' ? 'all' : 'rejected_or_resubmission');
+            setPage(1);
+          }}
+          className={`cursor-pointer rounded-xl sm:rounded-2xl p-3 sm:p-4 border transition-all shadow-xs ${
             statusFilter === 'rejected_or_resubmission'
               ? 'bg-red-50 dark:bg-red-600/20 border-red-500 text-red-800 dark:text-white ring-2 ring-red-500/40'
               : 'bg-white dark:bg-[#15203b] hover:bg-dark-50 dark:hover:bg-[#1c2a4d] border-dark-200 dark:border-red-500/20'
           }`}
         >
           <div className="flex items-center justify-between text-xs text-red-600 dark:text-red-400 font-semibold mb-1">
-            <span>Rejected / Resubmit</span>
-            <AlertCircle size={16} />
+            <span className="truncate">Rejected / Resubmit</span>
+            <AlertCircle size={15} className="shrink-0" />
           </div>
-          <div className="text-2xl font-bold text-dark-900 dark:text-white">{stats.rejectedOrResubmission}</div>
-          <p className="text-[10px] text-dark-500 dark:text-dark-400 mt-1">
+          <div className="text-xl sm:text-2xl font-bold text-dark-900 dark:text-white">{stats.rejectedOrResubmission}</div>
+          <p className="text-[10px] text-dark-500 dark:text-dark-400 mt-0.5 truncate">
             {stats.resubmissionRequired} resubmit, {stats.rejectedApplications} rejected
           </p>
         </div>
@@ -547,110 +686,178 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
             if (paymentFilter === 'all') setPaymentFilter('pending');
             else if (paymentFilter === 'pending') setPaymentFilter('completed');
             else setPaymentFilter('all');
+            setPage(1);
           }}
-          className={`cursor-pointer rounded-2xl p-4 border transition-all shadow-xs ${
+          className={`cursor-pointer col-span-2 sm:col-span-1 md:col-span-1 rounded-xl sm:rounded-2xl p-3 sm:p-4 border transition-all shadow-xs ${
             paymentFilter !== 'all'
               ? 'bg-teal-50 dark:bg-teal-600/20 border-teal-500 text-teal-800 dark:text-white ring-2 ring-teal-500/40'
               : 'bg-white dark:bg-[#15203b] hover:bg-dark-50 dark:hover:bg-[#1c2a4d] border-dark-200 dark:border-teal-500/20'
           }`}
         >
           <div className="flex items-center justify-between text-xs text-teal-600 dark:text-teal-400 font-semibold mb-1">
-            <span>Payment Status</span>
-            <CreditCard size={16} />
+            <span className="truncate">Payment Status</span>
+            <CreditCard size={15} className="shrink-0" />
           </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-xl font-bold text-emerald-600 dark:text-emerald-400">{stats.paymentCompleted} Paid</span>
+          <div className="flex items-baseline gap-1.5 flex-wrap">
+            <span className="text-lg sm:text-xl font-bold text-emerald-600 dark:text-emerald-400">
+              {stats.paymentCompleted} Paid
+            </span>
             <span className="text-xs text-dark-400">/</span>
-            <span className="text-sm font-semibold text-amber-600 dark:text-amber-400">{stats.paymentPending} Pend</span>
+            <span className="text-xs sm:text-sm font-semibold text-amber-600 dark:text-amber-400">
+              {stats.paymentPending} Pend
+            </span>
           </div>
-          <p className="text-[10px] text-dark-500 dark:text-dark-400 mt-1">Payment Status (Pending / Completed)</p>
+          <p className="text-[10px] text-dark-500 dark:text-dark-400 mt-0.5 truncate">Click to toggle filter</p>
         </div>
       </div>
 
       {/* ============================================================== */}
-      {/* 2. FILTER BAR & ACTIONS                                       */}
+      {/* 2. DYNAMIC CONTROLS & FILTER BAR                               */}
       {/* ============================================================== */}
-      <div className="bg-white dark:bg-[#15203b] border border-dark-200 dark:border-[#213259] rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3 shadow-xs">
-        {/* Search Input */}
-        <div className="relative flex-1 min-w-[260px]">
-          <Search className="absolute left-3 top-2.5 text-dark-400" size={16} />
-          <input
-            type="text"
-            placeholder="Search: Application #, Customer Name, Mobile, or Certificate #..."
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setPage(1);
-            }}
-            className="w-full pl-9 pr-4 py-2 bg-dark-50 dark:bg-[#0c1427] border border-dark-200 dark:border-[#213259] rounded-xl text-xs text-dark-900 dark:text-white placeholder-dark-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+      <div className="bg-white dark:bg-[#15203b] border border-dark-200 dark:border-[#213259] rounded-xl sm:rounded-2xl p-3 sm:p-4 space-y-3 shadow-xs">
+        {/* Top Row: Search + Quick Sort + Export + New Application */}
+        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+          {/* Search Input */}
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="absolute left-3 top-2.5 text-dark-400" size={16} />
+            <input
+              type="text"
+              placeholder="Search: Application #, Customer Name, Mobile, or Certificate #..."
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+              className="w-full pl-9 pr-8 py-2 bg-dark-50 dark:bg-[#0c1427] border border-dark-200 dark:border-[#213259] rounded-xl text-xs text-dark-900 dark:text-white placeholder-dark-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            {search && (
+              <button
+                onClick={() => setSearch('')}
+                className="absolute right-2.5 top-2.5 text-dark-400 hover:text-dark-600 dark:hover:text-white"
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
+
+          {/* Action Tools */}
+          <div className="flex items-center gap-2 flex-wrap justify-between md:justify-end">
+            {/* Dynamic Sort Dropdown */}
+            <div className="flex items-center gap-1.5 bg-dark-50 dark:bg-[#0c1427] border border-dark-200 dark:border-[#213259] rounded-xl px-2.5 py-1.5 text-xs">
+              <ArrowUpDown size={13} className="text-dark-400 shrink-0" />
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="bg-transparent text-dark-800 dark:text-dark-200 focus:outline-none cursor-pointer text-xs"
+              >
+                <option value="date_desc">Date (Newest)</option>
+                <option value="date_asc">Date (Oldest)</option>
+                <option value="name_asc">Name (A → Z)</option>
+                <option value="name_desc">Name (Z → A)</option>
+                <option value="amount_desc">Amount (High → Low)</option>
+                <option value="amount_asc">Amount (Low → High)</option>
+              </select>
+            </div>
+
+            {/* Live Sync Toggle Badge */}
+            <button
+              onClick={() => {
+                setAutoSync(!autoSync);
+                toast.success(autoSync ? 'Auto-sync paused' : 'Live Sync activated!');
+              }}
+              title={autoSync ? 'Live Sync Active (20s). Click to pause.' : 'Live Sync Paused. Click to resume.'}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
+                autoSync
+                  ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-500/30'
+                  : 'bg-dark-50 dark:bg-dark-800 text-dark-500 border-dark-300 dark:border-dark-700'
+              }`}
+            >
+              <span className={`w-2 h-2 rounded-full ${autoSync ? 'bg-emerald-500 animate-pulse' : 'bg-dark-400'}`} />
+              <span className="hidden sm:inline">{autoSync ? 'Live Sync' : 'Paused'}</span>
+            </button>
+
+            {/* Refresh Button */}
+            <button
+              onClick={() => {
+                fetchStats();
+                fetchApplications();
+                toast.success('Refreshed latest application data');
+              }}
+              title="Manual Data Refresh"
+              className="p-2 bg-dark-50 dark:bg-[#0c1427] hover:bg-dark-100 dark:hover:bg-[#1c2a4d] border border-dark-200 dark:border-[#213259] rounded-xl text-dark-600 dark:text-dark-300 transition-colors"
+            >
+              <RefreshCw size={14} className={loading ? 'animate-spin text-blue-600' : ''} />
+            </button>
+
+            {/* Export to Excel */}
+            <button
+              onClick={handleExportExcel}
+              title="Export to Excel Spreadsheet (.xlsx)"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-dark-50 dark:bg-[#0c1427] hover:bg-dark-100 dark:hover:bg-[#1c2a4d] border border-dark-200 dark:border-[#213259] rounded-xl text-xs font-medium text-emerald-600 dark:text-emerald-400 transition-colors shadow-2xs"
+            >
+              <FileSpreadsheet size={14} />
+              <span className="hidden xs:inline">Export</span>
+            </button>
+
+            {/* Create New Application Button */}
+            <button
+              onClick={() => {
+                loadCustomers();
+                setIsNewAppModalOpen(true);
+              }}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-xl text-xs font-semibold shadow-xs transition-all"
+            >
+              <Plus size={15} />
+              <span>+ New Application</span>
+            </button>
+          </div>
         </div>
 
-        {/* Quick Filter Badges */}
-        <div className="flex flex-wrap items-center gap-2">
-          <select
-            value={statusFilter}
-            onChange={(e) => {
-              setStatusFilter(e.target.value);
-              setPage(1);
-            }}
-            className="px-3 py-2 bg-dark-50 dark:bg-[#0c1427] border border-dark-200 dark:border-[#213259] rounded-xl text-xs text-dark-900 dark:text-white focus:outline-none"
-          >
-            <option value="all">All Statuses</option>
-            <option value="new">New Applications</option>
-            <option value="pending_documents">Pending Documents</option>
-            <option value="under_review">Documents Under Review</option>
-            <option value="approved">Approved Applications</option>
-            <option value="resubmission_required">Resubmit Required</option>
-            <option value="rejected">Rejected</option>
-            <option value="rejected_or_resubmission">Rejected / Resubmission</option>
-          </select>
-
-          <select
-            value={paymentFilter}
-            onChange={(e) => {
-              setPaymentFilter(e.target.value);
-              setPage(1);
-            }}
-            className="px-3 py-2 bg-dark-50 dark:bg-[#0c1427] border border-dark-200 dark:border-[#213259] rounded-xl text-xs text-dark-900 dark:text-white focus:outline-none"
-          >
-            <option value="all">All Payments</option>
-            <option value="completed">Payment Completed</option>
-            <option value="pending">Payment Pending</option>
-          </select>
-
-          <button
-            onClick={() => {
-              setSearch('');
-              setStatusFilter('all');
-              setPaymentFilter('all');
-              setPage(1);
-              fetchStats();
-              fetchApplications();
-            }}
-            title="Reset Filters & Refresh"
-            className="p-2 bg-dark-50 dark:bg-[#0c1427] hover:bg-dark-100 dark:hover:bg-[#1c2a4d] border border-dark-200 dark:border-[#213259] rounded-xl text-dark-600 dark:text-dark-300"
-          >
-            <RefreshCw size={15} className={loading ? 'animate-spin text-blue-600' : ''} />
-          </button>
-
-          <button
-            onClick={() => {
-              loadCustomers();
-              setIsNewAppModalOpen(true);
-            }}
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-xs transition-all"
-          >
-            <Plus size={15} />
-            <span>+ New Application</span>
-          </button>
+        {/* Bottom Row: Quick Filter Badges (Scrollable horizontally on mobile) */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 pt-0.5 no-scrollbar text-xs">
+          {[
+            { id: 'all', label: 'All', count: stats.totalApplications },
+            { id: 'new', label: 'New', count: stats.newApplications },
+            { id: 'pending_documents', label: 'Pending Docs', count: stats.pendingDocuments },
+            { id: 'under_review', label: 'Under Review', count: stats.documentsUnderReview },
+            { id: 'approved', label: 'Approved', count: stats.approvedApplications },
+            { id: 'resubmission_required', label: 'Resubmit', count: stats.resubmissionRequired },
+            { id: 'rejected', label: 'Rejected', count: stats.rejectedApplications },
+          ].map((tab) => {
+            const isActive = statusFilter === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  setStatusFilter(tab.id);
+                  setPage(1);
+                }}
+                className={`whitespace-nowrap px-3 py-1 rounded-full text-xs transition-all font-medium flex items-center gap-1.5 ${
+                  isActive
+                    ? 'bg-blue-600 text-white font-semibold shadow-xs'
+                    : 'bg-dark-50 dark:bg-[#0c1427] hover:bg-dark-100 dark:hover:bg-[#1c2a4d] text-dark-600 dark:text-dark-300 border border-dark-200 dark:border-[#213259]'
+                }`}
+              >
+                <span>{tab.label}</span>
+                <span
+                  className={`px-1.5 py-0.2 rounded-full text-[10px] ${
+                    isActive ? 'bg-white/20 text-white' : 'bg-dark-200 dark:bg-dark-700 text-dark-500 dark:text-dark-400'
+                  }`}
+                >
+                  {tab.count}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
       {/* ============================================================== */}
-      {/* 3. APPLICATIONS TABLE                                         */}
+      {/* 3. RESPONSIVE DUAL-VIEW: DESKTOP TABLE + MOBILE CARDS          */}
       {/* ============================================================== */}
-      <div className="bg-white dark:bg-[#15203b] border border-dark-200 dark:border-[#213259] rounded-2xl overflow-hidden shadow-xs">
+
+      {/* A. DESKTOP VIEW (Visible on tablet & desktop >= 768px) */}
+      <div className="hidden md:block bg-white dark:bg-[#15203b] border border-dark-200 dark:border-[#213259] rounded-2xl overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
           <table className="w-full text-xs text-left">
             <thead className="bg-dark-50 dark:bg-[#0e172e] text-dark-600 dark:text-dark-400 uppercase tracking-wider text-[10px] border-b border-dark-200 dark:border-[#213259]">
@@ -675,7 +882,7 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
                     </div>
                   </td>
                 </tr>
-              ) : applications.length === 0 ? (
+              ) : sortedApplications.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="px-4 py-12 text-center text-dark-400">
                     <p className="font-semibold text-dark-800 dark:text-white mb-1">No applications found</p>
@@ -683,7 +890,7 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
                   </td>
                 </tr>
               ) : (
-                applications.map((app) => {
+                sortedApplications.map((app) => {
                   const statusConf = STATUS_CONFIG[app.status] || STATUS_CONFIG.new;
                   const docCount = app.documents?.length || 0;
                   const verifiedDocCount = app.documents?.filter((d) => d.status === 'verified').length || 0;
@@ -704,7 +911,7 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
                         <div className="font-semibold text-dark-900 dark:text-white">{app.customerName}</div>
                         <div className="text-dark-500 dark:text-dark-400 text-[11px] flex items-center gap-2 mt-0.5">
                           <span>{app.customerMobile}</span>
-                          {app.customerEmail && <span className="truncate max-w-[120px]">{app.customerEmail}</span>}
+                          {app.customerEmail && <span className="truncate max-w-[140px]">{app.customerEmail}</span>}
                         </div>
                       </td>
 
@@ -718,9 +925,10 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
                       {/* Status */}
                       <td className="px-4 py-3">
                         <span
-                          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${statusConf.bg}`}
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${statusConf.bg}`}
                         >
-                          {statusConf.label}
+                          <span className={`w-1.5 h-1.5 rounded-full ${statusConf.dot}`} />
+                          <span>{statusConf.label}</span>
                         </span>
                         {app.status === 'rejected' && app.rejectionReason && (
                           <div className="text-[10px] text-red-500 dark:text-red-400 truncate max-w-[150px] mt-0.5" title={app.rejectionReason}>
@@ -775,7 +983,7 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
                               href={getFullUrl(app.finalCertificate.fileUrl)}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 border border-emerald-200 dark:border-emerald-500/30 font-semibold"
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 border border-emerald-200 dark:border-emerald-500/30 font-semibold transition-colors"
                             >
                               <Download size={12} />
                               <span>Download</span>
@@ -791,7 +999,7 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
                         ) : (
                           <button
                             onClick={() => openCertificateModal(app)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] bg-dark-50 dark:bg-dark-700/60 hover:bg-dark-100 dark:hover:bg-dark-600 text-dark-600 dark:text-dark-300 hover:text-dark-900 dark:hover:text-white border border-dark-200 dark:border-dark-600/40"
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] bg-dark-50 dark:bg-dark-700/60 hover:bg-dark-100 dark:hover:bg-dark-600 text-dark-600 dark:text-dark-300 hover:text-dark-900 dark:hover:text-white border border-dark-200 dark:border-dark-600/40 transition-colors"
                           >
                             <Upload size={12} />
                             <span>Upload Cert</span>
@@ -806,7 +1014,7 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
                           <button
                             onClick={() => openCommunicationHistory(app)}
                             title="Customer Communication History (Calls, WhatsApp, Emails, Notes)"
-                            className="p-1.5 bg-dark-50 dark:bg-[#0c1427] hover:bg-dark-100 dark:hover:bg-[#1e2e54] border border-dark-200 dark:border-[#213259] rounded-lg text-teal-600 dark:text-teal-400 hover:text-teal-700"
+                            className="p-1.5 bg-dark-50 dark:bg-[#0c1427] hover:bg-dark-100 dark:hover:bg-[#1e2e54] border border-dark-200 dark:border-[#213259] rounded-lg text-teal-600 dark:text-teal-400 hover:text-teal-700 transition-colors"
                           >
                             <MessageSquare size={14} />
                           </button>
@@ -815,7 +1023,7 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
                           <button
                             onClick={() => openStatusModal(app)}
                             title="Update Status & Payment"
-                            className="p-1.5 bg-dark-50 dark:bg-[#0c1427] hover:bg-dark-100 dark:hover:bg-[#1e2e54] border border-dark-200 dark:border-[#213259] rounded-lg text-blue-600 dark:text-blue-400 hover:text-blue-700"
+                            className="p-1.5 bg-dark-50 dark:bg-[#0c1427] hover:bg-dark-100 dark:hover:bg-[#1e2e54] border border-dark-200 dark:border-[#213259] rounded-lg text-blue-600 dark:text-blue-400 hover:text-blue-700 transition-colors"
                           >
                             <ShieldCheck size={14} />
                           </button>
@@ -828,31 +1036,184 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
             </tbody>
           </table>
         </div>
+      </div>
 
-        {/* Pagination Bar */}
-        <div className="bg-dark-50 dark:bg-[#0e172e] px-4 py-2.5 border-t border-dark-200 dark:border-[#213259] flex items-center justify-between text-xs text-dark-500 dark:text-dark-400">
-          <span>
-            Showing {applications.length} of {totalCount} applications
-          </span>
-          <div className="flex items-center gap-2">
-            <button
-              disabled={page <= 1}
-              onClick={() => setPage((p) => Math.max(p - 1, 1))}
-              className="px-2.5 py-1 bg-white dark:bg-[#15203b] hover:bg-dark-100 dark:hover:bg-[#1f3059] disabled:opacity-40 border border-dark-200 dark:border-[#213259] rounded-lg text-dark-700 dark:text-white"
-            >
-              Previous
-            </button>
-            <span className="text-dark-800 dark:text-white font-semibold">
-              Page {page} of {totalPages}
-            </span>
-            <button
-              disabled={page >= totalPages}
-              onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
-              className="px-2.5 py-1 bg-white dark:bg-[#15203b] hover:bg-dark-100 dark:hover:bg-[#1f3059] disabled:opacity-40 border border-dark-200 dark:border-[#213259] rounded-lg text-dark-700 dark:text-white"
-            >
-              Next
-            </button>
+      {/* B. MOBILE CARD VIEW (Optimized touch experience on phones < 768px) */}
+      <div className="block md:hidden space-y-3">
+        {loading ? (
+          <div className="p-8 text-center text-dark-400 bg-white dark:bg-[#15203b] border border-dark-200 dark:border-[#213259] rounded-2xl">
+            <RefreshCw size={18} className="animate-spin text-blue-600 mx-auto mb-2" />
+            <span>Loading applications...</span>
           </div>
+        ) : sortedApplications.length === 0 ? (
+          <div className="p-8 text-center text-dark-400 bg-white dark:bg-[#15203b] border border-dark-200 dark:border-[#213259] rounded-2xl">
+            <p className="font-semibold text-dark-800 dark:text-white mb-1">No applications found</p>
+            <p className="text-xs">Adjust your search or tap "+ New Application".</p>
+          </div>
+        ) : (
+          sortedApplications.map((app) => {
+            const statusConf = STATUS_CONFIG[app.status] || STATUS_CONFIG.new;
+            const docCount = app.documents?.length || 0;
+            const verifiedDocCount = app.documents?.filter((d) => d.status === 'verified').length || 0;
+            const hasCert = Boolean(app.finalCertificate?.fileUrl);
+
+            return (
+              <div
+                key={app._id}
+                className="bg-white dark:bg-[#15203b] border border-dark-200 dark:border-[#213259] rounded-2xl p-4 space-y-3 shadow-xs"
+              >
+                {/* Header: App # + Status + Date */}
+                <div className="flex items-center justify-between gap-2 border-b border-dark-100 dark:border-[#1e2c4f] pb-2.5">
+                  <div className="font-mono text-xs font-bold text-blue-600 dark:text-blue-400">
+                    {app.applicationNumber}
+                    <div className="text-[10px] font-normal text-dark-400">
+                      {new Date(app.createdAt).toLocaleDateString()}
+                    </div>
+                  </div>
+
+                  <span
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${statusConf.bg}`}
+                  >
+                    <span className={`w-1.5 h-1.5 rounded-full ${statusConf.dot}`} />
+                    <span>{statusConf.label}</span>
+                  </span>
+                </div>
+
+                {/* Customer Details with Quick Contact Touchpoints */}
+                <div className="space-y-1">
+                  <div className="font-bold text-sm text-dark-900 dark:text-white">{app.customerName}</div>
+                  <div className="flex items-center gap-2 flex-wrap text-xs text-dark-500 dark:text-dark-400">
+                    {app.customerMobile && (
+                      <a
+                        href={`tel:${app.customerMobile}`}
+                        className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline"
+                      >
+                        <Phone size={11} />
+                        <span>{app.customerMobile}</span>
+                      </a>
+                    )}
+                    {app.customerEmail && (
+                      <a
+                        href={`mailto:${app.customerEmail}`}
+                        className="inline-flex items-center gap-1 text-dark-500 dark:text-dark-400 truncate max-w-[180px] hover:underline"
+                      >
+                        <Mail size={11} />
+                        <span>{app.customerEmail}</span>
+                      </a>
+                    )}
+                  </div>
+                </div>
+
+                {/* Meta Row: Type & Payment */}
+                <div className="flex items-center justify-between text-xs bg-dark-50 dark:bg-[#0c1427] p-2.5 rounded-xl">
+                  <div>
+                    <span className="text-[10px] text-dark-400 block">Type</span>
+                    <span className="capitalize font-medium text-dark-800 dark:text-dark-200">
+                      {app.applicationType.replace('_', ' ')}
+                    </span>
+                  </div>
+
+                  <div className="text-right">
+                    <span className="text-[10px] text-dark-400 block">Payment</span>
+                    {app.paymentStatus === 'completed' ? (
+                      <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                        ₹{app.paymentAmount} Paid
+                      </span>
+                    ) : (
+                      <span className="font-semibold text-amber-600 dark:text-amber-400">
+                        ₹{app.paymentAmount} Pending
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Actions Grid */}
+                <div className="grid grid-cols-2 gap-2 pt-1">
+                  {/* Document Folder */}
+                  <button
+                    onClick={() => openDocumentFolder(app)}
+                    className="flex items-center justify-center gap-1.5 py-2 px-2 bg-dark-50 dark:bg-[#0c1427] hover:bg-dark-100 dark:hover:bg-[#1e2e54] border border-dark-200 dark:border-[#213259] rounded-xl text-xs text-sky-600 dark:text-sky-400 font-medium"
+                  >
+                    <Folder size={14} />
+                    <span>Folder ({verifiedDocCount}/{docCount})</span>
+                  </button>
+
+                  {/* Certificate */}
+                  {hasCert ? (
+                    <a
+                      href={getFullUrl(app.finalCertificate.fileUrl)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl text-xs bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30 font-semibold"
+                    >
+                      <Download size={13} />
+                      <span>Certificate</span>
+                    </a>
+                  ) : (
+                    <button
+                      onClick={() => openCertificateModal(app)}
+                      className="flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl text-xs bg-dark-50 dark:bg-dark-700/60 text-dark-600 dark:text-dark-300 border border-dark-200 dark:border-dark-600/40 font-medium"
+                    >
+                      <Upload size={13} />
+                      <span>Upload Cert</span>
+                    </button>
+                  )}
+
+                  {/* Timeline */}
+                  <button
+                    onClick={() => openCommunicationHistory(app)}
+                    className="flex items-center justify-center gap-1.5 py-2 px-2 bg-dark-50 dark:bg-[#0c1427] hover:bg-dark-100 dark:hover:bg-[#1e2e54] border border-dark-200 dark:border-[#213259] rounded-xl text-xs text-teal-600 dark:text-teal-400 font-medium"
+                  >
+                    <MessageSquare size={14} />
+                    <span>History</span>
+                  </button>
+
+                  {/* Status & Review */}
+                  <button
+                    onClick={() => openStatusModal(app)}
+                    className="flex items-center justify-center gap-1.5 py-2 px-2 bg-blue-50 dark:bg-blue-600/10 hover:bg-blue-100 dark:hover:bg-blue-600/20 border border-blue-200 dark:border-blue-500/30 rounded-xl text-xs text-blue-600 dark:text-blue-400 font-semibold"
+                  >
+                    <ShieldCheck size={14} />
+                    <span>Review & Status</span>
+                  </button>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Pagination Bar */}
+      <div className="bg-white dark:bg-[#15203b] border border-dark-200 dark:border-[#213259] rounded-xl sm:rounded-2xl px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-dark-500 dark:text-dark-400 shadow-xs">
+        <span>
+          Showing <strong className="text-dark-900 dark:text-white">{applications.length}</strong> of{' '}
+          <strong className="text-dark-900 dark:text-white">{totalCount}</strong> applications
+          {autoSync && (
+            <span className="ml-2 text-[10px] text-dark-400">
+              • Last synced: {lastSyncTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+            </span>
+          )}
+        </span>
+        <div className="flex items-center gap-2">
+          <button
+            disabled={page <= 1}
+            onClick={() => setPage((p) => Math.max(p - 1, 1))}
+            className="flex items-center gap-1 px-3 py-1.5 bg-dark-50 dark:bg-[#0c1427] hover:bg-dark-100 dark:hover:bg-[#1f3059] disabled:opacity-40 border border-dark-200 dark:border-[#213259] rounded-xl text-dark-700 dark:text-white font-medium transition-colors"
+          >
+            <ChevronLeft size={14} />
+            <span>Prev</span>
+          </button>
+          <span className="px-2 text-dark-800 dark:text-white font-semibold">
+            {page} / {totalPages}
+          </span>
+          <button
+            disabled={page >= totalPages}
+            onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
+            className="flex items-center gap-1 px-3 py-1.5 bg-dark-50 dark:bg-[#0c1427] hover:bg-dark-100 dark:hover:bg-[#1f3059] disabled:opacity-40 border border-dark-200 dark:border-[#213259] rounded-xl text-dark-700 dark:text-white font-medium transition-colors"
+          >
+            <span>Next</span>
+            <ChevronRight size={14} />
+          </button>
         </div>
       </div>
 
@@ -860,10 +1221,10 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
       {/* 4. MODAL: APPLICATION-WISE DOCUMENT FOLDER                      */}
       {/* ============================================================== */}
       {isFolderModalOpen && selectedApp && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="bg-white dark:bg-[#10192e] border border-dark-200 dark:border-[#233560] rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-sm">
+          <div className="bg-white dark:bg-[#10192e] border border-dark-200 dark:border-[#233560] rounded-2xl sm:rounded-3xl w-full max-w-2xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
             {/* Header */}
-            <div className="px-6 py-4 bg-dark-50 dark:bg-[#14203d] border-b border-dark-200 dark:border-[#233560] flex items-center justify-between">
+            <div className="px-4 sm:px-6 py-4 bg-dark-50 dark:bg-[#14203d] border-b border-dark-200 dark:border-[#233560] flex items-center justify-between shrink-0">
               <div className="flex items-center gap-2.5">
                 <div className="p-2 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-xl">
                   <Folder size={18} />
@@ -886,7 +1247,7 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
             </div>
 
             {/* Document List */}
-            <div className="p-6 overflow-y-auto space-y-4 flex-1">
+            <div className="p-4 sm:p-6 overflow-y-auto space-y-4 flex-1">
               <div className="space-y-2.5">
                 <h4 className="text-xs font-semibold uppercase tracking-wider text-dark-500 dark:text-dark-400">
                   Uploaded Documents ({selectedApp.documents?.length || 0})
@@ -910,21 +1271,19 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
                     return (
                       <div
                         key={doc._id}
-                        className="bg-dark-50/50 dark:bg-[#15203b] border border-dark-200 dark:border-[#233560] rounded-xl p-3 flex items-center justify-between gap-3"
+                        className="bg-dark-50/50 dark:bg-[#15203b] border border-dark-200 dark:border-[#233560] rounded-xl p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
                       >
-                        <div className="flex items-center gap-3 min-w-0">
+                        <div className="flex items-center gap-3 min-w-0 w-full sm:w-auto">
                           <FileText size={20} className="text-blue-600 dark:text-blue-400 shrink-0" />
-                          <div className="min-w-0">
+                          <div className="min-w-0 flex-1">
                             <div className="font-semibold text-dark-900 dark:text-white text-xs truncate flex items-center gap-2">
                               <span>{doc.name}</span>
-                              <span
-                                className={`text-[10px] px-2 py-0.2 rounded-full border capitalize ${docStatusColor}`}
-                              >
+                              <span className={`text-[10px] px-2 py-0.2 rounded-full border capitalize ${docStatusColor}`}>
                                 {doc.status.replace('_', ' ')}
                               </span>
                             </div>
-                            <div className="text-[11px] text-dark-500 dark:text-dark-400 flex items-center gap-2 mt-0.5">
-                              <span className="truncate max-w-[150px]">{doc.fileName}</span>
+                            <div className="text-[11px] text-dark-500 dark:text-dark-400 flex items-center gap-2 mt-0.5 flex-wrap">
+                              <span className="truncate max-w-[160px]">{doc.fileName}</span>
                               {doc.fileSize > 0 && <span>• {Math.round(doc.fileSize / 1024)} KB</span>}
                               {doc.remarks && <span className="text-orange-500 dark:text-orange-400">• Note: {doc.remarks}</span>}
                             </div>
@@ -932,7 +1291,7 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
                         </div>
 
                         {/* Actions */}
-                        <div className="flex items-center gap-1.5 shrink-0">
+                        <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center">
                           {/* Preview link */}
                           <a
                             href={getFullUrl(doc.fileUrl)}
@@ -1053,9 +1412,9 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
       {/* 5. MODAL: FINAL CERTIFICATE UPLOAD & DOWNLOAD                   */}
       {/* ============================================================== */}
       {isCertModalOpen && selectedApp && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="bg-white dark:bg-[#10192e] border border-dark-200 dark:border-[#233560] rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden">
-            <div className="px-6 py-4 bg-dark-50 dark:bg-[#14203d] border-b border-dark-200 dark:border-[#233560] flex items-center justify-between">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-sm">
+          <div className="bg-white dark:bg-[#10192e] border border-dark-200 dark:border-[#233560] rounded-2xl sm:rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden max-h-[92vh] flex flex-col">
+            <div className="px-4 sm:px-6 py-4 bg-dark-50 dark:bg-[#14203d] border-b border-dark-200 dark:border-[#233560] flex items-center justify-between shrink-0">
               <div className="flex items-center gap-2.5">
                 <div className="p-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-xl">
                   <Award size={18} />
@@ -1073,7 +1432,7 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
               </button>
             </div>
 
-            <div className="p-6 space-y-4">
+            <div className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1">
               {/* If already has certificate */}
               {selectedApp.finalCertificate?.fileUrl ? (
                 <div className="bg-emerald-50/50 dark:bg-[#15203b] border border-emerald-500/30 rounded-2xl p-4 space-y-3">
@@ -1095,44 +1454,68 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
                     )}
                   </div>
 
-                  <div className="pt-2 flex items-center gap-2">
+                  <div className="pt-2 flex items-center gap-2 flex-wrap">
                     <a
                       href={getFullUrl(selectedApp.finalCertificate.fileUrl)}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex-1 flex items-center justify-center gap-2 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-xl shadow-xs"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold transition-all shadow-xs"
                     >
-                      <Download size={14} />
+                      <Download size={13} />
                       <span>Download Certificate</span>
+                    </a>
+                    <a
+                      href={getFullUrl(selectedApp.finalCertificate.fileUrl)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-dark-50 dark:bg-[#0c1427] hover:bg-dark-100 dark:hover:bg-[#1f3059] border border-dark-200 dark:border-[#233560] rounded-xl text-xs text-dark-700 dark:text-dark-300"
+                    >
+                      <Eye size={13} />
+                      <span>Preview</span>
                     </a>
                     <button
                       type="button"
                       onClick={handleDeleteCert}
-                      className="p-2 bg-dark-100 dark:bg-dark-800 hover:bg-dark-200 dark:hover:bg-dark-700 text-dark-500 hover:text-red-500 border border-dark-200 dark:border-dark-600 rounded-xl text-xs"
+                      className="p-1.5 bg-red-50 dark:bg-red-500/10 hover:bg-red-100 dark:hover:bg-red-500/20 border border-red-200 dark:border-red-500/30 rounded-xl text-red-600 dark:text-red-400 text-xs"
                       title="Remove Certificate"
                     >
-                      <Trash2 size={15} />
+                      <Trash2 size={14} />
                     </button>
                   </div>
                 </div>
-              ) : null}
+              ) : (
+                <div className="p-4 text-center border border-dashed border-dark-200 dark:border-[#233560] rounded-2xl text-dark-500 dark:text-dark-400 text-xs">
+                  No certificate issued for this application yet. Upload below to officially issue the certificate.
+                </div>
+              )}
 
-              {/* Upload / Re-issue Form */}
-              <form onSubmit={handleUploadCertificate} className="space-y-3">
-                <h5 className="text-xs font-semibold text-dark-900 dark:text-white">
-                  {selectedApp.finalCertificate?.fileUrl ? 'Replace / Re-issue Certificate' : 'Issue & Upload Final Certificate'}
+              {/* Upload Certificate Form */}
+              <form onSubmit={handleUploadCertificate} className="space-y-3 pt-2">
+                <h5 className="text-xs font-bold text-dark-900 dark:text-white uppercase tracking-wider">
+                  {selectedApp.finalCertificate?.fileUrl ? 'Replace / Re-issue Certificate' : 'Issue New Certificate'}
                 </h5>
 
-                <div>
-                  <label className="text-[11px] text-dark-500 dark:text-dark-400 block mb-1">Certificate Number</label>
-                  <input
-                    type="text"
-                    value={certForm.certificateNumber}
-                    onChange={(e) => setCertForm({ ...certForm, certificateNumber: e.target.value })}
-                    className="w-full px-3 py-1.5 bg-white dark:bg-[#15203b] border border-dark-200 dark:border-[#233560] rounded-xl text-xs text-dark-900 dark:text-white font-mono"
-                    placeholder="e.g. CERT-JINL-2026-1002"
-                    required
-                  />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[11px] text-dark-500 dark:text-dark-400 block mb-1">Certificate #</label>
+                    <input
+                      type="text"
+                      value={certForm.certificateNumber}
+                      onChange={(e) => setCertForm({ ...certForm, certificateNumber: e.target.value })}
+                      className="w-full px-3 py-1.5 bg-dark-50 dark:bg-[#15203b] border border-dark-200 dark:border-[#233560] rounded-xl text-xs text-dark-900 dark:text-white font-mono"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] text-dark-500 dark:text-dark-400 block mb-1">Issued Date</label>
+                    <input
+                      type="date"
+                      value={certForm.issuedDate}
+                      onChange={(e) => setCertForm({ ...certForm, issuedDate: e.target.value })}
+                      className="w-full px-3 py-1.5 bg-dark-50 dark:bg-[#15203b] border border-dark-200 dark:border-[#233560] rounded-xl text-xs text-dark-900 dark:text-white"
+                      required
+                    />
+                  </div>
                 </div>
 
                 <div>
@@ -1141,28 +1524,19 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
                     type="text"
                     value={certForm.title}
                     onChange={(e) => setCertForm({ ...certForm, title: e.target.value })}
-                    className="w-full px-3 py-1.5 bg-white dark:bg-[#15203b] border border-dark-200 dark:border-[#233560] rounded-xl text-xs text-dark-900 dark:text-white"
-                    placeholder="PeYug Society Membership Certificate"
+                    className="w-full px-3 py-1.5 bg-dark-50 dark:bg-[#15203b] border border-dark-200 dark:border-[#233560] rounded-xl text-xs text-dark-900 dark:text-white"
+                    required
                   />
                 </div>
 
                 <div>
-                  <label className="text-[11px] text-dark-500 dark:text-dark-400 block mb-1">Issue Date</label>
-                  <input
-                    type="date"
-                    value={certForm.issuedDate}
-                    onChange={(e) => setCertForm({ ...certForm, issuedDate: e.target.value })}
-                    className="w-full px-3 py-1.5 bg-white dark:bg-[#15203b] border border-dark-200 dark:border-[#233560] rounded-xl text-xs text-dark-900 dark:text-white"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-[11px] text-dark-500 dark:text-dark-400 block mb-1">Certificate Document File (PDF / Image)</label>
+                  <label className="text-[11px] text-dark-500 dark:text-dark-400 block mb-1">
+                    Upload Certificate PDF / Image *
+                  </label>
                   <input
                     type="file"
                     onChange={(e) => setCertForm({ ...certForm, file: e.target.files[0] })}
                     className="w-full text-xs text-dark-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-emerald-600 file:text-white hover:file:bg-emerald-700 cursor-pointer"
-                    required={!selectedApp.finalCertificate?.fileUrl}
                   />
                 </div>
 
@@ -1170,7 +1544,7 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
                   type="submit"
                   className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-xl transition-all shadow-xs"
                 >
-                  Upload & Issue Final Certificate
+                  {selectedApp.finalCertificate?.fileUrl ? 'Update & Re-issue Certificate' : 'Issue Official Certificate'}
                 </button>
               </form>
             </div>
@@ -1182,17 +1556,16 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
       {/* 6. MODAL: CUSTOMER-WISE COMMUNICATION HISTORY                   */}
       {/* ============================================================== */}
       {isTimelineModalOpen && selectedApp && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="bg-white dark:bg-[#10192e] border border-dark-200 dark:border-[#233560] rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
-            <div className="px-6 py-4 bg-dark-50 dark:bg-[#14203d] border-b border-dark-200 dark:border-[#233560] flex items-center justify-between">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-sm">
+          <div className="bg-white dark:bg-[#10192e] border border-dark-200 dark:border-[#233560] rounded-2xl sm:rounded-3xl w-full max-w-2xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
+            {/* Header */}
+            <div className="px-4 sm:px-6 py-4 bg-dark-50 dark:bg-[#14203d] border-b border-dark-200 dark:border-[#233560] flex items-center justify-between shrink-0">
               <div className="flex items-center gap-2.5">
                 <div className="p-2 bg-teal-500/10 text-teal-600 dark:text-teal-400 rounded-xl">
                   <MessageSquare size={18} />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-dark-900 dark:text-white">
-                    Customer Communication History
-                  </h3>
+                  <h3 className="text-sm font-bold text-dark-900 dark:text-white">Customer Communication History</h3>
                   <p className="text-xs text-dark-500 dark:text-dark-400">
                     {selectedApp.customerName} • {selectedApp.customerMobile}
                   </p>
@@ -1207,8 +1580,8 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
             </div>
 
             {/* Filter Pills */}
-            <div className="px-6 py-2.5 bg-dark-50 dark:bg-[#0e172e] border-b border-dark-200 dark:border-[#233560] flex flex-wrap items-center gap-2 text-xs">
-              <span className="text-dark-500 dark:text-dark-400 mr-1">Filter:</span>
+            <div className="px-4 sm:px-6 py-2 bg-dark-50 dark:bg-[#0e172e] border-b border-dark-200 dark:border-[#233560] flex items-center gap-1.5 overflow-x-auto no-scrollbar text-xs shrink-0">
+              <span className="text-dark-500 dark:text-dark-400 mr-1 text-[11px]">Filter:</span>
               {[
                 { id: 'all', label: 'All Timeline' },
                 { id: 'call', label: `Calls (${timelineData?.counts?.calls || 0})` },
@@ -1220,7 +1593,7 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
                 <button
                   key={pill.id}
                   onClick={() => setTimelineFilter(pill.id)}
-                  className={`px-2.5 py-1 rounded-full text-[11px] transition-colors ${
+                  className={`whitespace-nowrap px-2.5 py-1 rounded-full text-[11px] transition-colors ${
                     timelineFilter === pill.id
                       ? 'bg-blue-600 text-white font-semibold'
                       : 'bg-white dark:bg-[#15203b] hover:bg-dark-100 dark:hover:bg-[#1c2a4d] text-dark-600 dark:text-dark-300 border border-dark-200 dark:border-transparent'
@@ -1232,7 +1605,7 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
             </div>
 
             {/* Timeline Stream */}
-            <div className="p-6 overflow-y-auto space-y-4 flex-1">
+            <div className="p-4 sm:p-6 overflow-y-auto space-y-4 flex-1">
               {timelineLoading ? (
                 <div className="py-12 text-center text-dark-400">
                   <RefreshCw size={20} className="animate-spin text-teal-600 dark:text-teal-400 mx-auto mb-2" />
@@ -1263,7 +1636,7 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
 
                         {/* Card */}
                         <div className="bg-dark-50/50 dark:bg-[#15203b] border border-dark-200 dark:border-[#233560] rounded-xl p-3 space-y-1">
-                          <div className="flex items-center justify-between text-xs">
+                          <div className="flex items-center justify-between text-xs flex-wrap gap-1">
                             <span className="font-semibold text-dark-900 dark:text-white">{item.title}</span>
                             <span className="text-[10px] text-dark-500 dark:text-dark-400">
                               {item.timestamp ? new Date(item.timestamp).toLocaleString() : ''}
@@ -1300,9 +1673,9 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
       {/* 7. MODAL: CREATE NEW APPLICATION                               */}
       {/* ============================================================== */}
       {isNewAppModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="bg-white dark:bg-[#10192e] border border-dark-200 dark:border-[#233560] rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden">
-            <div className="px-6 py-4 bg-dark-50 dark:bg-[#14203d] border-b border-dark-200 dark:border-[#233560] flex items-center justify-between">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-sm">
+          <div className="bg-white dark:bg-[#10192e] border border-dark-200 dark:border-[#233560] rounded-2xl sm:rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden max-h-[92vh] flex flex-col">
+            <div className="px-4 sm:px-6 py-4 bg-dark-50 dark:bg-[#14203d] border-b border-dark-200 dark:border-[#233560] flex items-center justify-between shrink-0">
               <h3 className="text-sm font-bold text-dark-900 dark:text-white flex items-center gap-2">
                 <Plus size={16} className="text-blue-600 dark:text-blue-400" />
                 <span>Initiate New Customer Application</span>
@@ -1315,7 +1688,7 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
               </button>
             </div>
 
-            <form onSubmit={handleCreateApplication} className="p-6 space-y-4">
+            <form onSubmit={handleCreateApplication} className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1">
               <div>
                 <label className="text-xs text-dark-700 dark:text-dark-300 font-semibold block mb-1">
                   Select Registered Customer *
@@ -1339,7 +1712,7 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs text-dark-700 dark:text-dark-300 font-semibold block mb-1">Application Type</label>
                   <select
@@ -1368,7 +1741,7 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs text-dark-700 dark:text-dark-300 font-semibold block mb-1">Payment Status</label>
                   <select
@@ -1419,9 +1792,9 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
       {/* 8. MODAL: UPDATE APPLICATION STATUS & PAYMENT                  */}
       {/* ============================================================== */}
       {isStatusModalOpen && selectedApp && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="bg-white dark:bg-[#10192e] border border-dark-200 dark:border-[#233560] rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
-            <div className="px-6 py-4 bg-dark-50 dark:bg-[#14203d] border-b border-dark-200 dark:border-[#233560] flex items-center justify-between">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-sm">
+          <div className="bg-white dark:bg-[#10192e] border border-dark-200 dark:border-[#233560] rounded-2xl sm:rounded-3xl w-full max-w-md shadow-2xl overflow-hidden max-h-[92vh] flex flex-col">
+            <div className="px-4 sm:px-6 py-4 bg-dark-50 dark:bg-[#14203d] border-b border-dark-200 dark:border-[#233560] flex items-center justify-between shrink-0">
               <div>
                 <h3 className="text-sm font-bold text-dark-900 dark:text-white">Review & Update Status</h3>
                 <p className="text-xs text-dark-500 dark:text-dark-400">{selectedApp.applicationNumber}</p>
@@ -1434,7 +1807,7 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
               </button>
             </div>
 
-            <form onSubmit={handleUpdateStatusSubmit} className="p-6 space-y-4">
+            <form onSubmit={handleUpdateStatusSubmit} className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1">
               <div>
                 <label className="text-xs text-dark-700 dark:text-dark-300 font-semibold block mb-1">
                   Application Lifecycle Status

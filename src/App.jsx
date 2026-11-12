@@ -223,7 +223,18 @@ function AppLayout() {
   };
 
   const [currentPage, setCurrentPage] = useState(() => resolvePageFromPath(location.pathname));
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => (typeof window !== 'undefined' ? window.innerWidth < 1024 : false));
+
+  // Automatically adjust sidebar on viewport resize for fluid media responsiveness
+  useEffect(() => {
+    const handleResize = () => {
+      if (typeof window !== 'undefined' && window.innerWidth < 768) {
+        setCollapsed(true);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Sync state and enforce strict role boundaries on route transitions
   useEffect(() => {
@@ -594,8 +605,8 @@ function AppLayout() {
         />
 
         <main
-          className={`flex-1 min-w-0 max-w-full p-4 sm:p-6 lg:p-8 transition-[margin] duration-300 ease-in-out overflow-x-hidden ${
-            collapsed ? 'ml-[72px]' : 'ml-[230px]'
+          className={`flex-1 min-w-0 max-w-full p-3 sm:p-5 lg:p-8 transition-[margin] duration-300 ease-in-out overflow-x-hidden ml-0 ${
+            collapsed ? 'md:ml-[72px]' : 'md:ml-[230px]'
           }`}
         >
           <Suspense fallback={<PageLoadingFallback />}>
