@@ -20,15 +20,34 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../context/ConfirmContext';
 import { getWallet, rechargeWallet } from '../api/wallet';
+import { parseCleanBalance } from '../utils/balance';
 
 export default function WalletPage({ onNavigate }) {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const { addToast } = useToast();
   const { confirm } = useConfirm();
 
   // Organizations
   const [selectedOrg, setSelectedOrg] = useState('Main Organization');
-  const [balance, setBalance] = useState(user?.balance !== undefined ? parseFloat(user.balance) : 0.0);
+  const [balance, setBalance] = useState(() => {
+    try {
+      const cached = localStorage.getItem('crm_wallet_balance');
+      if (cached !== null && cached !== undefined && cached !== '') {
+        return parseCleanBalance(cached);
+      }
+    } catch {
+      // ignore storage access errors
+    }
+    return parseCleanBalance(user?.balance);
+  });
+
+  // Keep balance in sync if user context updates from external events
+  useEffect(() => {
+    if (user?.balance !== undefined) {
+      const parsed = parseCleanBalance(user.balance);
+      setBalance((prev) => (prev === 0 && parsed > 0 ? parsed : prev));
+    }
+  }, [user?.balance]);
   const [freeAiMinutes, setFreeAiMinutes] = useState(0);
 
   // Accordion state
@@ -58,25 +77,49 @@ export default function WalletPage({ onNavigate }) {
 
   // Fetch real balance and transactions from /api/wallet
   useEffect(() => {
+    let isMounted = true;
     getWallet()
       .then((res) => {
-        if (res.wallet) {
-          if (res.wallet.balance !== undefined) setBalance(res.wallet.balance);
-          if (res.wallet.transactions && res.wallet.transactions.length > 0) {
-            setActivities(
-              res.wallet.transactions.map((t) => ({
-                id: t._id || t.id,
-                title: t.description || 'Wallet Top-up',
-                desc: `Payment Ref: ${t.paymentId || 'UPI'}`,
-                amount: t.amount,
-                time: t.date || 'Recent',
-                type: t.type || 'credit',
-              }))
-            );
+        if (!isMounted || !res) return;
+
+        const realBal =
+          res.balance !== undefined
+            ? parseCleanBalance(res.balance)
+            : res.wallet?.balance !== undefined
+            ? parseCleanBalance(res.wallet.balance)
+            : null;
+
+        if (realBal !== null) {
+          setBalance(realBal);
+          try {
+            localStorage.setItem('crm_wallet_balance', String(realBal));
+          } catch {}
+          if (updateUser && user && user.balance !== `₹${realBal.toFixed(1)}`) {
+            updateUser({ ...user, balance: `₹${realBal.toFixed(1)}` });
           }
         }
+
+        const txs = res.wallet?.transactions || res.transactions;
+        if (Array.isArray(txs) && txs.length > 0) {
+          setActivities(
+            txs.map((t) => ({
+              id: t._id || t.id,
+              title: t.description || 'Wallet Top-up',
+              desc: `Payment Ref: ${t.paymentId || 'UPI'}`,
+              amount: t.amount,
+              time: t.date || 'Recent',
+              type: t.type || 'credit',
+            }))
+          );
+        }
       })
-      .catch(() => {});
+      .catch((err) => {
+        console.warn('Wallet fetch fallback:', err);
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const handleAddMoney = async () => {
@@ -97,18 +140,27 @@ export default function WalletPage({ onNavigate }) {
 
     setIsProcessingPayment(true);
 
+    let updatedBal = parseCleanBalance(balance) + amount;
     try {
       const res = await rechargeWallet({
         amount,
         paymentMethod: 'UPI / Razorpay',
       });
-      if (res.balance !== undefined) {
-        setBalance(res.balance);
-      } else {
-        setBalance((prev) => parseFloat((prev + amount).toFixed(2)));
+      if (res?.balance !== undefined) {
+        updatedBal = parseCleanBalance(res.balance);
+      } else if (res?.wallet?.balance !== undefined) {
+        updatedBal = parseCleanBalance(res.wallet.balance);
       }
     } catch {
-      setBalance((prev) => parseFloat((prev + amount).toFixed(2)));
+      updatedBal = parseCleanBalance(balance) + amount;
+    }
+
+    setBalance(updatedBal);
+    try {
+      localStorage.setItem('crm_wallet_balance', String(updatedBal));
+    } catch {}
+    if (updateUser && user) {
+      updateUser({ ...user, balance: `₹${updatedBal.toFixed(1)}` });
     }
 
     const newAct = {
@@ -188,7 +240,7 @@ export default function WalletPage({ onNavigate }) {
                 AVAILABLE BALANCE
               </p>
               <div className="text-4xl font-extrabold text-[#2563eb] dark:text-blue-400 mt-2">
-                ₹{balance.toFixed(1)}
+                ₹{parseCleanBalance(balance).toFixed(1)}
               </div>
             </div>
 

@@ -25,6 +25,7 @@ import {
 import { useApp } from '../context/AppContext';
 import { useNotifications } from '../hooks/useNotifications';
 import { getRoleInfo, isAdminOrOwner, isManager } from '../utils/permissions';
+import { formatCurrency } from '../utils/balance';
 
 const getNotifIcon = (type) => {
   switch (type) {
@@ -127,7 +128,16 @@ export default function Header({
     ? user.email.split('@')[0].toUpperCase()
     : 'USER';
   const displayPhone = user?.phone || '';
-  const displayBalance = user?.balance !== undefined ? `₹${user.balance}` : null;
+  const displayBalance = user?.balance !== undefined
+    ? formatCurrency(user.balance)
+    : (() => {
+        try {
+          const cached = typeof window !== 'undefined' ? localStorage.getItem('crm_wallet_balance') : null;
+          return cached ? formatCurrency(cached) : '₹0.0';
+        } catch {
+          return '₹0.0';
+        }
+      })();
 
   return (
     <header className="fixed top-0 left-0 right-0 h-16 w-full bg-[#10192e] border-b border-[#1d2d52] flex items-center justify-between px-4 sm:px-6 z-30 shadow-sm">
