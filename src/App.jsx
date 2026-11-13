@@ -636,7 +636,11 @@ function AppLayout() {
         />
 
         <main
-          className={`flex-1 min-w-0 max-w-full p-3 sm:p-5 lg:p-8 transition-[margin] duration-300 ease-in-out overflow-x-hidden ml-0 ${
+          className={`flex-1 min-w-0 max-w-full transition-[margin] duration-300 ease-in-out ml-0 ${
+            currentPage === 'whatsapp'
+              ? 'p-2 sm:p-3 lg:p-3.5 h-[calc(100vh-4rem)] overflow-hidden'
+              : 'p-3 sm:p-5 lg:p-6 overflow-x-hidden'
+          } ${
             collapsed ? 'md:ml-[72px]' : 'md:ml-[230px]'
           }`}
         >

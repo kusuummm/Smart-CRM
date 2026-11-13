@@ -314,13 +314,12 @@ export default function Sidebar({
               style={
                 isActive
                   ? {
-                      backgroundColor: 'var(--color-primary-600)',
-                      borderLeft: '4px solid var(--color-primary-300)',
-                      boxShadow: '0 4px 14px -1px rgba(0, 0, 0, 0.35)',
+                      background: 'linear-gradient(90deg, #2563eb 0%, #3b82f6 100%)',
+                      boxShadow: '0 4px 14px -2px rgba(37, 99, 235, 0.45)',
                     }
                   : undefined
               }
-              className={`w-full flex items-center justify-between px-3 h-10 rounded-lg text-[13.5px] transition-all cursor-pointer group ${
+              className={`w-full flex items-center justify-between px-3 h-10 rounded-xl text-[13.5px] transition-all cursor-pointer group ${
                 isActive
                   ? 'text-white font-bold'
                   : 'text-slate-300 hover:bg-[#182647] hover:text-white'

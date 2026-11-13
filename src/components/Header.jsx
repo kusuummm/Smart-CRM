@@ -141,7 +141,7 @@ export default function Header({
       })();
 
   return (
-    <header className="fixed top-0 left-0 right-0 h-16 w-full bg-[#10192e] border-b border-[#1d2d52] flex items-center justify-between px-4 sm:px-6 z-30 shadow-sm">
+    <header className="fixed top-0 left-0 right-0 h-16 w-full bg-[#0b1329]/95 backdrop-blur-md border-b border-[#1c2c54]/80 flex items-center justify-between px-4 sm:px-6 z-30 shadow-md shadow-black/20">
       {/* Left Section: Sidebar Toggle & Panel Badge */}
       <div className="flex items-center gap-3 sm:gap-4">
         <button
@@ -218,12 +218,14 @@ export default function Header({
       <button
         type="button"
         onClick={() => window.dispatchEvent(new CustomEvent('smartcrm:open-command-palette'))}
-        className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#14213d] hover:bg-[#1a2b50] text-slate-300 hover:text-white border border-[#223663] hover:border-blue-500/50 text-xs transition-all cursor-pointer shadow-2xs"
+        className="hidden md:flex items-center justify-between w-64 sm:w-80 lg:w-96 px-3.5 py-1.5 rounded-xl bg-[#131f3e]/90 hover:bg-[#182850] text-slate-300 hover:text-white border border-[#213564] hover:border-blue-400/60 text-xs transition-all cursor-pointer shadow-2xs"
         title="Universal Search (Ctrl + K)"
       >
-        <Search size={13} className="text-blue-400" />
-        <span className="text-slate-300 font-medium">Search CRM...</span>
-        <kbd className="ml-1.5 px-1.5 py-0.5 text-[10px] font-mono font-semibold rounded bg-[#0b1222] border border-[#2b4172] text-slate-400">
+        <div className="flex items-center gap-2">
+          <Search size={14} className="text-blue-400" />
+          <span className="text-slate-300 font-medium">Search CRM pages, leads, actions...</span>
+        </div>
+        <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-semibold rounded bg-[#0b1222] border border-[#2b4172] text-slate-400">
           Ctrl K
         </kbd>
       </button>
