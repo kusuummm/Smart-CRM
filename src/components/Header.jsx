@@ -232,27 +232,29 @@ export default function Header({
 
       {/* Right Section: Balance, User Profile, Quick Actions, Logout */}
       <div className="flex items-center gap-3 sm:gap-4">
-        {/* Available Balance Pill */}
-        <button
-          onClick={() => onNavigate?.('wallet')}
-          title="Open Wallet & Recharges"
-          className="hidden sm:flex items-center gap-2 px-3 py-1.5 text-[13px] rounded-lg bg-gradient-to-r from-[#182647] to-[#1a2d58] border border-[#2a3a5e] hover:border-primary-400 text-slate-200 transition-all cursor-pointer shadow-2xs group"
-        >
-          <div
-            style={{
-              backgroundColor: 'rgba(var(--color-primary-500-rgb, 43, 73, 138), 0.22)',
-              color: 'var(--color-primary-400, #38bdf8)',
-            }}
-            className="w-5 h-5 rounded-md flex items-center justify-center group-hover:scale-110 transition-transform"
+        {/* Available Balance Pill - Shown only to Admin / Owner */}
+        {isAdminOrOwner(user) && (
+          <button
+            onClick={() => onNavigate?.('wallet')}
+            title="Open Wallet & Recharges"
+            className="hidden sm:flex items-center gap-2 px-3 py-1.5 text-[13px] rounded-lg bg-gradient-to-r from-[#182647] to-[#1a2d58] border border-[#2a3a5e] hover:border-primary-400 text-slate-200 transition-all cursor-pointer shadow-2xs group"
           >
-            <Wallet size={13} />
-          </div>
-          <span className="font-medium text-[11.5px] text-slate-300">AVL BAL :</span>
-          <span className="flex items-center gap-1.5 font-bold text-[13px] text-emerald-400">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-            {displayBalance || '₹0.0'}
-          </span>
-        </button>
+            <div
+              style={{
+                backgroundColor: 'rgba(var(--color-primary-500-rgb, 43, 73, 138), 0.22)',
+                color: 'var(--color-primary-400, #38bdf8)',
+              }}
+              className="w-5 h-5 rounded-md flex items-center justify-center group-hover:scale-110 transition-transform"
+            >
+              <Wallet size={13} />
+            </div>
+            <span className="font-medium text-[11.5px] text-slate-300">AVL BAL :</span>
+            <span className="flex items-center gap-1.5 font-bold text-[13px] text-emerald-400">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              {displayBalance || '₹0.0'}
+            </span>
+          </button>
+        )}
 
         {/* User Info (Name + Phone) */}
         <div

@@ -511,8 +511,8 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
         )}
       </div>
 
-      {/* 1. Clickable Pipeline Stage Metric Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2.5">
+      {/* 1. Sleek Filter Pills Bar */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
         {pipelineCards.map((card) => {
           const isSelected = statusFilter === card.id;
           const CardIcon = card.Icon;
@@ -524,45 +524,39 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
                 const nextStatus = isSelected && card.id !== '' ? '' : card.id;
                 handleStatusFilter(nextStatus);
               }}
-              className={`p-3 rounded-2xl border text-left transition-all cursor-pointer shadow-2xs hover:scale-[1.02] flex flex-col justify-between ${
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl border text-xs font-semibold shrink-0 transition-all cursor-pointer ${
                 isSelected
-                  ? 'border-primary-500 bg-primary-50/70 dark:bg-primary-950/40 ring-2 ring-primary-500/30'
-                  : 'border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 hover:border-primary-300 dark:hover:border-dark-600'
+                  ? 'border-blue-600 bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-700 font-bold shadow-2xs'
+                  : 'border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 text-dark-700 dark:text-dark-300 hover:bg-dark-50 dark:hover:bg-dark-700'
               }`}
-              title={`Click to filter leads by ${card.label}`}
             >
-              <div className="flex items-center justify-between">
-                <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${card.bg} ${card.color}`}>
-                  <CardIcon size={14} />
-                </div>
-                <span className={`text-base font-extrabold tabular-nums ${card.color}`}>
-                  {card.count}
-                </span>
-              </div>
-              <div className="mt-2.5">
-                <p className="text-[11px] font-bold text-dark-800 dark:text-dark-200 truncate">
-                  {card.label}
-                </p>
-                <p className="text-[10px] text-dark-400 font-medium tabular-nums mt-0.5">
-                  {leads.length > 0 ? `${Math.round((card.count / leads.length) * 100)}%` : '0%'}
-                </p>
-              </div>
+              <CardIcon size={13} className={card.color} />
+              <span>{card.label}</span>
+              <span
+                className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                  isSelected
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-dark-100 dark:bg-dark-700 text-dark-600 dark:text-dark-300'
+                }`}
+              >
+                {card.count}
+              </span>
             </button>
           );
         })}
       </div>
 
-      <div className="bg-white rounded-xl p-3 border border-dark-200 shadow-sm dark:bg-dark-800 dark:border-dark-700 flex flex-wrap gap-3 items-center justify-between">
+      <div className="bg-white rounded-xl p-3 border border-dark-200 shadow-2xs dark:bg-dark-800 dark:border-dark-700 flex flex-wrap gap-3 items-center justify-between">
         <div className="flex items-center gap-2">
           {statusFilter ? (
             <div className="inline-flex items-center gap-2">
               <span className="text-xs font-medium text-dark-500 dark:text-dark-400">Filtered by:</span>
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-primary-50 dark:bg-primary-950/40 text-primary-600 dark:text-primary-400 border border-primary-200 dark:border-primary-800">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-xs font-semibold rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800">
                 <span>{leadStatusLabels[statusFilter] || statusFilter}</span>
                 <button
                   type="button"
                   onClick={() => setStatusFilter('')}
-                  className="hover:text-primary-800 dark:hover:text-primary-200 cursor-pointer ml-1 p-0.5 rounded text-xs"
+                  className="hover:text-blue-800 dark:hover:text-blue-200 cursor-pointer ml-1 p-0.5 rounded text-xs"
                   title="Clear filter"
                 >
                   <X size={12} />
