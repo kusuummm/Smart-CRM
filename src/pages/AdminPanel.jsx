@@ -91,6 +91,7 @@ import {
 import { getCustomers, createCustomer, updateCustomer, bulkAssignCustomers } from '../api/customers';
 import { getFollowUps, createFollowUp, updateFollowUp, deleteFollowUp } from '../api/followups';
 import { testEmailDelivery } from '../api/emails';
+import { getWhatsAppConfig, updateWhatsAppConfig, testWhatsAppConnection } from '../api/whatsapp';
 import CallerProgressReports from '../components/CallerProgressReports';
 
 const emptyForm = { name: '', email: '', password: '', role: 'member', phone: '' };
@@ -360,6 +361,85 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
   const handleRunDiagnostics = async () => {
     await loadData(true);
     addToast('System diagnostics complete: Database active, SMTP mailer reachable, and Cloud APIs configured.', 'success');
+  };
+
+  // WhatsApp Business API Config & Handshake State
+  const [waConfig, setWaConfig] = useState({
+    accessToken: '',
+    phoneNumberId: '1408768628982301',
+    wabaId: '1604281820561116',
+    isConfigured: false,
+    maskedToken: '',
+  });
+  const [waTokenInput, setWaTokenInput] = useState('');
+  const [waPhoneIdInput, setWaPhoneIdInput] = useState('1408768628982301');
+  const [waWabaIdInput, setWaWabaIdInput] = useState('1604281820561116');
+  const [waSaving, setWaSaving] = useState(false);
+  const [waTesting, setWaTesting] = useState(false);
+  const [waTestResult, setWaTestResult] = useState(null);
+  const [showWaToken, setShowWaToken] = useState(false);
+
+  useEffect(() => {
+    if (currentView === 'admin-system-whatsapp') {
+      getWhatsAppConfig()
+        .then((data) => {
+          if (data) {
+            setWaConfig(data);
+            if (data.phoneNumberId) setWaPhoneIdInput(data.phoneNumberId);
+            if (data.wabaId) setWaWabaIdInput(data.wabaId);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [currentView]);
+
+  const handleSaveWhatsAppConfig = async (e) => {
+    e?.preventDefault();
+    if (!waTokenInput.trim() && !waConfig.isConfigured) {
+      addToast('Please enter a valid Meta WhatsApp Access Token', 'error');
+      return;
+    }
+    setWaSaving(true);
+    setWaTestResult(null);
+    try {
+      const payload = {
+        phoneNumberId: waPhoneIdInput.trim(),
+        wabaId: waWabaIdInput.trim(),
+      };
+      if (waTokenInput.trim()) payload.accessToken = waTokenInput.trim();
+      const res = await updateWhatsAppConfig(payload);
+      addToast(res.message || 'WhatsApp API credentials saved successfully!', 'success');
+      setWaConfig((prev) => ({
+        ...prev,
+        isConfigured: true,
+        phoneNumberId: waPhoneIdInput,
+        wabaId: waWabaIdInput,
+      }));
+      setWaTokenInput('');
+    } catch (err) {
+      addToast(err.response?.data?.message || 'Failed to save WhatsApp config', 'error');
+    } finally {
+      setWaSaving(false);
+    }
+  };
+
+  const handleTestWhatsAppConnection = async () => {
+    setWaTesting(true);
+    setWaTestResult(null);
+    try {
+      const payload = {};
+      if (waTokenInput.trim()) payload.token = waTokenInput.trim();
+      if (waPhoneIdInput.trim()) payload.phoneId = waPhoneIdInput.trim();
+      const res = await testWhatsAppConnection(payload);
+      setWaTestResult({ success: true, message: res.message, details: res.details });
+      addToast(res.message || 'WhatsApp API handshake verified!', 'success');
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Connection test failed';
+      setWaTestResult({ success: false, message: msg });
+      addToast(msg, 'error');
+    } finally {
+      setWaTesting(false);
+    }
   };
 
   const [form, setForm] = useState(emptyForm);
@@ -4600,6 +4680,145 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                   </span>
                 </div>
               )}
+
+              {/* WhatsApp Business API Gateway Configuration Box */}
+              <div className="bg-white dark:bg-dark-800 rounded-2xl border border-dark-200 dark:border-dark-700 p-6 shadow-sm space-y-5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-dark-100 dark:border-dark-700/60 pb-4">
+                  <div>
+                    <h4 className="text-base font-bold text-dark-900 dark:text-white flex items-center gap-2">
+                      <MessageCircle className="text-green-600" size={20} />
+                      <span>Company Registered WhatsApp Cloud API Gateway</span>
+                    </h4>
+                    <p className="text-xs text-dark-500 dark:text-dark-400 mt-0.5">
+                      Messages sent through this software will be dispatched from your registered business number directly to clients.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${
+                      waConfig.isConfigured
+                        ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800'
+                        : 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-400 border border-amber-300 dark:border-amber-800'
+                    }`}>
+                      {waConfig.isConfigured ? (
+                        <>
+                          <CheckCircle2 size={13} className="text-emerald-600 dark:text-emerald-400" />
+                          <span>Registered API Active</span>
+                        </>
+                      ) : (
+                        <>
+                          <AlertTriangle size={13} className="text-amber-600 dark:text-amber-400" />
+                          <span>API Token Required</span>
+                        </>
+                      )}
+                    </span>
+                  </div>
+                </div>
+
+                <form onSubmit={handleSaveWhatsAppConfig} className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1.5">
+                        Phone Number ID (Registered Number Identifier)
+                      </label>
+                      <input
+                        type="text"
+                        value={waPhoneIdInput}
+                        onChange={(e) => setWaPhoneIdInput(e.target.value)}
+                        placeholder="e.g. 1408768628982301"
+                        className="w-full px-3.5 py-2 text-xs font-mono rounded-xl bg-dark-50 dark:bg-dark-900 border border-dark-200 dark:border-dark-700 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                      />
+                      <p className="text-[11px] text-dark-400 mt-1">Found in Meta WhatsApp Manager &gt; API Setup</p>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1.5">
+                        WhatsApp Business Account ID (WABA ID)
+                      </label>
+                      <input
+                        type="text"
+                        value={waWabaIdInput}
+                        onChange={(e) => setWaWabaIdInput(e.target.value)}
+                        placeholder="e.g. 1604281820561116"
+                        className="w-full px-3.5 py-2 text-xs font-mono rounded-xl bg-dark-50 dark:bg-dark-900 border border-dark-200 dark:border-dark-700 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                      />
+                      <p className="text-[11px] text-dark-400 mt-1">Official Meta Business Account ID</p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1.5 flex items-center justify-between">
+                      <span>Meta Permanent System User Access Token</span>
+                      {waConfig.isConfigured && waConfig.maskedToken && (
+                        <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-mono">
+                          Current Token: {waConfig.maskedToken}
+                        </span>
+                      )}
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showWaToken ? 'text' : 'password'}
+                        value={waTokenInput}
+                        onChange={(e) => setWaTokenInput(e.target.value)}
+                        placeholder={waConfig.isConfigured ? 'Enter new token to replace existing token...' : 'Paste your Meta WhatsApp Access Token (EAAG...)'}
+                        className="w-full pl-3.5 pr-20 py-2.5 text-xs font-mono rounded-xl bg-dark-50 dark:bg-dark-900 border border-dark-200 dark:border-dark-700 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowWaToken(!showWaToken)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-dark-400 hover:text-dark-600 dark:hover:text-dark-200 text-xs font-semibold"
+                      >
+                        {showWaToken ? 'Hide' : 'Show'}
+                      </button>
+                    </div>
+                    <p className="text-[11px] text-dark-400 mt-1">
+                      Generate from Meta Developers Portal &gt; WhatsApp &gt; API Setup, or Meta Business Settings &gt; System Users.
+                    </p>
+                  </div>
+
+                  {waTestResult && (
+                    <div className={`p-3.5 rounded-xl border text-xs flex items-start gap-2.5 ${
+                      waTestResult.success
+                        ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200'
+                        : 'bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-800 text-red-800 dark:text-red-200'
+                    }`}>
+                      {waTestResult.success ? (
+                        <CheckCircle2 size={16} className="text-emerald-600 shrink-0 mt-0.5" />
+                      ) : (
+                        <AlertTriangle size={16} className="text-red-600 shrink-0 mt-0.5" />
+                      )}
+                      <div>
+                        <p className="font-bold">{waTestResult.message}</p>
+                        {waTestResult.details?.verifiedName && (
+                          <p className="mt-1 text-[11px] opacity-90">
+                            Registered Name: <strong>{waTestResult.details.verifiedName}</strong> • Phone: <strong>{waTestResult.details.displayPhoneNumber}</strong> • Quality: <strong>{waTestResult.details.qualityRating}</strong>
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex flex-wrap items-center gap-2 pt-2">
+                    <button
+                      type="submit"
+                      disabled={waSaving || (!waTokenInput.trim() && !waConfig.isConfigured)}
+                      className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold inline-flex items-center gap-1.5 transition-colors shadow-xs"
+                    >
+                      {waSaving ? <RefreshCw size={13} className="animate-spin" /> : <Shield size={13} />}
+                      <span>{waSaving ? 'Saving Credentials...' : 'Save API Token'}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleTestWhatsAppConnection}
+                      disabled={waTesting || (!waTokenInput.trim() && !waConfig.isConfigured)}
+                      className="px-4 py-2 bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 hover:bg-dark-50 dark:hover:bg-dark-700 disabled:opacity-50 text-dark-800 dark:text-dark-200 rounded-xl text-xs font-semibold inline-flex items-center gap-1.5 transition-colors"
+                    >
+                      {waTesting ? <RefreshCw size={13} className="animate-spin" /> : <Activity size={13} />}
+                      <span>{waTesting ? 'Verifying with Meta...' : 'Test Connection Handshake'}</span>
+                    </button>
+                  </div>
+                </form>
+              </div>
 
               {/* Quick Actions & Gateway Information */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

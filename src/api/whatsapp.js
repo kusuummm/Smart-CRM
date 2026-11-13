@@ -11,3 +11,12 @@ export const sendWhatsAppTemplate = (payload) =>
 
 export const sendFollowUpReminder = (payload) =>
   api.post('/whatsapp/send-followup-reminder', payload).then((res) => res.data);
+
+export const getWhatsAppConfig = () =>
+  api.get('/whatsapp/config').then((res) => res.data);
+
+export const updateWhatsAppConfig = (payload) =>
+  api.put('/whatsapp/config', payload).then((res) => res.data);
+
+export const testWhatsAppConnection = (payload) =>
+  api.post('/whatsapp/test-connection', payload).then((res) => res.data);
