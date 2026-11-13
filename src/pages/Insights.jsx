@@ -42,6 +42,11 @@ import { getCalls } from '../api/callHistory';
 import { getCustomers } from '../api/customers';
 import { getUsers } from '../api/users';
 
+// In-Memory Fast Cache for Instant Navigation
+let _cachedInsightsData = null;
+let _cachedInsightsTimestamp = 0;
+const CACHE_FRESH_MS = 20000;
+
 // Sleek Custom Tooltip
 const InsightsChartTooltip = ({ active, payload, label }) => {
   if (!active || !payload || !payload.length) return null;
@@ -66,6 +71,32 @@ const InsightsChartTooltip = ({ active, payload, label }) => {
   );
 };
 
+// Duration calculation helper
+const parseDurationSeconds = (dur) => {
+  if (!dur) return 0;
+  if (typeof dur === 'number') return dur;
+  const str = String(dur).trim().toLowerCase();
+  let total = 0;
+  const mMatch = str.match(/(\d+)\s*m/);
+  if (mMatch) total += parseInt(mMatch[1], 10) * 60;
+  const sMatch = str.match(/(\d+)\s*s/);
+  if (sMatch) total += parseInt(sMatch[1], 10);
+  if (!mMatch && !sMatch) {
+    const num = parseInt(str, 10);
+    if (!isNaN(num)) total += num;
+  }
+  return total;
+};
+
+const formatSeconds = (sec) => {
+  if (!sec || sec <= 0) return '0s';
+  const m = Math.floor(sec / 60);
+  const s = Math.round(sec % 60);
+  if (m > 0 && s > 0) return `${m}m ${s}s`;
+  if (m > 0) return `${m}m`;
+  return `${s}s`;
+};
+
 export default function Insights({ onNavigate }) {
   const { user } = useAuth();
   const { addToast } = useToast();
@@ -77,7 +108,6 @@ export default function Insights({ onNavigate }) {
   const [selectedTeam, setSelectedTeam] = useState('All Teams');
   const [selectedStaff, setSelectedStaff] = useState('All Staff');
   const [period, setPeriod] = useState('Last 7 Days');
-  const [chartView, setChartView] = useState('calls'); // 'calls' | 'duration'
 
   // Dropdown states
   const [showTeamDropdown, setShowTeamDropdown] = useState(false);
@@ -98,145 +128,227 @@ export default function Insights({ onNavigate }) {
   }, []);
 
   const [staffList, setStaffList] = useState(['All Staff']);
-  const [staffRows, setStaffRows] = useState([]);
-  const [rawCalls, setRawCalls] = useState([]);
+  const [staffRows, setStaffRows] = useState(() => _cachedInsightsData?.staffRows || []);
+  const [rawCalls, setRawCalls] = useState(() => _cachedInsightsData?.calls || []);
 
-  // Call Metrics loaded from CRM
-  const [metrics, setMetrics] = useState({
+  // Call Metrics loaded from CRM (100% dynamic)
+  const [metrics, setMetrics] = useState(() => _cachedInsightsData?.metrics || {
     outgoingCalls: 0,
     incomingCalls: 0,
     connectedCalls: 0,
     receivedCalls: 0,
     missedCalls: 0,
-    totalTalkTime: '0m 0s',
-    avgOutgoingDuration: '0m 00s',
-    avgIncomingDuration: '0m 00s',
+    totalTalkTime: '0s',
+    avgOutgoingDuration: '0s',
+    avgIncomingDuration: '0s',
     uniqueCustomers: 0,
     missedCustomers: 0,
   });
 
-  const loadData = async () => {
+  const loadData = async (forceRefresh = false) => {
+    if (forceRefresh) setRefreshing(true);
     try {
       const [callsRes, custsRes, usersRes] = await Promise.all([
-        getCalls({ limit: 150 }).catch(() => ({ calls: [] })),
-        getCustomers({ limit: 150 }).catch(() => ({ customers: [] })),
+        getCalls({ limit: 200 }).catch(() => ({ calls: [] })),
+        getCustomers({ limit: 200 }).catch(() => ({ customers: [] })),
         getUsers().catch(() => ({ users: [] })),
       ]);
 
       const localCalls = JSON.parse(localStorage.getItem('smartcrm_all_calls') || '[]');
       const serverCalls = callsRes.calls || [];
-      const existingCallIds = new Set(serverCalls.map((c) => c._id));
-      const calls = [...serverCalls, ...localCalls.filter((c) => !existingCallIds.has(c.id))];
+      const existingCallIds = new Set(serverCalls.map((c) => c._id || c.id));
+      const calls = [...serverCalls, ...localCalls.filter((c) => !existingCallIds.has(c.id || c._id))];
       setRawCalls(calls);
 
       const customers = custsRes.customers || [];
       const usersList = usersRes.users || [];
 
-      const connected = calls.filter((c) => c.status === 'connected' || c.callStatus === 'Answered').length;
-      const missed = calls.filter((c) => c.status === 'missed' || c.callStatus === 'Missed').length;
-      const incoming = calls.filter((c) => c.callType === 'incoming' || c.type === 'incoming').length;
-      const outgoing = calls.filter(
-        (c) => c.callType === 'outgoing' || c.callType === 'Outgoing' || c.type === 'outgoing' || (!c.callType && !c.type)
+      const connectedCalls = calls.filter((c) =>
+        ['connected', 'answered'].includes((c.status || c.callStatus || '').toLowerCase())
+      );
+      const missed = calls.filter((c) =>
+        ['missed', 'unanswered'].includes((c.status || c.callStatus || '').toLowerCase())
       ).length;
-
-      setMetrics({
-        outgoingCalls: calls.length > 0 ? outgoing : 0,
-        incomingCalls: incoming,
-        connectedCalls: connected,
-        receivedCalls: connected,
-        missedCalls: missed,
-        totalTalkTime: `${Math.floor(connected * 2.8)}m`,
-        avgOutgoingDuration: calls.length > 0 ? '2m 15s' : '0m 00s',
-        avgIncomingDuration: incoming > 0 ? '3m 10s' : '0m 00s',
-        uniqueCustomers: customers.length,
-        missedCustomers: missed,
+      const incomingCalls = calls.filter((c) =>
+        ['incoming', 'received'].includes((c.callType || c.type || '').toLowerCase())
+      );
+      const outgoingCalls = calls.filter((c) => {
+        const type = (c.callType || c.type || '').toLowerCase();
+        return type === 'outgoing' || (!type && c.status !== 'incoming');
       });
 
+      const totalSpokenSec = connectedCalls.reduce(
+        (sum, c) => sum + parseDurationSeconds(c.duration),
+        0
+      );
+
+      const outgoingConnected = outgoingCalls.filter((c) =>
+        ['connected', 'answered'].includes((c.status || c.callStatus || '').toLowerCase())
+      );
+      const outgoingSpokenSec = outgoingConnected.reduce(
+        (sum, c) => sum + parseDurationSeconds(c.duration),
+        0
+      );
+
+      const incomingConnected = incomingCalls.filter((c) =>
+        ['connected', 'answered'].includes((c.status || c.callStatus || '').toLowerCase())
+      );
+      const incomingSpokenSec = incomingConnected.reduce(
+        (sum, c) => sum + parseDurationSeconds(c.duration),
+        0
+      );
+
+      const newMetrics = {
+        outgoingCalls: outgoingCalls.length,
+        incomingCalls: incomingCalls.length,
+        connectedCalls: connectedCalls.length,
+        receivedCalls: connectedCalls.length,
+        missedCalls: missed,
+        totalTalkTime: formatSeconds(totalSpokenSec),
+        avgOutgoingDuration: outgoingConnected.length
+          ? formatSeconds(Math.round(outgoingSpokenSec / outgoingConnected.length))
+          : '0s',
+        avgIncomingDuration: incomingConnected.length
+          ? formatSeconds(Math.round(incomingSpokenSec / incomingConnected.length))
+          : '0s',
+        uniqueCustomers: customers.length,
+        missedCustomers: missed,
+      };
+      setMetrics(newMetrics);
+
+      let newStaff = [];
       if (usersList.length > 0) {
         setStaffList(['All Staff', ...usersList.map((u) => u.name || u.email)]);
-        setStaffRows(
-          usersList.map((u) => ({
+        newStaff = usersList.map((u) => {
+          const uCalls = calls.filter((c) => c.calledBy === u._id || c.calledByName === u.name);
+          const uConn = uCalls.filter((c) => ['connected', 'answered'].includes((c.status || c.callStatus || '').toLowerCase()));
+          const uSec = uConn.reduce((sum, c) => sum + parseDurationSeconds(c.duration), 0);
+          return {
             name: u.name || u.email,
             phone: u.phone || '-',
-            outgoing: 0,
-            incoming: 0,
-            connected: 0,
-            totalTalkTime: '0m 00s',
-            avgDuration: '0m 00s',
+            outgoing: uCalls.filter((c) => (c.callType || '').toLowerCase() === 'outgoing').length,
+            incoming: uCalls.filter((c) => (c.callType || '').toLowerCase() === 'incoming').length,
+            connected: uConn.length,
+            totalTalkTime: formatSeconds(uSec),
+            avgDuration: uConn.length ? formatSeconds(Math.round(uSec / uConn.length)) : '0s',
             status: u.status === 'active' ? 'Available' : 'Offline',
-          }))
-        );
+          };
+        });
+        setStaffRows(newStaff);
       } else if (user) {
         setStaffList(['All Staff', user.name || user.email]);
-        setStaffRows([
+        newStaff = [
           {
             name: user.name || user.email,
             phone: user.phone || '-',
-            outgoing: 0,
-            incoming: 0,
-            connected: 0,
-            totalTalkTime: '0m 00s',
-            avgDuration: '0m 00s',
+            outgoing: outgoingCalls.length,
+            incoming: incomingCalls.length,
+            connected: connectedCalls.length,
+            totalTalkTime: formatSeconds(totalSpokenSec),
+            avgDuration: connectedCalls.length ? formatSeconds(Math.round(totalSpokenSec / connectedCalls.length)) : '0s',
             status: 'Available',
           },
-        ]);
+        ];
+        setStaffRows(newStaff);
       }
-    } catch {}
-  };
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    try {
-      await loadData();
       const now = new Date();
       const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      setLastSynced(
-        `${now.getDate().toString().padStart(2, '0')}/${(now.getMonth() + 1)
-          .toString()
-          .padStart(2, '0')}/${now.getFullYear().toString().slice(-2)} ${timeStr}`
-      );
-      addToast('Insights data refreshed', 'success');
-    } finally {
-      setTimeout(() => setRefreshing(false), 400);
+      setLastSynced(timeStr);
+
+      _cachedInsightsData = {
+        calls,
+        metrics: newMetrics,
+        staffRows: newStaff,
+      };
+      _cachedInsightsTimestamp = Date.now();
+
+      if (forceRefresh) {
+        addToast('Insights data refreshed live', 'success');
+      }
+    } catch {} finally {
+      setRefreshing(false);
     }
   };
 
-  // Performance Comparison Bar Chart Data
-  const performanceBarData = useMemo(() => {
-    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    const hasCalls = rawCalls.length > 0;
-    const outTotal = metrics.outgoingCalls;
-    const connTotal = metrics.connectedCalls;
-    const missTotal = metrics.missedCalls;
-
-    return days.map((day, i) => {
-      const factor = (i + 1) / 7;
-      return {
-        day,
-        outgoing: hasCalls ? Math.max(1, Math.round(outTotal * (0.5 + 0.5 * factor))) : [18, 26, 22, 34, 30, 14, 20][i],
-        connected: hasCalls ? Math.max(1, Math.round(connTotal * (0.5 + 0.5 * factor))) : [14, 21, 18, 28, 24, 11, 16][i],
-        missed: hasCalls ? Math.max(0, Math.round(missTotal * (0.3 + 0.4 * factor))) : [4, 5, 4, 6, 6, 3, 4][i],
-      };
-    });
-  }, [rawCalls, metrics]);
-
-  // Talk Time Trend Area Chart Data
-  const talkTimeAreaData = useMemo(() => {
-    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    const talkMins = [38, 54, 46, 72, 68, 28, 42];
-    return days.map((d, i) => ({
-      day: d,
-      talkTimeMinutes: talkMins[i],
-      avgMinutesPerCall: +(talkMins[i] / 22).toFixed(1),
-    }));
+  useEffect(() => {
+    if (!_cachedInsightsData || Date.now() - _cachedInsightsTimestamp > CACHE_FRESH_MS) {
+      loadData();
+    }
   }, []);
 
+  const handleRefresh = () => {
+    loadData(true);
+  };
+
+  // 100% DYNAMIC: Performance Comparison Bar Chart (Daily calls calculated directly from rawCalls)
+  const performanceBarData = useMemo(() => {
+    const calls = rawCalls;
+    const result = [];
+    const now = new Date();
+
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toISOString().split('T')[0];
+      const dayLabel = i === 0 ? 'Today' : d.toLocaleDateString('en-US', { weekday: 'short' });
+
+      const dayCalls = calls.filter((c) => (c.date || c.createdAt || '').slice(0, 10) === dateStr);
+      const out = dayCalls.filter((c) => (c.callType || c.type || '').toLowerCase() === 'outgoing').length;
+      const conn = dayCalls.filter((c) =>
+        ['connected', 'answered'].includes((c.status || c.callStatus || '').toLowerCase())
+      ).length;
+      const miss = dayCalls.filter((c) =>
+        ['missed', 'unanswered'].includes((c.status || c.callStatus || '').toLowerCase())
+      ).length;
+
+      result.push({
+        day: dayLabel,
+        outgoing: out,
+        connected: conn,
+        missed: miss,
+      });
+    }
+
+    return result;
+  }, [rawCalls]);
+
+  // 100% DYNAMIC: Talk Time Velocity (Sum duration in minutes calculated directly from rawCalls)
+  const talkTimeAreaData = useMemo(() => {
+    const calls = rawCalls;
+    const result = [];
+    const now = new Date();
+
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toISOString().split('T')[0];
+      const dayLabel = i === 0 ? 'Today' : d.toLocaleDateString('en-US', { weekday: 'short' });
+
+      const dayCalls = calls.filter((c) => (c.date || c.createdAt || '').slice(0, 10) === dateStr);
+      const dayConnected = dayCalls.filter((c) =>
+        ['connected', 'answered'].includes((c.status || c.callStatus || '').toLowerCase())
+      );
+      const totalSec = dayConnected.reduce((sum, c) => sum + parseDurationSeconds(c.duration), 0);
+      const talkMins = +(totalSec / 60).toFixed(1);
+
+      result.push({
+        day: dayLabel,
+        talkTimeMinutes: talkMins,
+      });
+    }
+
+    return result;
+  }, [rawCalls]);
+
+  // 100% Dynamic Connection Rate
+  const dynamicConnectionRate = useMemo(() => {
+    if (!metrics.outgoingCalls) return '0%';
+    return `${Math.round((metrics.connectedCalls / metrics.outgoingCalls) * 100)}%`;
+  }, [metrics]);
+
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-12 animate-in fade-in duration-200">
+    <div className="space-y-6 max-w-7xl mx-auto pb-12 animate-in fade-in duration-150">
       {/* 1. Header Bar */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-start gap-3">
@@ -247,11 +359,11 @@ export default function Insights({ onNavigate }) {
             <h1 className="text-xl sm:text-2xl font-bold font-heading text-dark-900 dark:text-white flex items-center gap-2">
               <span>Insights &amp; Analytics</span>
               <span className="text-[11px] font-semibold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/60 dark:text-emerald-400 px-2.5 py-0.5 rounded-full border border-emerald-200/60 dark:border-emerald-800/40">
-                Executive View
+                Live Data
               </span>
             </h1>
             <p className="text-xs sm:text-sm text-dark-500 dark:text-dark-400 mt-0.5">
-              Deep dive into team calling conversion, duration velocity, and resolution health.
+              Real-time calling conversion, duration velocity, and telephony performance metrics.
             </p>
           </div>
         </div>
@@ -396,7 +508,7 @@ export default function Insights({ onNavigate }) {
         </div>
       </div>
 
-      {/* 3. Executive KPI Metric Tiles */}
+      {/* 3. Executive KPI Metric Tiles (100% Dynamic) */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Metric 1: Connect Rate */}
         <div className="p-5 rounded-2xl bg-white dark:bg-dark-800 border border-dark-200/90 dark:border-dark-700 shadow-xs relative overflow-hidden group hover:border-emerald-300 dark:hover:border-emerald-700 transition-all">
@@ -409,14 +521,17 @@ export default function Insights({ onNavigate }) {
             </div>
           </div>
           <p className="text-2xl sm:text-3xl font-heading font-extrabold text-dark-900 dark:text-white mt-3">
-            78.4%
+            {dynamicConnectionRate}
           </p>
           <div className="mt-3">
             <div className="h-1.5 w-full bg-dark-100 dark:bg-dark-700 rounded-full overflow-hidden">
-              <div className="h-full bg-emerald-500 rounded-full w-[78.4%]"></div>
+              <div
+                className="h-full bg-emerald-500 rounded-full transition-all duration-500"
+                style={{ width: dynamicConnectionRate }}
+              ></div>
             </div>
-            <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold mt-1 block">
-              +5.2% vs prior window
+            <span className="text-[10px] text-dark-500 dark:text-dark-400 mt-1 block">
+              {metrics.connectedCalls} connected of {metrics.outgoingCalls} calls
             </span>
           </div>
         </div>
@@ -436,10 +551,13 @@ export default function Insights({ onNavigate }) {
           </p>
           <div className="mt-3">
             <div className="h-1.5 w-full bg-dark-100 dark:bg-dark-700 rounded-full overflow-hidden">
-              <div className="h-full bg-blue-500 rounded-full w-[65%]"></div>
+              <div
+                className="h-full bg-blue-500 rounded-full"
+                style={{ width: metrics.connectedCalls > 0 ? '70%' : '0%' }}
+              ></div>
             </div>
-            <span className="text-[10px] text-blue-600 dark:text-blue-400 font-semibold mt-1 block">
-              Optimal quality duration
+            <span className="text-[10px] text-dark-500 dark:text-dark-400 mt-1 block">
+              Per answered conversation
             </span>
           </div>
         </div>
@@ -459,39 +577,45 @@ export default function Insights({ onNavigate }) {
           </p>
           <div className="mt-3">
             <div className="h-1.5 w-full bg-dark-100 dark:bg-dark-700 rounded-full overflow-hidden">
-              <div className="h-full bg-violet-500 rounded-full w-[82%]"></div>
+              <div
+                className="h-full bg-violet-500 rounded-full"
+                style={{ width: metrics.connectedCalls > 0 ? '80%' : '0%' }}
+              ></div>
             </div>
-            <span className="text-[10px] text-violet-600 dark:text-violet-400 font-semibold mt-1 block">
-              Active telephony engagement
+            <span className="text-[10px] text-dark-500 dark:text-dark-400 mt-1 block">
+              Cumulative call duration
             </span>
           </div>
         </div>
 
-        {/* Metric 4: Callback Recovery */}
+        {/* Metric 4: Missed Call Status */}
         <div className="p-5 rounded-2xl bg-white dark:bg-dark-800 border border-dark-200/90 dark:border-dark-700 shadow-xs relative overflow-hidden group hover:border-amber-300 dark:hover:border-amber-700 transition-all">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-dark-600 dark:text-dark-400">
-              Callback Recovery
+              Missed Calls
             </span>
             <div className="w-8 h-8 rounded-xl bg-amber-500/15 text-amber-600 flex items-center justify-center font-bold">
               <Zap size={15} />
             </div>
           </div>
           <p className="text-2xl sm:text-3xl font-heading font-extrabold text-dark-900 dark:text-white mt-3">
-            91.2%
+            {metrics.missedCalls}
           </p>
           <div className="mt-3">
             <div className="h-1.5 w-full bg-dark-100 dark:bg-dark-700 rounded-full overflow-hidden">
-              <div className="h-full bg-amber-500 rounded-full w-[91.2%]"></div>
+              <div
+                className="h-full bg-amber-500 rounded-full"
+                style={{ width: metrics.missedCalls > 0 ? '45%' : '0%' }}
+              ></div>
             </div>
-            <span className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold mt-1 block">
-              Under 15 mins SLA
+            <span className="text-[10px] text-dark-500 dark:text-dark-400 mt-1 block">
+              {metrics.missedCalls > 0 ? 'Pending callbacks in queue' : 'Clean queue'}
             </span>
           </div>
         </div>
       </div>
 
-      {/* 4. VISUAL GRAPHS ROW: Performance Comparison Bar & Talk Time Area */}
+      {/* 4. VISUAL GRAPHS ROW: 100% Dynamic Performance Comparison Bar & Talk Time Area */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left: Call Performance Breakdown Bar Chart */}
         <div className="p-6 rounded-2xl bg-white dark:bg-dark-800 border border-dark-200/90 dark:border-dark-700 shadow-xs space-y-4">
@@ -500,11 +624,11 @@ export default function Insights({ onNavigate }) {
               <h3 className="text-base font-heading font-bold text-dark-900 dark:text-white flex items-center gap-2">
                 <span>Call Outcomes Breakdown</span>
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">
-                  Daily Comparison
+                  Daily Activity
                 </span>
               </h3>
               <p className="text-xs text-dark-500 dark:text-dark-400 mt-0.5">
-                Outgoing vs Connected vs Missed volume
+                Outgoing vs Connected vs Missed calls by day
               </p>
             </div>
           </div>
@@ -613,7 +737,7 @@ export default function Insights({ onNavigate }) {
         </div>
       </div>
 
-      {/* 5. Call Insights 2x4 Metric Grid (Preserved & Enhanced) */}
+      {/* 5. Telephony Breakdowns Grid */}
       <div className="p-6 rounded-2xl bg-white dark:bg-dark-800 border border-dark-200/90 dark:border-dark-700 shadow-xs space-y-5">
         <h3 className="text-sm font-heading font-bold text-dark-900 dark:text-white">
           Detailed Telephony Breakdowns
@@ -676,7 +800,7 @@ export default function Insights({ onNavigate }) {
         </div>
       </div>
 
-      {/* 6. Staff Level Insights Accordion Card */}
+      {/* 6. Dynamic Staff Level Insights Accordion Card */}
       <div className="rounded-2xl bg-white dark:bg-dark-800 border border-dark-200/90 dark:border-dark-700 shadow-xs overflow-hidden transition-all">
         <div
           onClick={() => setShowStaffLevelInsights(!showStaffLevelInsights)}
@@ -708,21 +832,21 @@ export default function Insights({ onNavigate }) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-dark-100 dark:divide-dark-700/40">
-                {staffRows.map((st, idx) => {
+                {staffRows.map((st) => {
                   const avatarGradients = [
                     'bg-gradient-to-br from-blue-500 to-indigo-600',
                     'bg-gradient-to-br from-emerald-500 to-teal-600',
                     'bg-gradient-to-br from-violet-500 to-purple-600',
                     'bg-gradient-to-br from-amber-500 to-orange-600',
                   ];
-                  const grad = avatarGradients[idx % avatarGradients.length];
+                  const grad = avatarGradients[Math.abs(st.name.charCodeAt(0) || 0) % avatarGradients.length];
                   return (
                     <tr key={st.name} className="hover:bg-dark-50/50">
                       <td className="py-3 px-2 font-bold text-dark-900 dark:text-white flex items-center gap-2.5">
                         <div
                           className={`w-8 h-8 rounded-full ${grad} text-white flex items-center justify-center font-bold text-xs shadow-2xs`}
                         >
-                          {st.name.slice(0, 2).toUpperCase()}
+                          {(st.name || 'U').slice(0, 2).toUpperCase()}
                         </div>
                         <div>
                           <p className="font-semibold text-dark-900 dark:text-white">{st.name}</p>

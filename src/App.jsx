@@ -11,7 +11,7 @@ import { isAdminOrOwner, isManager, isOwner } from './utils/permissions';
 
 // Core synchronous pages for instant initial paint
 import Login from './pages/Login';
-import HomeDashboard from './pages/HomeDashboard';
+const HomeDashboard = lazy(() => import('./pages/HomeDashboard'));
 
 // Dynamic code-split pages (loaded on demand)
 const Teams = lazy(() => import('./pages/Teams'));
