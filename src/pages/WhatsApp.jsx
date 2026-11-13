@@ -82,32 +82,60 @@ export default function WhatsApp({ onNavigate }) {
     async function init() {
       try {
         const [custRes, logsRes] = await Promise.allSettled([
-          getCustomers({ limit: 50 }),
-          getWhatsAppLogs({ limit: 50 }),
+          getCustomers({ limit: 100 }),
+          getWhatsAppLogs({ limit: 100 }),
         ]);
         if (custRes.status === 'fulfilled' && custRes.value?.customers) {
           const list = custRes.value.customers;
+          const logs = logsRes.status === 'fulfilled' && logsRes.value?.logs ? logsRes.value.logs : [];
           setBackendCustomers(list);
           if (list.length > 0) {
-            const mapped = list.map((c, idx) => ({
-              id: c._id || `c_${idx}`,
-              customerName: c.name,
-              phone: c.mobile || c.phone || '',
-              leadStatus: c.status || 'Active Lead',
-              lastMessage: c.remarks || 'Connected via WhatsApp',
-              timestamp: 'Recent',
-              unread: 0,
-              avatarColor: ['bg-emerald-600', 'bg-blue-600', 'bg-slate-600', 'bg-amber-600'][idx % 4],
-              messages: [
-                {
-                  id: `m_${c._id || idx}_1`,
-                  sender: 'agent',
-                  text: `Hello ${c.name}, thank you for contacting us. How can we help you today?`,
-                  time: '10:00 AM',
-                  status: 'read',
-                },
-              ],
-            }));
+            const mapped = list.map((c, idx) => {
+              // Extract previous real logs belonging to this contact
+              const cleanMobile = (c.mobile || c.phone || '').replace(/\D/g, '').slice(-10);
+              const custLogs = logs.filter((l) => {
+                const matchId = l.customerId && String(l.customerId) === String(c._id);
+                const lPhoneDigits = (l.phone || l.mobile || '').replace(/\D/g, '').slice(-10);
+                const matchPhone = cleanMobile && lPhoneDigits && cleanMobile === lPhoneDigits;
+                return matchId || matchPhone;
+              }).reverse();
+
+              const msgs = custLogs.length > 0
+                ? custLogs.map((l) => ({
+                    id: l._id,
+                    sender: 'agent',
+                    text: l.message,
+                    time: new Date(l.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                    status: l.status === 'read' ? 'read' : l.status === 'delivered' ? 'delivered' : 'sent',
+                    deliveryMode: l.deliveryMode || 'cloud_api',
+                  }))
+                : [
+                    {
+                      id: `m_${c._id || idx}_1`,
+                      sender: 'agent',
+                      text: `Hello ${c.name}, thank you for contacting us. How can we help you today?`,
+                      time: '10:00 AM',
+                      status: 'read',
+                      deliveryMode: 'cloud_api',
+                    },
+                  ];
+
+              const lastLog = custLogs[custLogs.length - 1];
+
+              return {
+                id: c._id || `c_${idx}`,
+                customerName: c.name,
+                phone: c.mobile || c.phone || '',
+                leadStatus: c.status || 'Active Lead',
+                lastMessage: lastLog ? lastLog.message : (c.remarks || 'Connected via WhatsApp'),
+                timestamp: lastLog
+                  ? new Date(lastLog.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                  : 'Recent',
+                unread: 0,
+                avatarColor: ['bg-emerald-600', 'bg-blue-600', 'bg-slate-600', 'bg-amber-600'][idx % 4],
+                messages: msgs,
+              };
+            });
             setConversations(mapped);
             setActiveChatId(mapped[0].id);
           }
@@ -121,6 +149,16 @@ export default function WhatsApp({ onNavigate }) {
 
   const activeChat = conversations.find((c) => c.id === activeChatId) || (conversations.length > 0 ? conversations[0] : null);
 
+  // Helper to construct universal WhatsApp Web / Desktop deep link
+  const getDirectWhatsAppUrl = (phone, msg = '') => {
+    if (!phone) return 'https://web.whatsapp.com';
+    let digits = String(phone).replace(/\D/g, '');
+    if (digits.length === 10) digits = `91${digits}`;
+    else if (digits.length === 11 && digits.startsWith('0')) digits = `91${digits.substring(1)}`;
+    const textParam = msg ? `&text=${encodeURIComponent(msg)}` : '';
+    return `https://web.whatsapp.com/send?phone=${digits}${textParam}`;
+  };
+
   // Quick Reply Template Presets
   const quickTemplates = [
     { label: 'Intro Greeting', text: `Hello! Thank you for connecting with ${selectedOrg?.name || 'our team'}. How can we assist your business today?` },
@@ -129,16 +167,17 @@ export default function WhatsApp({ onNavigate }) {
     { label: 'Schedule Call', text: 'Would you be available for a quick 10-minute discovery call with our team today?' },
   ];
 
-  // Send message handler
-  const handleSendMessage = async (textToSend) => {
+  // Send message handler with Meta Cloud API + Direct WhatsApp Web 1-click bridge
+  const handleSendMessage = async (textToSend, mode = 'smart') => {
     if (!activeChat) return;
     const text = textToSend || messageInput;
     if (!text.trim()) return;
 
+    const trimmed = text.trim();
     const newMsg = {
       id: `m_${Date.now()}`,
       sender: 'agent',
-      text: text.trim(),
+      text: trimmed,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       status: 'sent',
     };
@@ -149,7 +188,7 @@ export default function WhatsApp({ onNavigate }) {
         if (c.id === activeChat.id) {
           return {
             ...c,
-            lastMessage: text.trim(),
+            lastMessage: trimmed,
             timestamp: 'Just now',
             messages: [...c.messages, newMsg],
           };
@@ -161,31 +200,73 @@ export default function WhatsApp({ onNavigate }) {
     setMessageInput('');
     setSending(true);
 
+    // If direct WhatsApp Web action is explicitly requested:
+    if (mode === 'direct_web') {
+      const directUrl = getDirectWhatsAppUrl(activeChat.phone, trimmed);
+      window.open(directUrl, '_blank', 'noopener,noreferrer');
+      addToast(`Opening WhatsApp Web for ${activeChat.customerName}...`, 'info');
+      try {
+        await sendWhatsAppMessage({
+          customerId: activeChat.id?.startsWith('c_') ? undefined : activeChat.id,
+          phone: activeChat.phone,
+          name: activeChat.customerName,
+          message: trimmed,
+          type: 'custom',
+        });
+      } catch (_) {}
+      setSending(false);
+      return;
+    }
+
     try {
-      // Send via backend API if customer exists
-      await sendWhatsAppMessage({
-        customerId: backendCustomers[0]?._id || 'mock-id',
-        message: text.trim(),
+      // Send via backend API
+      const res = await sendWhatsAppMessage({
+        customerId: activeChat.id?.startsWith('c_') ? undefined : activeChat.id,
+        phone: activeChat.phone,
+        name: activeChat.customerName,
+        message: trimmed,
         type: 'custom',
       });
-      addToast('Message delivered via WhatsApp Business API', 'success');
-      // Update message status to delivered
-      setConversations((prev) =>
-        prev.map((c) => {
-          if (c.id === activeChat.id) {
-            return {
-              ...c,
-              messages: c.messages.map((m) =>
-                m.id === newMsg.id ? { ...m, status: 'delivered' } : m
-              ),
-            };
-          }
-          return c;
-        })
-      );
-    } catch {
-      // Even if simulated or token pending, keep message in archive
-      addToast('Message archived in WhatsApp channel', 'success');
+
+      if (res?.deliveredVia === 'cloud_api') {
+        addToast('Message delivered via Meta WhatsApp Cloud API', 'success');
+        setConversations((prev) =>
+          prev.map((c) => {
+            if (c.id === activeChat.id) {
+              return {
+                ...c,
+                messages: c.messages.map((m) =>
+                  m.id === newMsg.id ? { ...m, status: 'delivered', deliveryMode: 'cloud_api' } : m
+                ),
+              };
+            }
+            return c;
+          })
+        );
+      } else {
+        // Direct WhatsApp Web bridge mode (opens prefilled chat in WhatsApp Web/App so agent transmits directly)
+        const targetUrl = res?.waLink || getDirectWhatsAppUrl(activeChat.phone, trimmed);
+        window.open(targetUrl, '_blank', 'noopener,noreferrer');
+        addToast(`Opening WhatsApp Web to send directly to ${activeChat.customerName}`, 'success');
+        setConversations((prev) =>
+          prev.map((c) => {
+            if (c.id === activeChat.id) {
+              return {
+                ...c,
+                messages: c.messages.map((m) =>
+                  m.id === newMsg.id ? { ...m, status: 'delivered', deliveryMode: 'wa_link' } : m
+                ),
+              };
+            }
+            return c;
+          })
+        );
+      }
+    } catch (err) {
+      // If server or network fails, fallback to direct WhatsApp Web bridge
+      const targetUrl = getDirectWhatsAppUrl(activeChat.phone, trimmed);
+      window.open(targetUrl, '_blank', 'noopener,noreferrer');
+      addToast(`Opening WhatsApp Web directly for ${activeChat.customerName}`, 'info');
     } finally {
       setSending(false);
     }
@@ -456,6 +537,18 @@ export default function WhatsApp({ onNavigate }) {
 
             {/* Quick Actions */}
             <div className="flex items-center gap-2">
+              <a
+                href={getDirectWhatsAppUrl(activeChat.phone)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-emerald-300 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 text-xs font-semibold text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors shadow-2xs"
+                title={`Open WhatsApp Web chat directly with ${activeChat.customerName} (${activeChat.phone})`}
+              >
+                <WhatsAppIcon className="w-3.5 h-3.5 fill-emerald-600" fill="#059669" />
+                <span>Chat on WhatsApp Web</span>
+                <ExternalLink size={12} className="opacity-70" />
+              </a>
+
               <button
                 onClick={() => {
                   addToast(`Initiating outbound telephony call to ${activeChat.phone}...`, 'info');
@@ -572,9 +665,20 @@ export default function WhatsApp({ onNavigate }) {
             <button
               type="button"
               disabled={sending || !messageInput.trim()}
+              onClick={() => handleSendMessage(undefined, 'direct_web')}
+              className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-semibold transition-colors shadow-xs"
+              title="Send via WhatsApp Web directly"
+            >
+              <WhatsAppIcon className="w-4 h-4 fill-white" fill="#ffffff" />
+              <span className="hidden sm:inline">WhatsApp Web</span>
+            </button>
+
+            <button
+              type="button"
+              disabled={sending || !messageInput.trim()}
               onClick={() => handleSendMessage()}
               className="flex items-center justify-center p-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white transition-colors shadow-xs"
-              title="Send Message"
+              title="Send Message via Cloud API / Bridge"
             >
               <Send size={16} />
             </button>

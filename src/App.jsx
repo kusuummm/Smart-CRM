@@ -41,6 +41,7 @@ const SearchPage = lazy(() => import('./pages/SearchPage'));
 const MyAccount = lazy(() => import('./pages/MyAccount'));
 const Settings = lazy(() => import('./pages/Settings'));
 const Notifications = lazy(() => import('./pages/Notifications'));
+const CallerProgressReports = lazy(() => import('./components/CallerProgressReports'));
 
 function PageLoadingFallback() {
   return (
@@ -511,9 +512,13 @@ function AppLayout() {
       case 'tc-events':
         return <Events onNavigate={navigateToPage} />;
       case 'admin-reports':
-        return (isAdmin || manager) ? (
-          <AdminPanel targetSection="admin-reports" onNavigate={navigateToPage} />
-        ) : (
+        if (isAdmin) {
+          return <AdminPanel targetSection="admin-reports" onNavigate={navigateToPage} />;
+        }
+        if (manager) {
+          return <CallerProgressReports onNavigate={navigateToPage} />;
+        }
+        return (
           <HomeDashboard
             onNavigate={navigateToPage}
             onOpenBuyNumber={() => setIsBuyNumberOpen(true)}
