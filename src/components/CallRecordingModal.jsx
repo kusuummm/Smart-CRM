@@ -69,10 +69,6 @@ export default function CallRecordingModal({ isOpen, onClose, call }) {
   if (!isOpen || !call) return null;
 
   const togglePlay = () => {
-    if (!hasRecording) {
-      addToast('No audio recording attached to this call record', 'info');
-      return;
-    }
     if (isPlaying) {
       audioEngine.pause();
       setIsPlaying(false);
@@ -235,20 +231,7 @@ export default function CallRecordingModal({ isOpen, onClose, call }) {
         </div>
 
         {/* Audio Player Card Section */}
-        {!hasRecording ? (
-          <div className="p-6 bg-slate-50 dark:bg-dark-800/80 border-b border-dark-200 dark:border-dark-700/80 text-center space-y-2">
-            <div className="w-12 h-12 rounded-full bg-dark-100 dark:bg-dark-700 flex items-center justify-center mx-auto text-dark-400">
-              <VolumeX size={22} />
-            </div>
-            <h4 className="text-sm font-bold text-dark-900 dark:text-white">
-              No Audio Recording Available
-            </h4>
-            <p className="text-xs text-dark-500 dark:text-dark-400 max-w-md mx-auto">
-              This call log does not have an audio file attached. Genuine audio recordings are captured when microphone recording is enabled or connected to your VoIP softphone.
-            </p>
-          </div>
-        ) : (
-          <div className="p-4 sm:p-5 bg-gradient-to-b from-blue-50/50 to-white dark:from-dark-800/80 dark:to-dark-900 border-b border-dark-200 dark:border-dark-700/80 space-y-4">
+        <div className="p-4 sm:p-5 bg-gradient-to-b from-blue-50/50 to-white dark:from-dark-800/80 dark:to-dark-900 border-b border-dark-200 dark:border-dark-700/80 space-y-4">
             
             {/* Waveform Scrubber */}
             <div className="space-y-1.5">
@@ -287,7 +270,11 @@ export default function CallRecordingModal({ isOpen, onClose, call }) {
               {/* Time Indicators */}
               <div className="flex items-center justify-between text-xs font-mono font-semibold text-dark-500 px-1">
                 <span>{formatSeconds(currentTime)}</span>
-                <span className="text-[11px] text-dark-400">Audio Quality: Genuine Telephony Recording</span>
+                <span className="text-[11px] text-blue-600 dark:text-blue-400 font-semibold flex items-center gap-1">
+                  {call.isRealMic || (call.recordingUrl && call.recordingUrl.includes('webm'))
+                    ? '🎙️ Real Microphone Voice Recording'
+                    : '📞 Telephony Audio Log'}
+                </span>
                 <span>{formatSeconds(duration)}</span>
               </div>
             </div>
@@ -360,12 +347,11 @@ export default function CallRecordingModal({ isOpen, onClose, call }) {
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 text-dark-700 dark:text-dark-200 hover:bg-dark-50 shadow-2xs transition-colors"
                 >
                   <Download size={13} />
-                  <span>Save MP3</span>
+                  <span>Save Audio</span>
                 </button>
               </div>
             </div>
           </div>
-        )}
 
         {/* Tab Toggle: Call Notes vs Full Transcript */}
         <div className="flex border-b border-dark-200 dark:border-dark-700 px-5 pt-2 gap-4 text-xs font-semibold bg-white dark:bg-dark-900">

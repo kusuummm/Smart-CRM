@@ -423,10 +423,8 @@ export default function CallHistory({ onNavigate, initialCallType = 'all' }) {
       }
     }
 
-    // 3. Auto-connect after 4s ringing so telecallers on Phone Link / phone have live talk time & recording
-    autoConnectTimerRef.current = setTimeout(() => {
-      handleAnswerCall();
-    }, 4000);
+    // Telecaller connects when customer answers or marks missed/busy
+
   };
 
   // Called when clicking "Launch Device Dialer": answers immediately so Phone Link is in sync
@@ -1572,11 +1570,11 @@ export default function CallHistory({ onNavigate, initialCallType = 'all' }) {
                     00:00
                   </span>
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-200 text-amber-900 dark:bg-amber-900 dark:text-amber-200 animate-pulse">
-                    Ringing ({ringCountdown}s)
+                    Calling / Ringing
                   </span>
                 </div>
                 <p className="text-[11px] text-amber-700 dark:text-amber-400 font-semibold">
-                  Auto-connecting in {ringCountdown}s for Phone Link/device call, or connect now:
+                  Waiting for customer to answer... Click "Customer Answered" to begin talk time & recording:
                 </p>
               </div>
             ) : (
