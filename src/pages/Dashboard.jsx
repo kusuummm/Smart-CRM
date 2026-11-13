@@ -14,24 +14,24 @@ import { clearApiCache } from '../api/client';
 import { isAdminOrOwner, getRoleInfo } from '../utils/permissions';
 
 const COLORS = {
-  blue: '#2563eb',
-  green: '#16a34a',
-  amber: '#d97706',
+  blue: '#3b82f6',
+  green: '#10b981',
+  amber: '#f59e0b',
   yellow: '#eab308',
-  orange: '#ea580c',
-  red: '#dc2626',
+  orange: '#f97316',
+  red: '#ef4444',
   gray: '#64748b',
-  indigo: '#2563eb',
+  indigo: '#6366f1',
 };
 
 const LEAD_STATUS_COLORS = {
-  new: COLORS.blue,
-  contacted: COLORS.yellow,
-  interested: COLORS.amber,
-  'follow-up': COLORS.orange,
-  converted: COLORS.green,
-  'not-interested': COLORS.gray,
-  closed: COLORS.red,
+  new: '#06b6d4',
+  contacted: '#f59e0b',
+  interested: '#3b82f6',
+  'follow-up': '#8b5cf6',
+  converted: '#10b981',
+  'not-interested': '#64748b',
+  closed: '#ef4444',
 };
 
 const CustomTooltip = ({ active, payload, label }) => {
@@ -397,8 +397,8 @@ export default function Dashboard({ onNavigate }) {
                   <YAxis tick={{ fontSize: 12, fill: '#64748b' }} axisLine={false} tickLine={false} allowDecimals={false} />
                   <Tooltip content={<CustomTooltip />} />
                   <Legend iconType="circle" iconSize={8} wrapperStyle={{ paddingTop: 20 }} />
-                  <Bar dataKey="pending" name="Pending" fill={COLORS.orange} radius={[4, 4, 0, 0]} barSize={20} />
-                  <Bar dataKey="completed" name="Completed" fill={COLORS.green} radius={[4, 4, 0, 0]} barSize={20} />
+                  <Bar dataKey="pending" name="Pending" fill={COLORS.orange} radius={[6, 6, 0, 0]} barSize={20} />
+                  <Bar dataKey="completed" name="Completed" fill={COLORS.green} radius={[6, 6, 0, 0]} barSize={20} />
                 </BarChart>
               </ResponsiveContainer>
             )}
