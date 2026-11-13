@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -32,11 +32,11 @@
   --color-accent: #2b498a;
   --color-accent-rgb: 43, 73, 138;
   accent-color: var(--color-primary-500);
-  font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   font-size: 14px;
   line-height: 1.5;
   font-weight: 400;
-  letter-spacing: -0.011em;
+  letter-spacing: -0.006em;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -58,20 +58,20 @@ input,
 optgroup,
 select,
 textarea {
-  font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  letter-spacing: -0.011em;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  letter-spacing: -0.006em;
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
-  letter-spacing: -0.025em;
-  font-weight: 700;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  letter-spacing: -0.015em;
+  font-weight: 600;
 }
 
 .font-inter,
 .font-inter *,
 [data-font="inter"] {
-  font-family: 'Inter', 'Plus Jakarta Sans', sans-serif !important;
+  font-family: 'Inter', sans-serif !important;
 }
 
 code,
@@ -90,10 +90,10 @@ body {
   width: 100%;
   max-width: 100vw;
   overflow-x: hidden;
-  font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   font-size: 14px;
   line-height: 1.5;
-  letter-spacing: -0.011em;
+  letter-spacing: -0.006em;
   background-color: #f1f5fa;
   color: #1a202c;
 }

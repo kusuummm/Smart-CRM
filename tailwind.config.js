@@ -6,7 +6,16 @@ export default {
     extend: {
       fontFamily: {
         sans: [
-          '"Plus Jakarta Sans"',
+          'Inter',
+          '-apple-system',
+          'BlinkMacSystemFont',
+          '"Segoe UI"',
+          'Roboto',
+          '"Helvetica Neue"',
+          'Arial',
+          'sans-serif',
+        ],
+        heading: [
           'Inter',
           '-apple-system',
           'BlinkMacSystemFont',
@@ -16,7 +25,8 @@ export default {
         ],
         inter: [
           'Inter',
-          '"Plus Jakarta Sans"',
+          '-apple-system',
+          'BlinkMacSystemFont',
           'sans-serif',
         ],
       },
