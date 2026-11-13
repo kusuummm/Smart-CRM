@@ -1,0 +1,1 @@
+import{o}from"./index-DQ2BF03Q.js";const s=(t={})=>o.get("/notes",{params:t}).then(e=>e.data),n=t=>o.post("/notes",t).then(e=>e.data),d=t=>o.delete(`/notes/${t}`).then(e=>e.data);export{n as c,d,s as g};
