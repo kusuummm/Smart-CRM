@@ -2,8 +2,6 @@
 // Plays authentic recorded audio files & microphone voice captures.
 // NO AI speech synthesis / NO robotic TTS. Genuine HTML5 Audio playback.
 
-import { realCallRecorder } from './realCallRecorder';
-
 class CallAudioEngine {
   constructor() {
     this.audio = null;
@@ -126,7 +124,14 @@ class CallAudioEngine {
     return total > 0 ? total : 30;
   }
 
-  // Play real call audio recording
+  // Check if a call record has an authentic recorded audio file
+  hasRecording(call) {
+    if (!call) return false;
+    const src = call.recordingUrl || call.audioUrl || call.dataUrl;
+    return Boolean(src && typeof src === 'string' && src.trim() && !src.startsWith('blob:null'));
+  }
+
+  // Play real call audio recording (NO fake AI synthesis)
   playCall(call, startTime = 0, onProgress = null, onEnded = null) {
     this.stop();
     this.currentCallId = call.id;
@@ -135,17 +140,17 @@ class CallAudioEngine {
     this.currentTime = Math.min(startTime, this.duration);
     this.onProgressCb = onProgress;
     this.onEndedCb = onEnded;
-    this.isPlaying = true;
 
-    // Determine audio source: real recorded audio URL, data URL, or authentic telephony audio blob
-    let audioSrc = call.recordingUrl || call.audioUrl || call.dataUrl;
+    // Determine audio source: ONLY genuine recorded audio URL or data URL
+    const audioSrc = call.recordingUrl || call.audioUrl || call.dataUrl;
 
     if (!audioSrc || typeof audioSrc !== 'string' || !audioSrc.trim()) {
-      // Create authentic telephony voice recording blob for calls without recorded file
-      const blob = realCallRecorder.createAuthenticTelephonyBlob(this.duration);
-      audioSrc = URL.createObjectURL(blob);
-      call.recordingUrl = audioSrc;
+      // Do NOT synthesize fake robotic/AI sound when no genuine recording exists
+      this.isPlaying = false;
+      return { success: false, reason: 'no_recording' };
     }
+
+    this.isPlaying = true;
 
     try {
       this.audio = new Audio(audioSrc);
@@ -171,14 +176,9 @@ class CallAudioEngine {
       });
 
       this.audio.addEventListener('error', (err) => {
-        console.warn('Real audio playback error, falling back to synthesizer:', err);
-        // Fallback: create fresh playable audio blob
-        const fallbackBlob = realCallRecorder.createAuthenticTelephonyBlob(this.duration);
-        const fallbackSrc = URL.createObjectURL(fallbackBlob);
-        this.audio = new Audio(fallbackSrc);
-        this.audio.playbackRate = this.playbackRate;
-        this.audio.volume = this.volume;
-        this.audio.play().catch(() => {});
+        console.warn('Real audio playback error:', err);
+        this.isPlaying = false;
+        this.stop();
       });
 
       const playPromise = this.audio.play();
@@ -187,8 +187,11 @@ class CallAudioEngine {
           console.warn('Audio play autoplay policy notice:', e);
         });
       }
+      return { success: true };
     } catch (err) {
       console.warn('HTML5 Audio initialization failed:', err);
+      this.isPlaying = false;
+      return { success: false, error: err.message };
     }
   }
 
@@ -259,30 +262,19 @@ class CallAudioEngine {
   // Download real call audio recording file (.wav / .mp3)
   downloadWavFile(call) {
     const audioSrc = call?.recordingUrl || call?.audioUrl || call?.dataUrl;
+    if (!audioSrc || typeof audioSrc !== 'string' || (!audioSrc.startsWith('blob:') && !audioSrc.startsWith('data:') && !audioSrc.startsWith('http'))) {
+      return false;
+    }
     const cleanNum = ((call?.customerNumber || call?.displayPhone || 'call') + '').replace(/[^0-9]/g, '');
     const filename = `Call_Recording_${cleanNum || 'audio'}_${Date.now()}.mp3`;
 
-    if (audioSrc && typeof audioSrc === 'string' && (audioSrc.startsWith('blob:') || audioSrc.startsWith('data:') || audioSrc.startsWith('http'))) {
-      const a = document.createElement('a');
-      a.href = audioSrc;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      return;
-    }
-
-    // Otherwise generate clean telephony audio recording WAV file
-    const durSec = this.parseDuration(call?.duration || call?.recordingDuration);
-    const blob = realCallRecorder.createAuthenticTelephonyBlob(durSec);
-    const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url;
+    a.href = audioSrc;
     a.download = filename;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    return true;
   }
 }
 

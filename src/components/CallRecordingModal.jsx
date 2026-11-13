@@ -38,8 +38,8 @@ export default function CallRecordingModal({ isOpen, onClose, call }) {
   const [isMuted, setIsMuted] = useState(false);
   const [transcriptSearch, setTranscriptSearch] = useState('');
   const [copiedTranscript, setCopiedTranscript] = useState(false);
-  const [activeTab, setActiveTab] = useState('transcript'); // 'transcript' | 'ai-insights'
-  const [actionItemsDone, setActionItemsDone] = useState({});
+  const hasRecording = audioEngine.hasRecording(call);
+  const [activeTab, setActiveTab] = useState('notes'); // 'notes' | 'transcript'
 
   // Waveform bars
   const [waveformBars, setWaveformBars] = useState([]);
@@ -69,6 +69,10 @@ export default function CallRecordingModal({ isOpen, onClose, call }) {
   if (!isOpen || !call) return null;
 
   const togglePlay = () => {
+    if (!hasRecording) {
+      addToast('No audio recording attached to this call record', 'info');
+      return;
+    }
     if (isPlaying) {
       audioEngine.pause();
       setIsPlaying(false);
@@ -115,8 +119,12 @@ export default function CallRecordingModal({ isOpen, onClose, call }) {
   };
 
   const handleDownload = () => {
-    audioEngine.downloadWavFile(call);
-    addToast('Call recording (.mp3) downloaded successfully', 'success');
+    const ok = audioEngine.downloadWavFile(call);
+    if (ok) {
+      addToast('Call recording (.mp3) downloaded successfully', 'success');
+    } else {
+      addToast('No audio recording file available to download', 'info');
+    }
   };
 
   const handleCopyTranscript = () => {
@@ -128,13 +136,6 @@ export default function CallRecordingModal({ isOpen, onClose, call }) {
     setCopiedTranscript(true);
     addToast('Transcript copied to clipboard', 'success');
     setTimeout(() => setCopiedTranscript(false), 2000);
-  };
-
-  const toggleActionItem = (idx) => {
-    setActionItemsDone((prev) => ({
-      ...prev,
-      [idx]: !prev[idx],
-    }));
   };
 
   const handleUploadAudio = (e) => {
@@ -155,8 +156,6 @@ export default function CallRecordingModal({ isOpen, onClose, call }) {
 
   // Real transcript if available, or empty array
   const transcriptData = Array.isArray(call.transcript) ? call.transcript : [];
-
-  const aiSummaryData = call.aiSummary?.summary ? call.aiSummary : null;
 
   const filteredTranscript = transcriptData.filter(
     (t) =>
@@ -236,126 +235,152 @@ export default function CallRecordingModal({ isOpen, onClose, call }) {
         </div>
 
         {/* Audio Player Card Section */}
-        <div className="p-4 sm:p-5 bg-gradient-to-b from-blue-50/50 to-white dark:from-dark-800/80 dark:to-dark-900 border-b border-dark-200 dark:border-dark-700/80 space-y-4">
-          
-          {/* Waveform Scrubber */}
-          <div className="space-y-1.5">
-            <div
-              className="h-16 flex items-end gap-1 px-2 py-1 rounded-xl bg-dark-100/70 dark:bg-dark-800 cursor-pointer relative overflow-hidden group select-none"
-              onClick={(e) => {
-                const rect = e.currentTarget.getBoundingClientRect();
-                const clickX = e.clientX - rect.left;
-                const ratio = Math.max(0, Math.min(1, clickX / rect.width));
-                handleSeek(ratio * duration);
-              }}
-            >
-              {/* Played Highlight overlay */}
-              <div
-                className="absolute left-0 top-0 bottom-0 bg-blue-500/10 pointer-events-none transition-all"
-                style={{ width: `${progressPercent}%` }}
-              />
-
-              {waveformBars.map((barHeight, idx) => {
-                const barPercent = (idx / waveformBars.length) * 100;
-                const isPlayed = barPercent <= progressPercent;
-                return (
-                  <div
-                    key={idx}
-                    className="flex-1 rounded-t-xs transition-all duration-150"
-                    style={{
-                      height: `${barHeight}%`,
-                      backgroundColor: isPlayed ? '#2563eb' : '#94a3b8',
-                      opacity: isPlayed ? 1 : 0.45,
-                    }}
-                  />
-                );
-              })}
+        {!hasRecording ? (
+          <div className="p-6 bg-slate-50 dark:bg-dark-800/80 border-b border-dark-200 dark:border-dark-700/80 text-center space-y-2">
+            <div className="w-12 h-12 rounded-full bg-dark-100 dark:bg-dark-700 flex items-center justify-center mx-auto text-dark-400">
+              <VolumeX size={22} />
             </div>
-
-            {/* Time Indicators */}
-            <div className="flex items-center justify-between text-xs font-mono font-semibold text-dark-500 px-1">
-              <span>{formatSeconds(currentTime)}</span>
-              <span className="text-[11px] text-dark-400">Audio Quality: 32 kbps Mono · G.711 Telephony</span>
-              <span>{formatSeconds(duration)}</span>
-            </div>
+            <h4 className="text-sm font-bold text-dark-900 dark:text-white">
+              No Audio Recording Available
+            </h4>
+            <p className="text-xs text-dark-500 dark:text-dark-400 max-w-md mx-auto">
+              This call log does not have an audio file attached. Genuine audio recordings are captured when microphone recording is enabled or connected to your VoIP softphone.
+            </p>
           </div>
-
-          {/* Transport Controls Row */}
-          <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+        ) : (
+          <div className="p-4 sm:p-5 bg-gradient-to-b from-blue-50/50 to-white dark:from-dark-800/80 dark:to-dark-900 border-b border-dark-200 dark:border-dark-700/80 space-y-4">
             
-            {/* Speed Pills */}
-            <div className="flex items-center gap-1 bg-dark-100 dark:bg-dark-800 p-1 rounded-xl">
-              {[0.75, 1.0, 1.25, 1.5, 2.0].map((rate) => (
-                <button
-                  key={rate}
-                  onClick={() => handleSpeedChange(rate)}
-                  className={`px-2 py-1 rounded-lg text-xs font-bold transition-all ${
-                    speed === rate
-                      ? 'bg-blue-600 text-white shadow-2xs'
-                      : 'text-dark-600 dark:text-dark-300 hover:text-dark-900'
-                  }`}
-                >
-                  {rate}x
-                </button>
-              ))}
-            </div>
-
-            {/* Main Play / Seek Controls */}
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => handleSeek(Math.max(0, currentTime - 5))}
-                className="p-2 rounded-xl text-dark-600 dark:text-dark-300 hover:bg-dark-100 dark:hover:bg-dark-800 transition-colors"
-                title="Rewind 5s"
+            {/* Waveform Scrubber */}
+            <div className="space-y-1.5">
+              <div
+                className="h-16 flex items-end gap-1 px-2 py-1 rounded-xl bg-dark-100/70 dark:bg-dark-800 cursor-pointer relative overflow-hidden group select-none"
+                onClick={(e) => {
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  const clickX = e.clientX - rect.left;
+                  const ratio = Math.max(0, Math.min(1, clickX / rect.width));
+                  handleSeek(ratio * duration);
+                }}
               >
-                <RotateCcw size={16} />
-              </button>
-
-              <button
-                onClick={togglePlay}
-                className="w-12 h-12 rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center shadow-lg transition-transform active:scale-95"
-              >
-                {isPlaying ? <Pause size={20} /> : <Play size={20} className="ml-0.5" />}
-              </button>
-
-              <button
-                onClick={() => handleSeek(Math.min(duration, currentTime + 5))}
-                className="p-2 rounded-xl text-dark-600 dark:text-dark-300 hover:bg-dark-100 dark:hover:bg-dark-800 transition-colors"
-                title="Forward 5s"
-              >
-                <RotateCw size={16} />
-              </button>
-            </div>
-
-            {/* Volume & Download */}
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-1.5 text-dark-500">
-                <button onClick={toggleMute} className="hover:text-dark-800">
-                  {isMuted || volume === 0 ? <VolumeX size={16} /> : <Volume2 size={16} />}
-                </button>
-                <input
-                  type="range"
-                  min="0"
-                  max="1"
-                  step="0.05"
-                  value={isMuted ? 0 : volume}
-                  onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
-                  className="w-16 h-1.5 accent-blue-600 cursor-pointer"
+                {/* Played Highlight overlay */}
+                <div
+                  className="absolute left-0 top-0 bottom-0 bg-blue-500/10 pointer-events-none transition-all"
+                  style={{ width: `${progressPercent}%` }}
                 />
+
+                {waveformBars.map((barHeight, idx) => {
+                  const barPercent = (idx / waveformBars.length) * 100;
+                  const isPlayed = barPercent <= progressPercent;
+                  return (
+                    <div
+                      key={idx}
+                      className="flex-1 rounded-t-xs transition-all duration-150"
+                      style={{
+                        height: `${barHeight}%`,
+                        backgroundColor: isPlayed ? '#2563eb' : '#94a3b8',
+                        opacity: isPlayed ? 1 : 0.45,
+                      }}
+                    />
+                  );
+                })}
               </div>
 
-              <button
-                onClick={handleDownload}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 text-dark-700 dark:text-dark-200 hover:bg-dark-50 shadow-2xs transition-colors"
-              >
-                <Download size={13} />
-                <span>Save MP3</span>
-              </button>
+              {/* Time Indicators */}
+              <div className="flex items-center justify-between text-xs font-mono font-semibold text-dark-500 px-1">
+                <span>{formatSeconds(currentTime)}</span>
+                <span className="text-[11px] text-dark-400">Audio Quality: Genuine Telephony Recording</span>
+                <span>{formatSeconds(duration)}</span>
+              </div>
+            </div>
+
+            {/* Transport Controls Row */}
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+              
+              {/* Speed Pills */}
+              <div className="flex items-center gap-1 bg-dark-100 dark:bg-dark-800 p-1 rounded-xl">
+                {[0.75, 1.0, 1.25, 1.5, 2.0].map((rate) => (
+                  <button
+                    key={rate}
+                    onClick={() => handleSpeedChange(rate)}
+                    className={`px-2 py-1 rounded-lg text-xs font-bold transition-all ${
+                      speed === rate
+                        ? 'bg-blue-600 text-white shadow-2xs'
+                        : 'text-dark-600 dark:text-dark-300 hover:text-dark-900'
+                    }`}
+                  >
+                    {rate}x
+                  </button>
+                ))}
+              </div>
+
+              {/* Main Play / Seek Controls */}
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => handleSeek(Math.max(0, currentTime - 5))}
+                  className="p-2 rounded-xl text-dark-600 dark:text-dark-300 hover:bg-dark-100 dark:hover:bg-dark-800 transition-colors"
+                  title="Rewind 5s"
+                >
+                  <RotateCcw size={16} />
+                </button>
+
+                <button
+                  onClick={togglePlay}
+                  className="w-12 h-12 rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center shadow-lg transition-transform active:scale-95"
+                >
+                  {isPlaying ? <Pause size={20} /> : <Play size={20} className="ml-0.5" />}
+                </button>
+
+                <button
+                  onClick={() => handleSeek(Math.min(duration, currentTime + 5))}
+                  className="p-2 rounded-xl text-dark-600 dark:text-dark-300 hover:bg-dark-100 dark:hover:bg-dark-800 transition-colors"
+                  title="Forward 5s"
+                >
+                  <RotateCw size={16} />
+                </button>
+              </div>
+
+              {/* Volume & Download */}
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1.5 text-dark-500">
+                  <button onClick={toggleMute} className="hover:text-dark-800">
+                    {isMuted || volume === 0 ? <VolumeX size={16} /> : <Volume2 size={16} />}
+                  </button>
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.05"
+                    value={isMuted ? 0 : volume}
+                    onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
+                    className="w-16 h-1.5 accent-blue-600 cursor-pointer"
+                  />
+                </div>
+
+                <button
+                  onClick={handleDownload}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 text-dark-700 dark:text-dark-200 hover:bg-dark-50 shadow-2xs transition-colors"
+                >
+                  <Download size={13} />
+                  <span>Save MP3</span>
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
-        {/* Tab Toggle: AI Summary vs Full Transcript */}
+        {/* Tab Toggle: Call Notes vs Full Transcript */}
         <div className="flex border-b border-dark-200 dark:border-dark-700 px-5 pt-2 gap-4 text-xs font-semibold bg-white dark:bg-dark-900">
+          <button
+            onClick={() => setActiveTab('notes')}
+            className={`pb-2.5 border-b-2 flex items-center gap-1.5 transition-all ${
+              activeTab === 'notes'
+                ? 'border-blue-600 text-blue-600 font-bold'
+                : 'border-transparent text-dark-500 hover:text-dark-900'
+            }`}
+          >
+            <FileText size={14} />
+            <span>Call Notes &amp; Details</span>
+          </button>
+          
           <button
             onClick={() => setActiveTab('transcript')}
             className={`pb-2.5 border-b-2 flex items-center gap-1.5 transition-all ${
@@ -364,20 +389,8 @@ export default function CallRecordingModal({ isOpen, onClose, call }) {
                 : 'border-transparent text-dark-500 hover:text-dark-900'
             }`}
           >
-            <FileText size={14} />
-            <span>Speaker Transcript ({transcriptData.length} turns)</span>
-          </button>
-          
-          <button
-            onClick={() => setActiveTab('ai-insights')}
-            className={`pb-2.5 border-b-2 flex items-center gap-1.5 transition-all ${
-              activeTab === 'ai-insights'
-                ? 'border-blue-600 text-blue-600 font-bold'
-                : 'border-transparent text-dark-500 hover:text-dark-900'
-            }`}
-          >
-            <Sparkles size={14} className="text-amber-500" />
-            <span>Call Summary &amp; Follow-ups</span>
+            <Clock size={14} />
+            <span>Telephony Transcript ({transcriptData.length} turns)</span>
           </button>
         </div>
 
@@ -477,116 +490,97 @@ export default function CallRecordingModal({ isOpen, onClose, call }) {
             </div>
           )}
 
-          {/* TAB 2: AI INSIGHTS */}
-          {activeTab === 'ai-insights' && (
+          {/* TAB 2: CALL NOTES & TELEPHONY DETAILS (REAL DATA - NO AI SPEECH) */}
+          {activeTab === 'notes' && (
             <div className="space-y-4">
-              {!aiSummaryData ? (
-                <div className="py-12 text-center text-dark-400 dark:text-dark-500 text-xs space-y-1">
-                  <p className="font-semibold text-dark-700 dark:text-dark-300">No Call Summary Available</p>
-                  <p>AI insights will be generated when transcripts are processed for this call.</p>
+              {/* Agent Remarks Card */}
+              <div className="p-4 rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 space-y-2">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold text-dark-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
+                    <FileText size={14} className="text-blue-600" />
+                    <span>Telecaller Remarks & Notes</span>
+                  </h4>
+                  <span className="text-[11px] font-semibold text-dark-500">
+                    Logged by: <strong className="text-dark-800 dark:text-dark-200">{call.staff || call.calledByName || call.caller || 'Telecaller'}</strong>
+                  </span>
                 </div>
-              ) : (
-                <>
-                  {/* Sentiment Score Card */}
-                  <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-blue-500/10 to-transparent border border-emerald-500/30 dark:border-emerald-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0">
-                        <Sparkles size={24} />
-                      </div>
-                      <div>
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
-                          Customer Call Engagement
-                        </span>
-                        <h4 className="text-base font-bold text-dark-900 dark:text-white">
-                          {aiSummaryData.sentiment}
-                        </h4>
-                        <p className="text-xs text-dark-500">
-                          High purchase intent & responsive communication during call
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <div className="text-right">
-                        <span className="text-[10px] text-dark-400 uppercase font-bold">Intent Score</span>
-                        <p className="text-xl font-black font-mono text-emerald-600 dark:text-emerald-400">
-                          {aiSummaryData.score}/100
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Executive Summary */}
-                  <div className="p-4 rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 space-y-2">
-                    <h4 className="text-xs font-bold text-dark-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
-                      <Bot size={14} className="text-blue-600" />
-                      <span>Call Executive Summary</span>
-                    </h4>
-                    <p className="text-xs text-dark-700 dark:text-dark-200 leading-relaxed">
-                      {aiSummaryData.summary}
+                <div className="p-3 rounded-lg bg-dark-50 dark:bg-dark-900/60 border border-dark-200/60 dark:border-dark-700/60 text-xs text-dark-700 dark:text-dark-200 leading-relaxed font-sans">
+                  {call.remarks || call.notes ? (
+                    <p>{call.remarks || call.notes}</p>
+                  ) : (
+                    <p className="italic text-dark-400 dark:text-dark-500">
+                      No remarks were entered by the agent during this call.
                     </p>
-                  </div>
-
-                  {/* Key Topics Tags */}
-                  {aiSummaryData.keyPoints && aiSummaryData.keyPoints.length > 0 && (
-                    <div className="p-4 rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 space-y-2">
-                      <h4 className="text-xs font-bold text-dark-900 dark:text-white uppercase tracking-wider">
-                        Key Topics Discussed
-                      </h4>
-                      <div className="flex flex-wrap gap-2">
-                        {aiSummaryData.keyPoints.map((point, idx) => (
-                          <span
-                            key={idx}
-                            className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-dark-100 dark:bg-dark-700 text-dark-700 dark:text-dark-200"
-                          >
-                            #{point}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
                   )}
+                </div>
+              </div>
 
-                  {/* Action Items / Follow-ups */}
-                  {aiSummaryData.followUps && aiSummaryData.followUps.length > 0 && (
-                    <div className="p-4 rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 space-y-2.5">
-                      <h4 className="text-xs font-bold text-dark-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
-                        <CheckCircle2 size={14} className="text-emerald-600" />
-                        <span>Recommended Action Items & Next Steps</span>
-                      </h4>
-                      <div className="space-y-2">
-                        {aiSummaryData.followUps.map((action, idx) => {
-                          const isDone = !!actionItemsDone[idx];
-                          return (
-                            <div
-                              key={idx}
-                              onClick={() => toggleActionItem(idx)}
-                              className={`flex items-start gap-2.5 p-2 rounded-lg cursor-pointer transition-colors ${
-                                isDone ? 'bg-emerald-50/60 dark:bg-emerald-950/20' : 'hover:bg-dark-50 dark:hover:bg-dark-700/50'
-                              }`}
-                            >
-                              <input
-                                type="checkbox"
-                                checked={isDone}
-                                onChange={() => {}}
-                                className="mt-0.5 rounded text-blue-600"
-                              />
-                              <span
-                                className={`text-xs ${
-                                  isDone
-                                    ? 'line-through text-dark-400'
-                                    : 'text-dark-800 dark:text-dark-200 font-medium'
-                                }`}
-                              >
-                                {action}
-                              </span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-                </>
-              )}
+              {/* Call Metadata Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="p-3 rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800">
+                  <span className="text-[10px] uppercase font-bold text-dark-400 block mb-1">Direction</span>
+                  <p className="text-xs font-bold text-dark-900 dark:text-white capitalize">
+                    {call.callType || 'Outbound'}
+                  </p>
+                </div>
+
+                <div className="p-3 rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800">
+                  <span className="text-[10px] uppercase font-bold text-dark-400 block mb-1">Call Status</span>
+                  <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                    (call.status || '').toLowerCase().includes('connect') || (call.status || '').toLowerCase() === 'completed'
+                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
+                      : 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300'
+                  }`}>
+                    {call.status || 'Completed'}
+                  </span>
+                </div>
+
+                <div className="p-3 rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800">
+                  <span className="text-[10px] uppercase font-bold text-dark-400 block mb-1">Duration</span>
+                  <p className="text-xs font-bold font-mono text-dark-900 dark:text-white">
+                    {call.duration || '0m 0s'}
+                  </p>
+                </div>
+
+                <div className="p-3 rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800">
+                  <span className="text-[10px] uppercase font-bold text-dark-400 block mb-1">Timestamp</span>
+                  <p className="text-xs font-medium text-dark-700 dark:text-dark-300 truncate">
+                    {call.date || 'Today'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Customer Contact & Quick Actions */}
+              <div className="p-4 rounded-xl border border-dark-200 dark:border-dark-700 bg-dark-50/50 dark:bg-dark-800/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-dark-400">Customer Phone</span>
+                  <p className="text-sm font-bold font-mono text-dark-900 dark:text-white">
+                    {call.customerNumber || call.customerPhone || 'N/A'}
+                  </p>
+                  <p className="text-xs text-dark-500">
+                    Contact: {call.customerName || 'Direct Customer'}
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <a
+                    href={`https://wa.me/${(call.customerNumber || '').replace(/[^0-9]/g, '')}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-2xs transition-colors"
+                  >
+                    <span>Chat on WhatsApp</span>
+                  </a>
+
+                  <a
+                    href={`tel:${(call.customerNumber || '').replace(/[^0-9+]/g, '')}`}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-2xs transition-colors"
+                  >
+                    <Phone size={12} />
+                    <span>Call Phone</span>
+                  </a>
+                </div>
+              </div>
             </div>
           )}
 

@@ -162,17 +162,13 @@ class RealCallRecorder {
     return new Promise((resolve) => {
       if (!this.mediaRecorder || this.chunks.length === 0) {
         cleanupStreams();
-        const fallbackBlob = this.createAuthenticTelephonyBlob(elapsedSec);
-        const url = URL.createObjectURL(fallbackBlob);
-        this.blobToBase64(fallbackBlob).then((dataUrl) => {
-          resolve({
-            blob: fallbackBlob,
-            url,
-            dataUrl,
-            durationSec: elapsedSec,
-            waveform: this.generateRealWaveform(32),
-            isRealMic: false,
-          });
+        resolve({
+          blob: null,
+          url: '',
+          dataUrl: null,
+          durationSec: elapsedSec,
+          waveform: [],
+          isRealMic: false,
         });
         return;
       }
@@ -202,13 +198,12 @@ class RealCallRecorder {
         }
       } catch {
         cleanupStreams();
-        const fallbackBlob = this.createAuthenticTelephonyBlob(elapsedSec);
         resolve({
-          blob: fallbackBlob,
-          url: URL.createObjectURL(fallbackBlob),
+          blob: null,
+          url: '',
           dataUrl: null,
           durationSec: elapsedSec,
-          waveform: this.generateRealWaveform(32),
+          waveform: [],
           isRealMic: false,
         });
       }
@@ -223,59 +218,6 @@ class RealCallRecorder {
       reader.onerror = () => resolve(null);
       reader.readAsDataURL(blob);
     });
-  }
-
-  // Generate realistic human speech WAV audio if mic was unavailable
-  createAuthenticTelephonyBlob(durationSec = 10) {
-    const sampleRate = 8000;
-    const dur = Math.max(durationSec, 3);
-    const numSamples = sampleRate * dur;
-    const buffer = new ArrayBuffer(44 + numSamples * 2);
-    const view = new DataView(buffer);
-
-    // RIFF identifier
-    const writeString = (offset, str) => {
-      for (let i = 0; i < str.length; i++) {
-        view.setUint8(offset + i, str.charCodeAt(i));
-      }
-    };
-
-    writeString(0, 'RIFF');
-    view.setUint32(4, 36 + numSamples * 2, true);
-    writeString(8, 'WAVE');
-    writeString(12, 'fmt ');
-    view.setUint32(16, 16, true);
-    view.setUint16(20, 1, true); // PCM
-    view.setUint16(22, 1, true); // Mono
-    view.setUint32(24, sampleRate, true);
-    view.setUint32(28, sampleRate * 2, true);
-    view.setUint16(32, 2, true);
-    view.setUint16(34, 16, true);
-    writeString(36, 'data');
-    view.setUint32(40, numSamples * 2, true);
-
-    // Synthesize natural human telephony conversation vocal formants (F1 ~ 500Hz, F2 ~ 1500Hz)
-    let offset = 44;
-    for (let i = 0; i < numSamples; i++) {
-      const t = i / sampleRate;
-      // Syllable speech envelope (~3 to 4 syllables per second)
-      const speechRhythm = Math.sin(2 * Math.PI * 3.5 * t);
-      const isSpeaking = speechRhythm > -0.2 ? Math.max(0, speechRhythm) : 0;
-      
-      // Vocal cord fundamentals & harmonics
-      const f0 = 130 + Math.sin(2 * Math.PI * 0.7 * t) * 15; // natural pitch inflection
-      const voice =
-        Math.sin(2 * Math.PI * f0 * t) * 0.35 +
-        Math.sin(2 * Math.PI * (f0 * 2) * t) * 0.2 +
-        Math.sin(2 * Math.PI * (f0 * 3) * t) * 0.1;
-      
-      const comfortNoise = (Math.random() * 2 - 1) * 0.015;
-      const sample = Math.max(-1, Math.min(1, (voice * isSpeaking + comfortNoise) * 0.7));
-      view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7fff, true);
-      offset += 2;
-    }
-
-    return new Blob([buffer], { type: 'audio/wav' });
   }
 
   // Generate waveform height values from realistic audio activity
