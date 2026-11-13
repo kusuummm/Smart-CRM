@@ -6,6 +6,7 @@ import { ConfirmProvider } from './context/ConfirmContext';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import { Toaster } from 'react-hot-toast';
+import ErrorBoundary from './components/ErrorBoundary';
 import { isAdminOrOwner, isManager, isOwner } from './utils/permissions';
 
 // Core synchronous pages for instant initial paint
@@ -615,9 +616,11 @@ function AppLayout() {
             collapsed ? 'md:ml-[72px]' : 'md:ml-[230px]'
           }`}
         >
-          <Suspense fallback={<PageLoadingFallback />}>
-            {pageContent}
-          </Suspense>
+          <ErrorBoundary>
+            <Suspense fallback={<PageLoadingFallback />}>
+              {pageContent}
+            </Suspense>
+          </ErrorBoundary>
         </main>
       </div>
 

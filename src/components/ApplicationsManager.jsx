@@ -54,13 +54,17 @@ import {
 } from '../api/applications';
 import { getCustomers } from '../api/customers';
 
-// Helper to resolve static file URL
+// Helper to resolve static file URL with auth token for secure download/preview
 const getFullUrl = (url) => {
   if (!url) return '';
   if (url.startsWith('http://') || url.startsWith('https://')) return url;
   const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
   const serverBase = apiBase.replace(/\/api\/?$/, '');
-  return `${serverBase}${url.startsWith('/') ? '' : '/'}${url}`;
+  const cleanPath = url.startsWith('/') ? url : `/${url}`;
+  const token = typeof window !== 'undefined' ? localStorage.getItem('crm_token') : null;
+  const separator = cleanPath.includes('?') ? '&' : '?';
+  const tokenParam = token ? `${separator}token=${encodeURIComponent(token)}` : '';
+  return `${serverBase}${cleanPath}${tokenParam}`;
 };
 
 const STATUS_CONFIG = {

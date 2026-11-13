@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { loginRequest, getMeRequest, logoutRequest } from '../api/auth';
 import { heartbeatRequest } from '../api/users';
+import { clearApiCache } from '../api/client';
 
 const AuthContext = createContext(null);
 
@@ -51,7 +52,8 @@ export function AuthProvider({ children }) {
         // Token expired, invalid, or account disabled - clear everything.
         localStorage.removeItem('crm_token');
         localStorage.removeItem('crm_user');
-        setUser(null);
+        clearApiCache();
+    setUser(null);
       })
       .finally(() => setAuthLoading(false));
   }, []);
@@ -112,6 +114,7 @@ export function AuthProvider({ children }) {
     } catch {
       // Even if the server call fails (e.g. offline), still log out locally.
     }
+    clearApiCache();
     setUser(null);
     localStorage.removeItem('crm_token');
     localStorage.removeItem('crm_user');
@@ -143,6 +146,7 @@ export function AuthProvider({ children }) {
     const previousUser = localStorage.getItem('crm_user');
 
     localStorage.setItem('crm_token', account.token);
+    clearApiCache();
     try {
       const data = await getMeRequest();
       localStorage.setItem('crm_user', JSON.stringify(data.user));

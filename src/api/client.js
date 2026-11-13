@@ -7,6 +7,16 @@ const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const api = axios.create({ baseURL });
 
+// High-Speed In-Memory Client Cache & In-Flight Request Deduplication
+const cache = new Map();
+const inFlight = new Map();
+const CACHE_TTL_MS = 25000; // 25s TTL for lightning-fast tab navigation
+
+export const clearApiCache = () => {
+  cache.clear();
+  inFlight.clear();
+};
+
 // Attach the JWT (if we have one) to every outgoing request.
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('crm_token');
@@ -23,6 +33,7 @@ api.interceptors.response.use(
   (error) => {
     const isLoginRequest = error.config?.url?.includes('/auth/login');
     if (error.response?.status === 401 && !isLoginRequest) {
+      clearApiCache();
       localStorage.removeItem('crm_token');
       localStorage.removeItem('crm_user');
       // Full reload is the simplest reliable way to bounce back to the
@@ -35,15 +46,6 @@ api.interceptors.response.use(
   }
 );
 
-// High-Speed In-Memory Client Cache & In-Flight Request Deduplication
-const cache = new Map();
-const inFlight = new Map();
-const CACHE_TTL_MS = 25000; // 25s TTL for lightning-fast tab navigation
-
-export const clearApiCache = () => {
-  cache.clear();
-};
-
 const originalGet = api.get.bind(api);
 
 api.get = function (url, config = {}) {
@@ -52,7 +54,11 @@ api.get = function (url, config = {}) {
     return originalGet(url, config);
   }
 
-  const key = `${url}?${JSON.stringify(config.params || {})}`;
+  // Token-scoped cache key prevents cross-account cache contamination
+  const token = typeof localStorage !== 'undefined' ? (localStorage.getItem('crm_token') || 'anon') : 'anon';
+  const tokenPrefix = token.length > 16 ? token.slice(-16) : token;
+  const key = `${tokenPrefix}:${url}?${JSON.stringify(config.params || {})}`;
+
   const cached = cache.get(key);
 
   if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
@@ -82,7 +88,7 @@ api.get = function (url, config = {}) {
 ['post', 'put', 'patch', 'delete'].forEach((method) => {
   const originalMethod = api[method].bind(api);
   api[method] = function (...args) {
-    cache.clear();
+    clearApiCache();
     return originalMethod(...args);
   };
 });
