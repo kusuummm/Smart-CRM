@@ -1,0 +1,1 @@
+import{o as e}from"./index-DQRwHAYO.js";const s=(a={})=>e.get("/calls",{params:a}).then(t=>t.data),c=a=>e.post("/calls",a).then(t=>t.data),o=a=>e.delete(`/calls/${a}`).then(t=>t.data);export{c,o as d,s as g};

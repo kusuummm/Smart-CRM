@@ -114,33 +114,52 @@ export default function Sidebar({
   const userIsManager = isManager(user);
   const userIsAdminOrOwner = isAdminOrOwner(user);
 
-  // Member / Caller Workspace - Clean & Focused
+  // Member / Caller Workspace
   const memberMenuItems = [
-    { type: 'header', label: 'WORKSPACE' },
-    { id: 'home', label: 'Dashboard', icon: Home },
+    { type: 'header', label: 'CORE CRM' },
+    { id: 'home', label: 'Home', icon: Home },
     { id: 'contacts', label: 'Contacts', icon: BookUser },
     { id: 'leads', label: 'Leads & Pipeline', icon: TrendingUp },
     { id: 'todos', label: 'To Dos & Tasks', icon: CheckSquare },
     { id: 'call-history', label: 'Call History', icon: Phone },
+    { id: 'reports', label: 'Reports', icon: Clock },
+    { id: 'insights', label: 'Insights', icon: BarChart2 },
+
+    { type: 'header', label: 'COMMUNICATIONS' },
     { id: 'whatsapp', label: 'WhatsApp', icon: MessageSquare },
-    { id: 'eod-sheet', label: 'Daily EOD Sheet', icon: FileSpreadsheet },
+    { id: 'emails', label: 'Emails', icon: Mail },
+    { id: 'events', label: 'Calendar & Reminders', icon: Calendar },
+    { id: 'quick-message', label: 'Quick Message', icon: Zap },
+    { id: 'notes', label: 'Notes', icon: FileText },
+
+    { type: 'header', label: 'WORKSPACE' },
+    { id: 'eod-sheet', label: 'EOD Sheet', icon: FileSpreadsheet },
     { id: 'notifications', label: 'Notifications', icon: Bell },
+    { id: 'wallet', label: 'Wallet', icon: Wallet },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
 
   // Manager Supervision Center
   const managerMenuItems = [
-    { type: 'header', label: 'SUPERVISION' },
+    { type: 'header', label: 'TEAM SUPERVISION' },
     { id: 'teams', label: 'Teams', icon: Users },
     { id: 'team-members', label: 'Team Members', icon: UserCheck },
-    { id: 'leads', label: 'Team Pipeline', icon: TrendingUp },
+    { id: 'leads', label: 'Team Leads & Pipeline', icon: TrendingUp },
     { id: 'contacts', label: 'Contacts', icon: BookUser },
-    { id: 'todos', label: 'Tasks & Follow-ups', icon: CheckSquare },
-    { id: 'call-history', label: 'Call History', icon: Phone },
-    { id: 'admin-reports', label: 'Caller Reports', icon: BarChart2 },
+    { id: 'todos', label: 'To Dos & Tasks', icon: CheckSquare },
+    { id: 'call-history', label: 'Call History & Logs', icon: Phone },
+    { id: 'admin-reports', label: 'Team Progress Reports', icon: BarChart2 },
     { id: 'eod-sheet', label: 'Team EOD Sheets', icon: FileSpreadsheet },
+
+    { type: 'header', label: 'COMMUNICATIONS' },
     { id: 'whatsapp', label: 'WhatsApp', icon: MessageSquare },
+    { id: 'emails', label: 'Emails', icon: Mail },
+    { id: 'events', label: 'Calendar & Reminders', icon: Calendar },
     { id: 'broadcast', label: 'Broadcast', icon: Radio },
+
+    { type: 'header', label: 'PREFERENCES' },
+    { id: 'notifications', label: 'Notifications', icon: Bell },
+    { id: 'wallet', label: 'Wallet', icon: Wallet },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
 
