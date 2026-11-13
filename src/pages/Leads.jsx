@@ -116,6 +116,7 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
     remark: '',
   });
   const [isAssigning, setIsAssigning] = useState(false);
+  const [form, setForm] = useState({ status: 'new', remark: '', telecallerId: '' });
 
   // Meeting scheduling modal state
   const [meetingModalLead, setMeetingModalLead] = useState(null);
@@ -236,7 +237,25 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
     setIsModalOpen(true);
   };
 
-  const [form, setForm] = useState({ status: 'new', remark: '', telecallerId: '' });
+  // Open Schedule Meeting modal
+  const openScheduleMeeting = (lead) => {
+    setMeetingModalLead(lead);
+    const today = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    now.setHours(now.getHours() + 1);
+    const hourStr = String(now.getHours()).padStart(2, '0') + ':00';
+
+    setMeetingForm({
+      title: `Consultation & Demo with ${lead.customerName || 'Customer'}`,
+      date: today,
+      time: hourStr,
+      duration: '30 mins',
+      customerEmail: lead.customerId?.email || lead.email || '',
+      meetingLink: 'https://meet.google.com/new',
+      location: 'Google Meet',
+      agenda: `Discuss ${lead.customerId?.interestedProduct || 'Smart CRM'} requirements and next steps.`,
+    });
+  };
 
   // Save updated follow-up status (triggers automated notification emails to both customer and lead)
   const handleSaveStatus = async () => {
@@ -379,26 +398,6 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
     } finally {
       setIsReassigning(false);
     }
-  };
-
-  // Open Schedule Meeting modal
-  const openScheduleMeeting = (lead) => {
-    setMeetingModalLead(lead);
-    const today = new Date().toISOString().split('T')[0];
-    const now = new Date();
-    now.setHours(now.getHours() + 1);
-    const hourStr = String(now.getHours()).padStart(2, '0') + ':00';
-
-    setMeetingForm({
-      title: `Consultation & Demo with ${lead.customerName || 'Customer'}`,
-      date: today,
-      time: hourStr,
-      duration: '30 mins',
-      customerEmail: lead.customerId?.email || lead.email || '',
-      meetingLink: 'https://meet.google.com/new',
-      location: 'Google Meet',
-      agenda: `Discuss ${lead.customerId?.interestedProduct || 'Smart CRM'} requirements and next steps.`,
-    });
   };
 
   // Submit Meeting and trigger invitations & 1-hour prior reminder scheduler

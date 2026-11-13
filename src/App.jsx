@@ -42,6 +42,7 @@ const MyAccount = lazy(() => import('./pages/MyAccount'));
 const Settings = lazy(() => import('./pages/Settings'));
 const Notifications = lazy(() => import('./pages/Notifications'));
 const CallerProgressReports = lazy(() => import('./components/CallerProgressReports'));
+const EodSheet = lazy(() => import('./pages/EodSheet'));
 
 function PageLoadingFallback() {
   return (
@@ -88,6 +89,8 @@ const pathToPage = {
   '/team-members': 'team-members',
   '/team': 'team-members',
   '/notes': 'notes',
+  '/eod': 'eod-sheet',
+  '/eod-sheet': 'eod-sheet',
   '/automations': 'automations',
   '/quick-message': 'quick-message',
   '/emails': 'emails',
@@ -147,6 +150,8 @@ const pageToPath = {
   'team-members': '/team-members',
   team: '/team-members',
   notes: '/notes',
+  'eod-sheet': '/eod',
+  eod: '/eod',
   automations: '/automations',
   'quick-message': '/quick-message',
   search: '/search',
@@ -282,6 +287,7 @@ function AppLayout() {
       import('./pages/ToDos');
       import('./pages/CallHistory');
       import('./pages/WhatsApp');
+      import('./pages/EodSheet');
       import('./pages/Settings');
     };
     if (typeof window !== 'undefined') {
@@ -595,6 +601,9 @@ function AppLayout() {
         return <TeamMembers onNavigate={navigateToPage} />;
       case 'notes':
         return <Notes onNavigate={navigateToPage} />;
+      case 'eod-sheet':
+      case 'eod':
+        return <EodSheet onNavigate={navigateToPage} />;
       case 'automations':
         return <Automations onNavigate={navigateToPage} />;
       case 'quick-message':

@@ -33,6 +33,7 @@ import {
   Filter,
   BarChart3,
   Flame,
+  FileSpreadsheet,
   AlertCircle,
 } from 'lucide-react';
 import {
@@ -669,6 +670,13 @@ export default function HomeDashboard({ onNavigate, onOpenBuyNumber }) {
         >
           <Users size={13} />
           <span>Contacts Directory</span>
+        </button>
+        <button
+          onClick={() => onNavigate?.('eod-sheet')}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-teal-50/80 hover:bg-teal-100 dark:bg-teal-950/40 dark:hover:bg-teal-900/50 text-teal-700 dark:text-teal-300 border border-teal-200/60 dark:border-teal-800/50 text-xs font-semibold transition-all shrink-0 hover:scale-102 cursor-pointer"
+        >
+          <FileSpreadsheet size={13} />
+          <span>EOD Sheet</span>
         </button>
         <button
           onClick={() => onNavigate?.('insights')}

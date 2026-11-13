@@ -25,6 +25,7 @@ import {
   Mail,
   Calendar,
   LayoutDashboard,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useApp } from '../context/AppContext';
@@ -132,6 +133,7 @@ export default function Sidebar({
     { id: 'notes', label: 'Notes', icon: FileText },
 
     { type: 'header', label: 'WORKSPACE' },
+    { id: 'eod-sheet', label: 'EOD Sheet', icon: FileSpreadsheet },
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'wallet', label: 'Wallet', icon: Wallet },
     { id: 'settings', label: 'Settings', icon: Settings },
@@ -147,6 +149,7 @@ export default function Sidebar({
     { id: 'todos', label: 'To Dos & Tasks', icon: CheckSquare },
     { id: 'call-history', label: 'Call History & Logs', icon: Phone },
     { id: 'admin-reports', label: 'Team Progress Reports', icon: BarChart2 },
+    { id: 'eod-sheet', label: 'Team EOD Sheets', icon: FileSpreadsheet },
 
     { type: 'header', label: 'COMMUNICATIONS' },
     { id: 'whatsapp', label: 'WhatsApp', icon: MessageSquare },
@@ -170,6 +173,7 @@ export default function Sidebar({
     { id: 'admin-agents', label: 'Lead Presence', icon: Activity },
     { id: 'admin-workload', label: 'Workload Balancer', icon: ArrowRightLeft },
     { id: 'admin-reports', label: 'Lead Progress Reports', icon: BarChart2 },
+    { id: 'eod-sheet', label: 'EOD Oversight Console', icon: FileSpreadsheet },
     { id: 'admin-audit', label: 'Audit Activity Log', icon: Clock },
 
     { type: 'header', label: 'ORGANIZATION & TOOLS' },
@@ -191,6 +195,7 @@ export default function Sidebar({
     { id: 'admin-agents', label: 'Lead Presence', icon: Activity },
     { id: 'admin-workload', label: 'Workload Balancer', icon: ArrowRightLeft },
     { id: 'admin-reports', label: 'Lead Progress Reports', icon: BarChart2 },
+    { id: 'eod-sheet', label: 'EOD Oversight Console', icon: FileSpreadsheet },
     { id: 'admin-audit', label: 'Audit Activity Log', icon: Clock },
     { id: 'admin-system', label: 'System Diagnostics', icon: Database },
 
