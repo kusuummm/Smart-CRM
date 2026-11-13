@@ -57,6 +57,7 @@ function PageLoadingFallback() {
 // Interactive Modals matching reference UI
 import BuyNumberModal from './components/BuyNumberModal';
 import LogoutModal from './components/LogoutModal';
+import CommandPalette from './components/CommandPalette';
 
 // Route path to internal page ID mapping
 const pathToPage = {
@@ -307,6 +308,24 @@ function AppLayout() {
   const [isBuyNumberOpen, setIsBuyNumberOpen] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+
+  // Global Ctrl+K / Cmd+K Command Palette Keyboard Listener
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsCommandPaletteOpen((prev) => !prev);
+      }
+    };
+    const handleCustomOpen = () => setIsCommandPaletteOpen(true);
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('smartcrm:open-command-palette', handleCustomOpen);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('smartcrm:open-command-palette', handleCustomOpen);
+    };
+  }, []);
 
   const handleConfirmLogout = async () => {
     setIsLoggingOut(true);
@@ -642,6 +661,13 @@ function AppLayout() {
         onConfirm={handleConfirmLogout}
         user={user}
         isLoading={isLoggingOut}
+      />
+
+      {/* Universal Command Palette (Ctrl+K) */}
+      <CommandPalette
+        isOpen={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
+        onNavigate={navigateToPage}
       />
     </div>
   );

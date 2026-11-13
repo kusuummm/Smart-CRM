@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import {
+  Search,
   Bell,
   Settings,
   User,
@@ -212,6 +213,20 @@ export default function Header({
           );
         })()}
       </div>
+
+      {/* Center Section: Command Palette Trigger (Ctrl + K) */}
+      <button
+        type="button"
+        onClick={() => window.dispatchEvent(new CustomEvent('smartcrm:open-command-palette'))}
+        className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#14213d] hover:bg-[#1a2b50] text-slate-300 hover:text-white border border-[#223663] hover:border-blue-500/50 text-xs transition-all cursor-pointer shadow-2xs"
+        title="Universal Search (Ctrl + K)"
+      >
+        <Search size={13} className="text-blue-400" />
+        <span className="text-slate-300 font-medium">Search CRM...</span>
+        <kbd className="ml-1.5 px-1.5 py-0.5 text-[10px] font-mono font-semibold rounded bg-[#0b1222] border border-[#2b4172] text-slate-400">
+          Ctrl K
+        </kbd>
+      </button>
 
       {/* Right Section: Balance, User Profile, Quick Actions, Logout */}
       <div className="flex items-center gap-3 sm:gap-4">

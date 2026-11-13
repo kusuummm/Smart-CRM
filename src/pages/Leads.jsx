@@ -25,6 +25,12 @@ import {
   XCircle,
   Lock,
   X,
+  List,
+  Columns,
+  ChevronLeft,
+  ChevronRight,
+  GripVertical,
+  ExternalLink,
 } from 'lucide-react';
 import { PageHeader } from '../components/Common';
 import Modal from '../components/Modal';
@@ -85,6 +91,58 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
   const [searchTerm, setSearchTerm] = useState(selectedCustomer || '');
   const [statusDropdownLeadId, setStatusDropdownLeadId] = useState(null);
   const { addToast } = useToast();
+  const [viewMode, setViewMode] = useState(() => {
+    return localStorage.getItem('smartcrm_leads_view_mode') || 'table';
+  });
+  const [draggedLeadId, setDraggedLeadId] = useState(null);
+  const [dragOverStage, setDragOverStage] = useState(null);
+
+  const handleSetViewMode = (mode) => {
+    setViewMode(mode);
+    try {
+      localStorage.setItem('smartcrm_leads_view_mode', mode);
+    } catch {}
+  };
+
+  const handleDragStart = (e, lead) => {
+    setDraggedLeadId(lead._id);
+    e.dataTransfer.setData('leadId', lead._id);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragEnd = () => {
+    setDraggedLeadId(null);
+    setDragOverStage(null);
+  };
+
+  const handleDropOnStage = async (e, stageId) => {
+    e.preventDefault();
+    setDragOverStage(null);
+    const leadId = e.dataTransfer.getData('leadId') || draggedLeadId;
+    if (!leadId) return;
+    const targetLead = leads.find((l) => l._id === leadId);
+    if (targetLead && targetLead.status !== stageId) {
+      await handleQuickStatusChange(targetLead, stageId);
+    }
+  };
+
+  const advanceStage = (lead, direction = 1) => {
+    const currentIndex = statusOptionsConfig.findIndex((s) => s.id === (lead.status || 'new'));
+    const nextIndex = currentIndex + direction;
+    if (nextIndex >= 0 && nextIndex < statusOptionsConfig.length) {
+      handleQuickStatusChange(lead, statusOptionsConfig[nextIndex].id);
+    }
+  };
+
+  const kanbanStages = useMemo(() => {
+    return statusOptionsConfig.map((stage) => {
+      const stageLeads = filtered.filter((l) => (l.status || 'new') === stage.id);
+      return {
+        ...stage,
+        leads: stageLeads,
+      };
+    });
+  }, [filtered]);
 
   // Admin-only: Assign Customer to Lead modal state
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
@@ -519,6 +577,35 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
         </div>
 
         <div className="flex items-center gap-3 ml-auto">
+          {/* View Mode Toggle (Table vs Kanban) */}
+          <div className="flex items-center bg-dark-100 dark:bg-dark-700/80 p-0.5 rounded-lg border border-dark-200 dark:border-dark-700">
+            <button
+              type="button"
+              onClick={() => handleSetViewMode('table')}
+              className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-md transition-all ${
+                viewMode === 'table'
+                  ? 'bg-white dark:bg-dark-800 text-primary-600 dark:text-primary-400 shadow-2xs font-bold'
+                  : 'text-dark-500 hover:text-dark-900 dark:hover:text-dark-200'
+              }`}
+              title="Table Grid View"
+            >
+              <List size={13} />
+              <span className="hidden sm:inline">Table</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSetViewMode('kanban')}
+              className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-md transition-all ${
+                viewMode === 'kanban'
+                  ? 'bg-white dark:bg-dark-800 text-primary-600 dark:text-primary-400 shadow-2xs font-bold'
+                  : 'text-dark-500 hover:text-dark-900 dark:hover:text-dark-200'
+              }`}
+              title="Drag-and-Drop Pipeline Kanban Board"
+            >
+              <Columns size={13} />
+              <span className="hidden sm:inline">Kanban</span>
+            </button>
+          </div>
           {isAdmin && telecallers.length > 0 && (
             <select
               value={telecallerFilter}
@@ -551,6 +638,146 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
       {loading ? (
         <div className="flex items-center justify-center py-16 text-dark-400 dark:text-dark-500">
           <Loader2 className="animate-spin mr-2" size={20} /> Loading follow-ups...
+        </div>
+      ) : viewMode === 'kanban' ? (
+        <div className="overflow-x-auto pb-4">
+          <div className="flex gap-4 min-w-[1280px]">
+            {kanbanStages.map((stage) => {
+              const StageIcon = stage.Icon;
+              const isOver = dragOverStage === stage.id;
+              return (
+                <div
+                  key={stage.id}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setDragOverStage(stage.id);
+                  }}
+                  onDragLeave={() => setDragOverStage(null)}
+                  onDrop={(e) => handleDropOnStage(e, stage.id)}
+                  className={`flex-1 min-w-[280px] max-w-[320px] rounded-2xl border transition-all flex flex-col ${
+                    isOver
+                      ? 'border-primary-500 bg-primary-50/50 dark:bg-primary-950/30 ring-2 ring-primary-500/30'
+                      : 'border-dark-200 dark:border-dark-700 bg-dark-50/60 dark:bg-dark-900/40'
+                  }`}
+                >
+                  {/* Stage Header */}
+                  <div className="p-3.5 border-b border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 rounded-t-2xl flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-lg bg-primary-50 dark:bg-primary-950/60 text-primary-600 dark:text-primary-400 flex items-center justify-center shrink-0">
+                        {StageIcon && <StageIcon size={13} />}
+                      </div>
+                      <h4 className="text-xs font-bold text-dark-900 dark:text-white truncate">
+                        {stage.label.replace('Follow-up: ', '')}
+                      </h4>
+                    </div>
+                    <span className="px-2 py-0.5 rounded-full text-[11px] font-bold font-mono bg-dark-100 dark:bg-dark-700 text-dark-700 dark:text-dark-300">
+                      {stage.leads.length}
+                    </span>
+                  </div>
+
+                  {/* Cards List in Stage */}
+                  <div className="p-2.5 flex-1 space-y-2.5 overflow-y-auto max-h-[calc(100vh-320px)] min-h-[160px]">
+                    {stage.leads.length === 0 ? (
+                      <div className="h-28 border-2 border-dashed border-dark-200 dark:border-dark-700/80 rounded-xl flex items-center justify-center text-[11px] text-dark-400 dark:text-dark-500">
+                        Drop leads here
+                      </div>
+                    ) : (
+                      stage.leads.map((lead) => {
+                        const assignedTc = telecallers.find((t) => String(t._id) === String(lead.telecallerId));
+                        const isBeingDragged = draggedLeadId === lead._id;
+                        return (
+                          <div
+                            key={lead._id}
+                            draggable
+                            onDragStart={(e) => handleDragStart(e, lead)}
+                            onDragEnd={handleDragEnd}
+                            className={`p-3.5 rounded-xl border bg-white dark:bg-dark-800 shadow-2xs transition-all cursor-grab active:cursor-grabbing hover:shadow-md hover:border-primary-300 dark:hover:border-dark-600 ${
+                              isBeingDragged ? 'opacity-40 scale-95 border-primary-500' : 'border-dark-200 dark:border-dark-700'
+                            }`}
+                          >
+                            {/* Top Bar: Lead Name & Grip */}
+                            <div className="flex items-start justify-between gap-2">
+                              <div
+                                onClick={() => {
+                                  setCustomer360Lead(lead);
+                                  setIsCustomer360Open(true);
+                                }}
+                                className="cursor-pointer group/title"
+                              >
+                                <h5 className="text-xs font-bold text-dark-900 dark:text-white group-hover/title:text-primary-600 flex items-center gap-1">
+                                  <span>{lead.customerName || 'Unnamed Customer'}</span>
+                                  <ExternalLink size={10} className="opacity-0 group-hover/title:opacity-100 transition-opacity" />
+                                </h5>
+                                <span className="text-[10px] text-dark-400">
+                                  {lead.createdAt ? new Date(lead.createdAt).toLocaleDateString() : 'Recent'}
+                                </span>
+                              </div>
+                              <GripVertical size={14} className="text-dark-300 dark:text-dark-600 shrink-0" />
+                            </div>
+
+                            {/* Customer Phone & Communication Quick Links */}
+                            {lead.customerPhone && (
+                              <div className="mt-2 flex items-center justify-between text-xs pt-1.5 border-t border-dark-100 dark:border-dark-700/60">
+                                <span className="font-mono text-[11px] text-dark-600 dark:text-dark-300">
+                                  {lead.customerPhone}
+                                </span>
+                                <div className="flex items-center gap-1">
+                                  <a
+                                    href={`https://wa.me/${(lead.customerPhone || '').replace(/[^0-9]/g, '')}`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="p-1 rounded-md text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
+                                    title="WhatsApp Customer"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <PhoneCall size={12} />
+                                  </a>
+                                  <a
+                                    href={`tel:${lead.customerPhone}`}
+                                    className="p-1 rounded-md text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40"
+                                    title="Call Customer"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <Phone size={12} />
+                                  </a>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Footer: Assigned Member & Stage Shift arrows */}
+                            <div className="mt-2.5 pt-2 border-t border-dark-100 dark:border-dark-700/60 flex items-center justify-between">
+                              <span className="text-[10px] font-semibold text-dark-500 dark:text-dark-400 truncate max-w-[120px]">
+                                {assignedTc ? assignedTc.name : 'Unassigned'}
+                              </span>
+
+                              <div className="flex items-center gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => advanceStage(lead, -1)}
+                                  title="Move to previous stage"
+                                  className="p-1 rounded-md hover:bg-dark-100 dark:hover:bg-dark-700 text-dark-400 hover:text-dark-700 dark:hover:text-dark-200"
+                                >
+                                  <ChevronLeft size={13} />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => advanceStage(lead, 1)}
+                                  title="Advance to next stage"
+                                  className="p-1 rounded-md hover:bg-dark-100 dark:hover:bg-dark-700 text-dark-400 hover:text-dark-700 dark:hover:text-dark-200"
+                                >
+                                  <ChevronRight size={13} />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       ) : (
         <div className="bg-white rounded-xl border border-dark-200 shadow-sm dark:bg-dark-800 dark:border-dark-700 min-h-[360px]">
