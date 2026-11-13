@@ -311,6 +311,33 @@ export default function Customers({ onNavigate }) {
     }
   };
 
+  const openAdd = () => {
+    setEditingCustomer(null);
+    setForm({
+      name: '',
+      mobile: '',
+      alternateNumber: '',
+      email: '',
+      company: '',
+      city: '',
+      state: '',
+      leadSource: '',
+      interestedProduct: '',
+      status: 'active',
+      assignedTelecaller: '',
+      telecallerId: '',
+      remarks: '',
+    });
+    setIsModalOpen(true);
+  };
+
+  const openEdit = (customer) => {
+    setEditingCustomer(customer);
+    const { _id, id, ...rest } = customer;
+    setForm({ ...rest });
+    setIsModalOpen(true);
+  };
+
   const baseColumns = [
     {
       key: 'name',
@@ -562,33 +589,6 @@ export default function Customers({ onNavigate }) {
         ...baseColumns,
       ]
     : baseColumns;
-
-  const openAdd = () => {
-    setEditingCustomer(null);
-    setForm({
-      name: '',
-      mobile: '',
-      alternateNumber: '',
-      email: '',
-      company: '',
-      city: '',
-      state: '',
-      leadSource: '',
-      interestedProduct: '',
-      status: 'active',
-      assignedTelecaller: '',
-      telecallerId: '',
-      remarks: '',
-    });
-    setIsModalOpen(true);
-  };
-
-  const openEdit = (customer) => {
-    setEditingCustomer(customer);
-    const { _id, id, ...rest } = customer;
-    setForm({ ...rest });
-    setIsModalOpen(true);
-  };
 
   const handleSave = async () => {
     if (!form.name.trim()) {

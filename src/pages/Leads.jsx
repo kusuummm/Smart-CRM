@@ -104,46 +104,6 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
     } catch {}
   };
 
-  const handleDragStart = (e, lead) => {
-    setDraggedLeadId(lead._id);
-    e.dataTransfer.setData('leadId', lead._id);
-    e.dataTransfer.effectAllowed = 'move';
-  };
-
-  const handleDragEnd = () => {
-    setDraggedLeadId(null);
-    setDragOverStage(null);
-  };
-
-  const handleDropOnStage = async (e, stageId) => {
-    e.preventDefault();
-    setDragOverStage(null);
-    const leadId = e.dataTransfer.getData('leadId') || draggedLeadId;
-    if (!leadId) return;
-    const targetLead = leads.find((l) => l._id === leadId);
-    if (targetLead && targetLead.status !== stageId) {
-      await handleQuickStatusChange(targetLead, stageId);
-    }
-  };
-
-  const advanceStage = (lead, direction = 1) => {
-    const currentIndex = statusOptionsConfig.findIndex((s) => s.id === (lead.status || 'new'));
-    const nextIndex = currentIndex + direction;
-    if (nextIndex >= 0 && nextIndex < statusOptionsConfig.length) {
-      handleQuickStatusChange(lead, statusOptionsConfig[nextIndex].id);
-    }
-  };
-
-  const kanbanStages = useMemo(() => {
-    return statusOptionsConfig.map((stage) => {
-      const stageLeads = filtered.filter((l) => (l.status || 'new') === stage.id);
-      return {
-        ...stage,
-        leads: stageLeads,
-      };
-    });
-  }, [filtered]);
-
   // Admin-only: Assign Customer to Lead modal state
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [isExcelModalOpen, setIsExcelModalOpen] = useState(false);
@@ -330,6 +290,47 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
       addToast(error.response?.data?.message || 'Failed to update follow-up status', 'error');
     }
   };
+
+  // Pipeline Drag-and-Drop and Stage Shift Handlers
+  const handleDragStart = (e, lead) => {
+    setDraggedLeadId(lead._id);
+    e.dataTransfer.setData('leadId', lead._id);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragEnd = () => {
+    setDraggedLeadId(null);
+    setDragOverStage(null);
+  };
+
+  const handleDropOnStage = async (e, stageId) => {
+    e.preventDefault();
+    setDragOverStage(null);
+    const leadId = e.dataTransfer.getData('leadId') || draggedLeadId;
+    if (!leadId) return;
+    const targetLead = leads.find((l) => l._id === leadId);
+    if (targetLead && targetLead.status !== stageId) {
+      await handleQuickStatusChange(targetLead, stageId);
+    }
+  };
+
+  const advanceStage = (lead, direction = 1) => {
+    const currentIndex = statusOptionsConfig.findIndex((s) => s.id === (lead.status || 'new'));
+    const nextIndex = currentIndex + direction;
+    if (nextIndex >= 0 && nextIndex < statusOptionsConfig.length) {
+      handleQuickStatusChange(lead, statusOptionsConfig[nextIndex].id);
+    }
+  };
+
+  const kanbanStages = useMemo(() => {
+    return statusOptionsConfig.map((stage) => {
+      const stageLeads = filtered.filter((l) => (l.status || 'new') === stage.id);
+      return {
+        ...stage,
+        leads: stageLeads,
+      };
+    });
+  }, [filtered]);
 
   // Admin submit handler: Assign Customer to Lead
   const handleAssignCustomerSubmit = async (e) => {
