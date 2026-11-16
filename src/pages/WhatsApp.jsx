@@ -19,6 +19,7 @@ import {
   FileText,
   Calendar,
   AlertCircle,
+  AlertTriangle,
   Lock,
 } from 'lucide-react';
 import { useToast } from '../components/Toast';
@@ -319,6 +320,11 @@ export default function WhatsApp({ onNavigate }) {
   };
 
   // Filtered conversations list
+  const isMixedContent =
+    typeof window !== 'undefined' &&
+    window.location.protocol === 'https:' &&
+    String(import.meta.env.VITE_API_URL || 'http://localhost:5000/api').includes('localhost');
+
   const filteredConversations = conversations.filter((c) => {
     const matchesSearch =
       c.customerName.toLowerCase().includes(chatSearch.toLowerCase()) ||
@@ -373,6 +379,24 @@ export default function WhatsApp({ onNavigate }) {
           </button>
         </div>
       </div>
+
+      {/* Mixed Content Alert Banner if accessed via HTTPS with localhost backend */}
+      {isMixedContent && (
+        <div className="px-4 py-2 bg-amber-500/10 border-b border-amber-500/20 text-amber-800 dark:text-amber-300 text-xs flex items-center justify-between gap-3 shrink-0">
+          <div className="flex items-center gap-2">
+            <AlertTriangle size={15} className="text-amber-600 shrink-0" />
+            <span>
+              <strong>Render HTTPS Notice:</strong> Browser security blocks direct HTTP calls from HTTPS Render. To send via Meta Cloud API directly, open <strong><a href="http://localhost:3000/whatsapp" className="underline font-bold text-emerald-700 dark:text-emerald-400">http://localhost:3000/whatsapp</a></strong> or click <strong>Open Web</strong>.
+            </span>
+          </div>
+          <button
+            onClick={() => window.open('http://localhost:3000/whatsapp', '_blank')}
+            className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] shrink-0"
+          >
+            Open Local CRM
+          </button>
+        </div>
+      )}
 
       {/* Dual Pane Workspace */}
       <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 overflow-hidden">
@@ -573,6 +597,16 @@ export default function WhatsApp({ onNavigate }) {
                               <CheckCheck size={13} className="text-blue-500" />
                             ) : msg.status === 'delivered' ? (
                               <CheckCheck size={13} className="text-dark-400" />
+                            ) : msg.status === 'failed' ? (
+                              <button
+                                type="button"
+                                onClick={() => handleSendMessage(msg.text, 'direct_web')}
+                                className="inline-flex items-center gap-1 text-rose-500 hover:text-rose-600 font-semibold cursor-pointer"
+                                title="Failed to dispatch. Click to send directly via WhatsApp Web"
+                              >
+                                <AlertCircle size={13} />
+                                <span className="text-[9px]">Send via Web</span>
+                              </button>
                             ) : (
                               <Check size={13} className="text-dark-400" />
                             )}
