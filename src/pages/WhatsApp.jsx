@@ -170,12 +170,28 @@ export default function WhatsApp({ onNavigate }) {
     return `https://web.whatsapp.com/send?phone=${digits}${textParam}`;
   };
 
-  // Quick Reply Template Presets
+  // Official Approved PeYug Meta Templates & Quick Presets
   const quickTemplates = [
-    { label: 'Intro Greeting', text: `Hello! Thank you for connecting with our team. How can we assist your business today?` },
-    { label: 'Share Information', text: 'Please find our product catalog and business information attached.' },
-    { label: 'Payment Reminder', text: 'Gentle reminder: Your invoice is ready. Kindly complete the payment to ensure uninterrupted service.' },
-    { label: 'Schedule Call', text: 'Would you be available for a quick 10-minute discovery call with our team today?' },
+    {
+      label: 'नमस्ते PeYug',
+      text: `नमस्ते 🙏\nआपका कॉल प्राप्त हुआ। PeYug से जुड़ने के लिए धन्यवाद। हमारी टीम जल्द ही आपसे संपर्क करेगी।\n\n📌 हमारी सेवाएं:\n✔ डेली डिपॉज़िट\n✔ इमरजेंसी लोन\n✔ सुरक्षित डिजिटल भुगतान\n\nअधिक जानकारी के लिए WhatsApp पर "Hi" लिखें।`,
+    },
+    {
+      label: 'PeYug परिवार Welcome',
+      text: `🎉 PeYug परिवार में आपका स्वागत है।\n\nअब आप:\n✅ डेली बचत कर सकते हैं\n✅ इमरजेंसी लोन सहायता पा सकते हैं\n✅ घर बैठे डिजिटल कलेक्शन कर सकते हैं\n\nहमारा लक्ष्य: “हर व्यक्ति को आर्थिक रूप से मज़बूत बनाना।” 💙\n🌐 वेबसाइट: https://peyug.in/`,
+    },
+    {
+      label: 'EMI Reminder',
+      text: `🙏 नमस्ते, आपकी ईएमआई / भुगतान की ड्यू डेट पास है। कृपया समय पर भुगतान करके अपना रिकॉर्ड अच्छा बनाए रखें।`,
+    },
+    {
+      label: 'इमरजेंसी लोन',
+      text: `⚡ इमरजेंसी लोन सहायता\nकृपया अपनी आवश्यकता बताएं: पर्सनल लोन, बिजनेस लोन, या मेडिकल इमरजेंसी। हमारी टीम तुरंत आपकी सहायता करेगी।`,
+    },
+    {
+      label: 'डेली डिपॉज़िट',
+      text: `💰 डेली डिपॉज़िट सेवा\nPeYug के साथ आसान जमा सुविधा और सुरक्षित डिजिटल भुगतान शुरू करें।`,
+    },
   ];
 
   // Send message handler with Meta Cloud API + Direct WhatsApp Web 1-click bridge
