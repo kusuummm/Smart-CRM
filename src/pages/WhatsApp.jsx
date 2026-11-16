@@ -174,28 +174,38 @@ export default function WhatsApp({ onNavigate }) {
   const quickTemplates = [
     {
       label: 'नमस्ते PeYug',
-      text: `नमस्ते 🙏\nआपका कॉल प्राप्त हुआ। PeYug से जुड़ने के लिए धन्यवाद। हमारी टीम जल्द ही आपसे संपर्क करेगी।\n\n📌 हमारी सेवाएं:\n✔ डेली डिपॉज़िट\n✔ इमरजेंसी लोन\n✔ सुरक्षित डिजिटल भुगतान\n\nअधिक जानकारी के लिए WhatsApp पर "Hi" लिखें।`,
+      templateName: 'peyug_missed_call_h_v1',
+      text: `नमस्ते 🙏\nआपका कॉल प्राप्त हुआ।\nPeYug से जुड़ने के लिए धन्यवाद।\nहमारी टीम जल्द ही आपसे संपर्क करेगी।\n\n📌 हमारी सेवाएं:\n✔ डेली डिपॉज़िट\n✔ इमरजेंसी लोन\n✔ सुरक्षित डिजिटल भुगतान\n\nअधिक जानकारी के लिए WhatsApp पर "Hi" लिखें।`,
     },
     {
       label: 'PeYug परिवार Welcome',
+      templateName: 'peyug_family_welcome_h_v1',
       text: `🎉 PeYug परिवार में आपका स्वागत है।\n\nअब आप:\n✅ डेली बचत कर सकते हैं\n✅ इमरजेंसी लोन सहायता पा सकते हैं\n✅ घर बैठे डिजिटल कलेक्शन कर सकते हैं\n\nहमारा लक्ष्य: “हर व्यक्ति को आर्थिक रूप से मज़बूत बनाना।” 💙\n🌐 वेबसाइट: https://peyug.in/`,
     },
     {
       label: 'EMI Reminder',
-      text: `🙏 नमस्ते, आपकी ईएमआई / भुगतान की ड्यू डेट पास है। कृपया समय पर भुगतान करके अपना रिकॉर्ड अच्छा बनाए रखें।`,
+      templateName: 'peyug_emi_reminder_h_v1',
+      text: `🙏 नमस्ते,\nआपकी ईएमआई / भुगतान की डीउ डेट पास है।\n\nकृपया समय पर भुगतान करके अपना रिकॉर्ड अच्छा बनाए रखें।\n\nकिसी सहायता के लिए Reply करें।`,
     },
     {
       label: 'इमरजेंसी लोन',
-      text: `⚡ इमरजेंसी लोन सहायता\nकृपया अपनी आवश्यकता बताएं: पर्सनल लोन, बिजनेस लोन, या मेडिकल इमरजेंसी। हमारी टीम तुरंत आपकी सहायता करेगी।`,
+      templateName: 'peyug_emergency_loan_h_v1',
+      text: `⚡ इमरजेंसी लोन सहायता\n\nकृपया अपनी आवश्यकता चुनें:\n🔘 पर्सनल लोन\n🔘 बिजनेस लोन\n🔘 मेडिकल इमरजेंसी\n🔘 शिक्षा की जरूरत\n\nहमारी टीम आपको जल्द से जल्द सहायता प्रदान करेगी। 💙`,
     },
     {
       label: 'डेली डिपॉज़िट',
-      text: `💰 डेली डिपॉज़िट सेवा\nPeYug के साथ आसान जमा सुविधा और सुरक्षित डिजिटल भुगतान शुरू करें।`,
+      templateName: 'peyug_daily_deposit_h_v1',
+      text: `💰 डेली डिपॉज़िट सेवा\n\nआप कितना डिपॉज़िट शुरू करना चाहते हैं?\n🔘 ₹100 प्रतिदिन\n🔘 ₹200 प्रतिदिन\n🔘 ₹500 प्रतिदिन\n🔘 अपनी मर्ज़ी की राशि\n\nआज ही अपनी बचत शुरू करें और अपने सपनों को पूरा करें। 🙏`,
+    },
+    {
+      label: 'Account Activate',
+      templateName: 'peyug_account_activate_h_v1',
+      text: `🚀 आपका अकाउंट अभी तक सक्रिय नहीं हुआ है।\n\nआज ही शुरुआत करें और पाएं:\n✅ आसान जमा सुविधा\n✅ इमरजेंसी सहायता\n✅ डिजिटल भुगतान सुविधा\n\nReply करें: "START"`,
     },
   ];
 
   // Send message handler with Meta Cloud API + Direct WhatsApp Web 1-click bridge
-  const handleSendMessage = async (textToSend, mode = 'smart') => {
+  const handleSendMessage = async (textToSend, mode = 'smart', templateName = null) => {
     if (!activeChat) return;
     const text = textToSend || messageInput;
     if (!text.trim()) return;
@@ -237,7 +247,8 @@ export default function WhatsApp({ onNavigate }) {
           phone: activeChat.phone,
           name: activeChat.customerName,
           message: trimmed,
-          type: 'custom',
+          templateName: templateName || undefined,
+          type: templateName ? 'template' : 'custom',
         });
       } catch (_) {}
       setSending(false);
@@ -250,7 +261,8 @@ export default function WhatsApp({ onNavigate }) {
         phone: activeChat.phone,
         name: activeChat.customerName,
         message: trimmed,
-        type: 'custom',
+        templateName: templateName || undefined,
+        type: templateName ? 'template' : 'custom',
       });
 
       if (res?.isCloudApi || res?.deliveredVia === 'cloud_api') {
@@ -582,7 +594,7 @@ export default function WhatsApp({ onNavigate }) {
               {quickTemplates.map((t, idx) => (
                 <button
                   key={idx}
-                  onClick={() => handleSendMessage(t.text)}
+                  onClick={() => handleSendMessage(t.text, 'smart', t.templateName)}
                   className="px-2.5 py-1 rounded-lg text-[11px] font-medium bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 text-dark-700 dark:text-dark-300 hover:border-emerald-400 hover:text-emerald-600 whitespace-nowrap transition-colors shadow-2xs"
                 >
                   {t.label}
