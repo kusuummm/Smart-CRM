@@ -59,6 +59,7 @@ function PageLoadingFallback() {
 import BuyNumberModal from './components/BuyNumberModal';
 import LogoutModal from './components/LogoutModal';
 import CommandPalette from './components/CommandPalette';
+import SoftphoneModal from './components/SoftphoneModal';
 
 // Route path to internal page ID mapping
 const pathToPage = {
@@ -315,6 +316,13 @@ function AppLayout() {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+  const [isGlobalSoftphoneOpen, setIsGlobalSoftphoneOpen] = useState(false);
+
+  useEffect(() => {
+    const handleOpenSoftphone = () => setIsGlobalSoftphoneOpen(true);
+    window.addEventListener('smartcrm:open-softphone', handleOpenSoftphone);
+    return () => window.removeEventListener('smartcrm:open-softphone', handleOpenSoftphone);
+  }, []);
 
   // Global Ctrl+K / Cmd+K Command Palette Keyboard Listener
   useEffect(() => {
@@ -677,6 +685,13 @@ function AppLayout() {
       />
 
       {/* Universal Command Palette (Ctrl+K) */}
+      {/* Global Softphone Dialpad & In-CRM Calling */}
+      <SoftphoneModal
+        isOpen={isGlobalSoftphoneOpen}
+        onClose={() => setIsGlobalSoftphoneOpen(false)}
+        onNavigate={navigateToPage}
+      />
+
       <CommandPalette
         isOpen={isCommandPaletteOpen}
         onClose={() => setIsCommandPaletteOpen(false)}

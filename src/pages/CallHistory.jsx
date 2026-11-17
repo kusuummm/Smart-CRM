@@ -37,6 +37,7 @@ import { useAuth } from '../context/AuthContext';
 import { getCalls, createCall } from '../api/callHistory';
 import { getCustomers, updateCustomer } from '../api/customers';
 import CallRecordingModal from '../components/CallRecordingModal';
+import SoftphoneModal from '../components/SoftphoneModal';
 import Customer360Modal from '../components/Customer360Modal';
 import { audioEngine, formatSeconds, generateWaveform } from '../utils/audioPlayer';
 import { realCallRecorder } from '../utils/realCallRecorder';
@@ -94,6 +95,8 @@ export default function CallHistory({ onNavigate, initialCallType = 'all' }) {
 
   // Active Dialing modal & Realistic Call State Machine
   const [dialingCall, setDialingCall] = useState(null);
+  const [isSoftphoneOpen, setIsSoftphoneOpen] = useState(false);
+  const [softphoneTarget, setSoftphoneTarget] = useState(null);
   const [dialCallState, setDialCallState] = useState('ringing'); // 'ringing' | 'connected'
   const [dialDuration, setDialDuration] = useState(0);
   const [dialIsRecording, setDialIsRecording] = useState(false);
@@ -399,32 +402,13 @@ export default function CallHistory({ onNavigate, initialCallType = 'all' }) {
   // Dial call: starts in RINGING state, plays ringtone, launches tel: protocol on device.
   // TIMING DOES NOT START YET. It only starts when answered by customer or auto-connects after 4s!
   const startCall = (call) => {
-    if (autoConnectTimerRef.current) {
-      clearTimeout(autoConnectTimerRef.current);
-    }
-    setDialingCall(call);
-    setDialCallState('ringing');
-    setDialDuration(0);
-    setDialIsRecording(false);
-    setCallNotes('');
-    setRingCountdown(4);
-
-    // 1. Play brief realistic telephony ringtone (if not muted)
-    audioEngine.playRingTone();
-
-    // 2. Trigger native phone dialer (tel: protocol) on Windows Phone Link / mobile
-    const rawNumber = call.customerNumber || call.displayPhone || '';
-    const cleanNumber = rawNumber.replace(/[^0-9+]/g, '');
-    if (cleanNumber) {
-      try {
-        window.open(`tel:${cleanNumber}`, '_self');
-      } catch (e) {
-        console.warn('tel: protocol redirect:', e);
-      }
-    }
-
-    // Telecaller connects when customer answers or marks missed/busy
-
+    setSoftphoneTarget({
+      id: call.customerId || call._id || call.id,
+      name: call.customerName || 'Customer',
+      phone: call.customerNumber || call.displayPhone || '',
+      leadStatus: call.status || 'Lead',
+    });
+    setIsSoftphoneOpen(true);
   };
 
   // Called when clicking "Launch Device Dialer": answers immediately so Phone Link is in sync

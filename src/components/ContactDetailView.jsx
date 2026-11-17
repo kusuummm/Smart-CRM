@@ -4,6 +4,8 @@ import {
   Pencil,
   Phone,
   PhoneCall,
+  Headphones,
+  Smartphone,
   MessageCircle,
   FileText,
   ChevronDown,
@@ -27,6 +29,7 @@ import {
 } from 'lucide-react';
 import { audioEngine } from '../utils/audioPlayer';
 import CallRecordingModal from './CallRecordingModal';
+import SoftphoneModal from './SoftphoneModal';
 import TeamCallHistoryTable from './TeamCallHistoryTable';
 import { useToast } from './Toast';
 import { useConfirm } from '../context/ConfirmContext';
@@ -67,6 +70,8 @@ export default function ContactDetailView({
   const [isAddFollowUpOpen, setIsAddFollowUpOpen] = useState(false);
   const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
   const [isMessageModalOpen, setIsMessageModalOpen] = useState(false);
+  const [isSoftphoneOpen, setIsSoftphoneOpen] = useState(false);
+  const [callingMode, setCallingMode] = useState(() => localStorage.getItem('smartcrm_calling_mode') || 'web_softphone');
 
   const contactName = contact?.name || 'Contact';
   const rawContactPhone = contact?.phone
@@ -298,56 +303,7 @@ export default function ContactDetailView({
 
   // Click To Call Handler
   const handleTriggerCall = () => {
-    if (onStartCall) {
-      onStartCall(contact);
-    } else {
-      audioEngine.playRingTone();
-      addToast(`Initiating call to ${contactName} (+91 ${contactPhone})...`, 'success');
-
-      // Dynamically add an outgoing call log
-      const newCallRec = {
-        id: `rc_${Date.now()}`,
-        time: 'Just now',
-        agent: user?.name || 'Agent',
-        duration: '14s',
-        hasRecording: true,
-        callType: 'outgoing',
-        aiSummary: {
-          sentiment: 'Positive',
-          score: 94,
-          summary: `Call placed to ${contactName} regarding follow-up. Customer responded positively.`,
-          keyPoints: ['Direct Call placed from Contact Details', 'Customer contacted successfully'],
-          followUps: ['Review recorded conversation'],
-        },
-        transcript: [
-          { speaker: user?.name || 'Agent', role: 'agent', time: '00:02', text: `Hello ${contactName}, this is ${user?.name || 'Support'} following up on your account.` },
-          { speaker: contactName, role: 'customer', time: '00:06', text: 'Hi! Yes, thanks for reaching out.' },
-        ],
-      };
-
-      const updatedCalls = [newCallRec, ...recentCalls];
-      setRecentCalls(updatedCalls);
-      try {
-        localStorage.setItem(`smartcrm_calls_${contactPhone}`, JSON.stringify(updatedCalls));
-      } catch {}
-
-      // Save to backend
-      createCall({
-        customerId: (contact?.id && contact.id.length === 24) ? contact.id : undefined,
-        customerName: contactName,
-        customerPhone: contactPhone,
-        duration: '14s',
-        status: 'connected',
-        remarks: `Call to ${contactName} placed from Contact Details`,
-      }).catch(() => {});
-
-      const cleanPhone = contactPhone.replace(/[^0-9]/g, '');
-      if (cleanPhone) {
-        try {
-          window.open(`tel:${cleanPhone}`, '_self');
-        } catch (e) {}
-      }
-    }
+    setIsSoftphoneOpen(true);
   };
 
   // Complete Task handler
@@ -727,22 +683,90 @@ export default function ContactDetailView({
       {/* Sub-tab 1: Contact Details Page matching Screenshots 2 & 3 */}
       {activeSubTab === 'contact' && (
         <>
-          {/* Yellow Alert Box matching Reference */}
-          <div className="p-3.5 rounded-md bg-[#fffbe6] dark:bg-amber-950/20 border border-[#ffe58f] dark:border-amber-900/40 text-[#d48806] dark:text-amber-200 text-[13px] text-center space-y-1">
-            <p className="font-normal text-[#ad6800] dark:text-amber-200">
-              Make sure the Superfone mobile app is in 'Call from Web' mode before placing this call.
-            </p>
-            <p className="text-[12px] font-normal text-[#d48806] dark:text-amber-300 flex items-center justify-center gap-1.5 flex-wrap">
-              <span>Go to Call History on the mobile app</span>
-              <span>&gt;</span>
-              <span>Click on</span>
-              <span className="inline-flex items-center justify-center border border-[#ffd591] dark:border-dark-600 rounded px-1 py-0.5 text-[10px] bg-white dark:bg-dark-800">
-                <Phone size={10} className="text-[#d48806] dark:text-dark-200" />
-              </span>
-              <span>icon on the top bar</span>
-              <span>&gt;</span>
-              <span>Turn on the mode</span>
-            </p>
+          {/* Interactive Calling Mode Selector */}
+          <div className="p-3.5 rounded-lg bg-white dark:bg-dark-800 border border-[#d9d9d9] dark:border-dark-700 shadow-2xs space-y-2">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-[13px] font-semibold text-dark-800 dark:text-dark-100">
+                  Calling Mode:
+                </span>
+                <span className="text-[12px] text-dark-500">
+                  {callingMode === 'web_softphone'
+                    ? 'In-CRM Web Dialer (Default — Mic & Speaker with Live Audio Recording & AI Summaries)'
+                    : callingMode === 'superfone'
+                    ? 'Superfone Mobile App Bridge ("Call from Web" Mode)'
+                    : 'Device SIM (Windows Phone Link / Mobile)'}
+                </span>
+              </div>
+
+              {/* Mode Toggle Buttons */}
+              <div className="flex items-center gap-1 bg-dark-50 dark:bg-dark-900 p-0.5 rounded-lg border border-dark-200 dark:border-dark-700">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCallingMode('web_softphone');
+                    try { localStorage.setItem('smartcrm_calling_mode', 'web_softphone'); } catch (_) {}
+                    addToast('Calling mode set to In-CRM Web Dialer', 'info');
+                  }}
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${
+                    callingMode === 'web_softphone'
+                      ? 'bg-emerald-600 text-white shadow-xs'
+                      : 'text-dark-600 dark:text-dark-300 hover:text-dark-900'
+                  }`}
+                >
+                  <Headphones size={12} />
+                  <span>Web Dialer</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCallingMode('superfone');
+                    try { localStorage.setItem('smartcrm_calling_mode', 'superfone'); } catch (_) {}
+                    addToast('Calling mode set to Superfone Mobile Bridge', 'info');
+                  }}
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${
+                    callingMode === 'superfone'
+                      ? 'bg-blue-600 text-white shadow-xs'
+                      : 'text-dark-600 dark:text-dark-300 hover:text-dark-900'
+                  }`}
+                >
+                  <Smartphone size={12} />
+                  <span>Superfone</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCallingMode('sim');
+                    try { localStorage.setItem('smartcrm_calling_mode', 'sim'); } catch (_) {}
+                    addToast('Calling mode set to Device SIM', 'info');
+                  }}
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${
+                    callingMode === 'sim'
+                      ? 'bg-blue-600 text-white shadow-xs'
+                      : 'text-dark-600 dark:text-dark-300 hover:text-dark-900'
+                  }`}
+                >
+                  <Phone size={12} />
+                  <span>SIM</span>
+                </button>
+              </div>
+            </div>
+
+            {callingMode === 'superfone' && (
+              <div className="p-2.5 rounded-md bg-[#fffbe6] dark:bg-amber-950/20 border border-[#ffe58f] dark:border-amber-900/40 text-[#d48806] dark:text-amber-200 text-[12px] flex items-center justify-center gap-1.5 flex-wrap">
+                <span className="font-semibold">Superfone:</span>
+                <span>Go to Call History on mobile app</span>
+                <span>&gt;</span>
+                <span>Click</span>
+                <span className="inline-flex items-center px-1 py-0.5 rounded border border-[#ffd591] bg-white dark:bg-dark-800 text-[10px]">
+                  📞
+                </span>
+                <span>icon</span>
+                <span>&gt;</span>
+                <span>Turn on 'Call from Web' mode</span>
+              </div>
+            )}
           </div>
 
           {/* Contact Main Card matching Reference */}
@@ -1369,6 +1393,35 @@ export default function ContactDetailView({
       )}
 
       {/* Full AI Call Recording Modal */}
+      {/* Smart In-CRM Softphone Modal */}
+      <SoftphoneModal
+        isOpen={isSoftphoneOpen}
+        onClose={() => setIsSoftphoneOpen(false)}
+        contact={{
+          id: contact?.id || contact?._id,
+          name: contactName,
+          phone: contactPhone || rawContactPhone,
+          leadStatus: leadStage,
+        }}
+        onNavigate={onNavigate}
+        onCallSaved={(newCall) => {
+          setRecentCalls((prev) => [
+            {
+              id: newCall.id,
+              time: 'Just now',
+              agent: user?.name || 'Agent',
+              duration: newCall.duration,
+              hasRecording: Boolean(newCall.recordingUrl),
+              recordingUrl: newCall.recordingUrl,
+              callType: newCall.callType?.toLowerCase() || 'outgoing',
+              aiSummary: newCall.aiSummary,
+              transcript: newCall.transcript,
+            },
+            ...prev,
+          ]);
+        }}
+      />
+
       <CallRecordingModal
         isOpen={isRecordingModalOpen}
         onClose={() => setIsRecordingModalOpen(false)}

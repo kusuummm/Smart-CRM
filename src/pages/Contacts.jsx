@@ -39,6 +39,7 @@ import { getCustomers, createCustomer, updateCustomer, deleteCustomer, bulkDelet
 import { getUsers } from '../api/users';
 import { getCalls, createCall } from '../api/callHistory';
 import CallRecordingModal from '../components/CallRecordingModal';
+import SoftphoneModal from '../components/SoftphoneModal';
 import { audioEngine, formatSeconds, generateWaveform } from '../utils/audioPlayer';
 import { realCallRecorder } from '../utils/realCallRecorder';
 import ContactDetailView from '../components/ContactDetailView';
@@ -99,6 +100,8 @@ export default function Contacts({ onNavigate }) {
 
   // Active Calling & Realistic State Machine
   const [activeCallContact, setActiveCallContact] = useState(null);
+  const [isSoftphoneModalOpen, setIsSoftphoneModalOpen] = useState(false);
+  const [softphoneTargetContact, setSoftphoneTargetContact] = useState(null);
   const [activeCallState, setActiveCallState] = useState('ringing'); // 'ringing' | 'connected'
   const [callTimer, setCallTimer] = useState(0);
   const [isRecordingActive, setIsRecordingActive] = useState(false);
@@ -478,31 +481,8 @@ export default function Contacts({ onNavigate }) {
 
   // Dial Call: starts in ringing state, timer starts once answered or auto-connected in 4s!
   const handleStartCall = (contact) => {
-    if (autoConnectTimerRef.current) {
-      clearTimeout(autoConnectTimerRef.current);
-    }
-    setActiveCallContact(contact);
-    setActiveCallState('ringing');
-    setCallTimer(0);
-    setIsRecordingActive(false);
-    setRingCountdown(4);
-
-    // 1. Play brief realistic telephony ringtone (if not muted)
-    audioEngine.playRingTone();
-
-    // 2. Trigger native telephony dialer (tel: protocol) on Windows Phone Link / mobile
-    const rawNumber = contact.phone || '';
-    const cleanNumber = rawNumber.replace(/[^0-9+]/g, '');
-    if (cleanNumber) {
-      try {
-        window.open(`tel:${cleanNumber}`, '_self');
-      } catch (e) {
-        console.warn('tel: protocol redirect:', e);
-      }
-    }
-
-    // Telecaller connects when customer answers or marks missed/busy
-
+    setSoftphoneTargetContact(contact);
+    setIsSoftphoneModalOpen(true);
   };
 
   // Called when clicking "Launch Device Dialer": answers immediately so Phone Link is in sync
@@ -2470,6 +2450,26 @@ export default function Contacts({ onNavigate }) {
           </div>
         </div>
       )}
+
+      {/* Smart In-CRM Softphone Modal */}
+      <SoftphoneModal
+        isOpen={isSoftphoneModalOpen}
+        onClose={() => {
+          setIsSoftphoneModalOpen(false);
+          setSoftphoneTargetContact(null);
+        }}
+        contact={softphoneTargetContact}
+        onNavigate={onNavigate}
+        onCallSaved={(newRec) => {
+          const phoneKey = (newRec.customerNumber || '').replace(/[^0-9]/g, '').slice(-10);
+          if (phoneKey) {
+            setCustomerRecordings((prev) => ({
+              ...prev,
+              [phoneKey]: [newRec, ...(prev[phoneKey] || [])],
+            }));
+          }
+        }}
+      />
 
       {/* Customer Profile & Past Call Recordings Drawer */}
       {viewingContact && (

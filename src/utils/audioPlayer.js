@@ -82,6 +82,48 @@ class CallAudioEngine {
     }
   }
 
+  // Play authentic Dual-Tone Multi-Frequency (DTMF) dialpad tone
+  playDtmf(key) {
+    this.initAudioContext();
+    if (!this.audioCtx) return;
+
+    const DTMF_FREQS = {
+      '1': [697, 1209], '2': [697, 1336], '3': [697, 1477],
+      '4': [770, 1209], '5': [770, 1336], '6': [770, 1477],
+      '7': [852, 1209], '8': [852, 1336], '9': [852, 1477],
+      '*': [941, 1209], '0': [941, 1336], '#': [941, 1477],
+    };
+
+    const freqs = DTMF_FREQS[String(key)];
+    if (!freqs) return;
+
+    try {
+      const now = this.audioCtx.currentTime;
+      const osc1 = this.audioCtx.createOscillator();
+      const osc2 = this.audioCtx.createOscillator();
+      const gain = this.audioCtx.createGain();
+
+      osc1.type = 'sine';
+      osc2.type = 'sine';
+      osc1.frequency.setValueAtTime(freqs[0], now);
+      osc2.frequency.setValueAtTime(freqs[1], now);
+
+      gain.gain.setValueAtTime(0.12, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+
+      osc1.connect(gain);
+      osc2.connect(gain);
+      gain.connect(this.audioCtx.destination);
+
+      osc1.start(now);
+      osc2.start(now);
+      osc1.stop(now + 0.2);
+      osc2.stop(now + 0.2);
+    } catch (e) {
+      console.warn('DTMF tone error:', e);
+    }
+  }
+
   stopRingTone() {
     if (this.ringTimeout) {
       clearTimeout(this.ringTimeout);

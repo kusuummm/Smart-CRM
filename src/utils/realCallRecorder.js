@@ -91,6 +91,15 @@ class RealCallRecorder {
     }
   }
 
+  // Mute / Unmute microphone capture
+  setMuted(isMuted) {
+    if (this.stream) {
+      this.stream.getAudioTracks().forEach((track) => {
+        track.enabled = !isMuted;
+      });
+    }
+  }
+
   // Pause recording
   pause() {
     if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
