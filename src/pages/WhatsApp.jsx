@@ -303,8 +303,53 @@ export default function WhatsApp({ onNavigate }) {
                 messages: msgs,
               };
             });
-            setConversations(mapped);
-            setActiveChatId(mapped[0].id);
+            let targetCust = null;
+            try {
+              const raw = localStorage.getItem('smartcrm_whatsapp_target_customer');
+              if (raw) {
+                targetCust = JSON.parse(raw);
+                localStorage.removeItem('smartcrm_whatsapp_target_customer');
+              }
+            } catch (_) {}
+
+            if (targetCust) {
+              const targetPhone10 = (targetCust.phone || '').replace(/\D/g, '').slice(-10);
+              const foundIdx = mapped.findIndex((m) => {
+                const mPhone10 = (m.phone || '').replace(/\D/g, '').slice(-10);
+                return (
+                  (targetCust.id && String(m.id) === String(targetCust.id)) ||
+                  (targetPhone10 && mPhone10 && targetPhone10 === mPhone10)
+                );
+              });
+
+              if (foundIdx !== -1) {
+                const [targetItem] = mapped.splice(foundIdx, 1);
+                mapped.unshift(targetItem);
+                setConversations(mapped);
+                setActiveChatId(targetItem.id);
+              } else {
+                const newConv = {
+                  id: targetCust.id || `target_${Date.now()}`,
+                  customerName: targetCust.name || 'Customer',
+                  phone: targetCust.phone || '',
+                  leadStatus: targetCust.leadStatus || 'Active Lead',
+                  lastMessage: 'Direct WhatsApp chat opened',
+                  timestamp: 'Just now',
+                  unread: 0,
+                  avatarColor: 'bg-emerald-600',
+                  messages: [],
+                };
+                mapped.unshift(newConv);
+                setConversations(mapped);
+                setActiveChatId(newConv.id);
+              }
+              if (targetCust.prefillMessage) {
+                setMessageText(targetCust.prefillMessage);
+              }
+            } else {
+              setConversations(mapped);
+              setActiveChatId(mapped[0].id);
+            }
           }
         }
       } catch (err) {
@@ -313,6 +358,59 @@ export default function WhatsApp({ onNavigate }) {
     }
     init();
   }, []);
+  // smartcrm_whatsapp_target_customer_listener: listen for target customer handoffs from other CRM modules
+  useEffect(() => {
+    const handleTargetCheck = () => {
+      try {
+        const raw = localStorage.getItem('smartcrm_whatsapp_target_customer');
+        if (!raw) return;
+        const targetCust = JSON.parse(raw);
+        localStorage.removeItem('smartcrm_whatsapp_target_customer');
+
+        const targetPhone10 = (targetCust.phone || '').replace(/\D/g, '').slice(-10);
+
+        setConversations((prev) => {
+          const foundIdx = prev.findIndex((m) => {
+            const mPhone10 = (m.phone || '').replace(/\D/g, '').slice(-10);
+            return (
+              (targetCust.id && String(m.id) === String(targetCust.id)) ||
+              (targetPhone10 && mPhone10 && targetPhone10 === mPhone10)
+            );
+          });
+
+          if (foundIdx !== -1) {
+            const targetItem = prev[foundIdx];
+            const reordered = [targetItem, ...prev.filter((_, i) => i !== foundIdx)];
+            setActiveChatId(targetItem.id);
+            return reordered;
+          } else {
+            const newConv = {
+              id: targetCust.id || `target_${Date.now()}`,
+              customerName: targetCust.name || 'Customer',
+              phone: targetCust.phone || '',
+              leadStatus: targetCust.leadStatus || 'Active Lead',
+              lastMessage: 'Direct WhatsApp chat opened',
+              timestamp: 'Just now',
+              unread: 0,
+              avatarColor: 'bg-emerald-600',
+              messages: [],
+            };
+            setActiveChatId(newConv.id);
+            return [newConv, ...prev];
+          }
+        });
+
+        if (targetCust.prefillMessage) {
+          setMessageText(targetCust.prefillMessage);
+        }
+      } catch (_) {}
+    };
+
+    handleTargetCheck();
+    window.addEventListener('focus', handleTargetCheck);
+    return () => window.removeEventListener('focus', handleTargetCheck);
+  }, []);
+
 
   // Background poll to sync live message delivery statuses (sent -> delivered -> read)
   useEffect(() => {

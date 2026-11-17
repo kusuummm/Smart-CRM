@@ -328,7 +328,19 @@ export default function EodSheet({ onNavigate }) {
       `Hi ${member.name}, this is a reminder from CRM management to submit your End of Day (EOD) sheet for today (${selectedDate}). Thank you!`
     );
     if (phone) {
-      window.open(`https://wa.me/${phone.length === 10 ? '91' + phone : phone}?text=${text}`, '_blank');
+      try {
+        localStorage.setItem('smartcrm_whatsapp_target_customer', JSON.stringify({
+          id: member._id || member.id,
+          name: member.name,
+          phone: phone,
+          prefillMessage: `Hi ${member.name}, this is a reminder from CRM management to submit your End of Day (EOD) sheet for today (${selectedDate}). Thank you!`,
+        }));
+      } catch (_) {}
+      if (onNavigate) {
+        onNavigate('whatsapp');
+      } else {
+        window.location.href = '/whatsapp';
+      }
     } else {
       addToast(`Opening chat for ${member.name}`, 'info');
       onNavigate?.('whatsapp');

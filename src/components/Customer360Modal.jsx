@@ -958,15 +958,25 @@ export default function Customer360Modal({ isOpen, onClose, customer, onStartCal
             </button>
 
             {/* WhatsApp */}
-            <a
-              href={`https://wa.me/91${profile.clean10}`}
-              target="_blank"
-              rel="noreferrer"
-              className="p-2 rounded-xl border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/80 dark:bg-emerald-950/40 text-emerald-600 hover:bg-emerald-100 transition-colors cursor-pointer"
-              title="Open WhatsApp chat"
+            <button
+              type="button"
+              onClick={() => {
+                try {
+                  localStorage.setItem('smartcrm_whatsapp_target_customer', JSON.stringify({
+                    id: profile.id || profile._id,
+                    name: profile.name,
+                    phone: profile.clean10,
+                    leadStatus: profile.leadStatus,
+                  }));
+                } catch (_) {}
+                onClose?.();
+                window.location.href = '/whatsapp';
+              }}
+              className="p-2 rounded-xl border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/80 dark:bg-emerald-950/40 text-emerald-600 hover:bg-emerald-100 transition-colors cursor-pointer cursor-pointer"
+              title="Open WhatsApp in CRM"
             >
               <MessageCircle size={16} />
-            </a>
+            </button>
 
             {/* Close */}
             <button

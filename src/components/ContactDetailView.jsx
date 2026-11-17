@@ -75,6 +75,26 @@ export default function ContactDetailView({
   const contactPhone = rawContactPhone ? rawContactPhone.slice(-10) : '';
   const contactStorageKey = contact?.id || contactPhone || 'default';
 
+  // Navigate to WhatsApp page inside CRM with this contact preselected
+  const handleOpenCrmWhatsApp = (prefillText = '') => {
+    const target = {
+      id: contact?.id || contact?._id,
+      name: contactName,
+      phone: contactPhone || rawContactPhone,
+      leadStatus: leadStage,
+      prefillMessage: prefillText,
+    };
+    try {
+      localStorage.setItem('smartcrm_whatsapp_target_customer', JSON.stringify(target));
+    } catch (_) {}
+    setIsMessageModalOpen(false);
+    if (onNavigate) {
+      onNavigate('whatsapp');
+    } else {
+      window.location.href = '/whatsapp';
+    }
+  };
+
   // Notes state
   const [contactNotes, setContactNotes] = useState([]);
   const [newNoteText, setNewNoteText] = useState('');
@@ -961,7 +981,7 @@ export default function ContactDetailView({
               {/* Message */}
               <button
                 type="button"
-                onClick={() => setIsMessageModalOpen(true)}
+                onClick={() => handleOpenCrmWhatsApp()}
                 className="flex flex-col items-center gap-1 text-[rgba(0,0,0,0.65)] dark:text-dark-300 hover:text-emerald-600 cursor-pointer group"
               >
                 <div className="p-2 rounded-full hover:bg-dark-100 dark:hover:bg-dark-700">
@@ -1328,11 +1348,7 @@ export default function ContactDetailView({
             <div className="space-y-2 font-inter">
               <button
                 type="button"
-                onClick={() => {
-                  window.open(`https://wa.me/91${contactPhone.replace(/[^0-9]/g, '')}?text=Hi%20${encodeURIComponent(contactName)},%20following%20up%20on%20our%20recent%20discussion.`, '_blank');
-                  setIsMessageModalOpen(false);
-                  addToast('Opening WhatsApp Chat...', 'success');
-                }}
+                onClick={() => handleOpenCrmWhatsApp(`Hi ${contactName}, following up on our recent discussion.`)}
                 className="w-full flex items-center justify-between p-3 rounded-md border border-[#b7eb8f] bg-[#f6ffed] hover:bg-[#d9f7be] text-[#389e0d] text-[13px] leading-[20px] font-inter font-normal cursor-pointer transition-colors"
               >
                 <span>Follow-up Greeting Template</span>
@@ -1341,11 +1357,7 @@ export default function ContactDetailView({
 
               <button
                 type="button"
-                onClick={() => {
-                  window.open(`https://wa.me/91${contactPhone.replace(/[^0-9]/g, '')}?text=Hi%20${encodeURIComponent(contactName)},%20here%20is%20the%20official%20quote.`, '_blank');
-                  setIsMessageModalOpen(false);
-                  addToast('Opening WhatsApp Chat...', 'success');
-                }}
+                onClick={() => handleOpenCrmWhatsApp(`Hi ${contactName}, here is the official quote.`)}
                 className="w-full flex items-center justify-between p-3 rounded-md border border-[#d9d9d9] dark:border-dark-700 hover:bg-dark-50 dark:hover:bg-dark-700 text-[rgba(0,0,0,0.88)] dark:text-dark-200 text-[13px] leading-[20px] font-inter font-normal cursor-pointer transition-colors"
               >
                 <span>Share Official Quote</span>

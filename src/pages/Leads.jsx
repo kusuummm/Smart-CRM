@@ -716,16 +716,29 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
                                   {lead.customerPhone}
                                 </span>
                                 <div className="flex items-center gap-1">
-                                  <a
-                                    href={`https://wa.me/${(lead.customerPhone || '').replace(/[^0-9]/g, '')}`}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="p-1 rounded-md text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
-                                    title="WhatsApp Customer"
-                                    onClick={(e) => e.stopPropagation()}
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      try {
+                                        localStorage.setItem('smartcrm_whatsapp_target_customer', JSON.stringify({
+                                          id: lead.customerId || lead.id || lead._id,
+                                          name: lead.customerName || lead.title || 'Customer',
+                                          phone: lead.customerPhone || '',
+                                          leadStatus: lead.stage || lead.status || 'Lead',
+                                        }));
+                                      } catch (_) {}
+                                      if (onNavigate) {
+                                        onNavigate('whatsapp');
+                                      } else {
+                                        window.location.href = '/whatsapp';
+                                      }
+                                    }}
+                                    className="p-1 rounded-md text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 cursor-pointer"
+                                    title="WhatsApp Customer in CRM"
                                   >
                                     <PhoneCall size={12} />
-                                  </a>
+                                  </button>
                                   <a
                                     href={`tel:${lead.customerPhone}`}
                                     className="p-1 rounded-md text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40"

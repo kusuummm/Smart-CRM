@@ -549,14 +549,21 @@ export default function CallRecordingModal({ isOpen, onClose, call }) {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <a
-                    href={`https://wa.me/${(call.customerNumber || '').replace(/[^0-9]/g, '')}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-2xs transition-colors"
+                  <button
+                    type="button"
+                    onClick={() => {
+                      try {
+                        localStorage.setItem('smartcrm_whatsapp_target_customer', JSON.stringify({
+                          name: call.customerName || 'Direct Customer',
+                          phone: (call.customerNumber || '').replace(/[^0-9]/g, ''),
+                        }));
+                      } catch (_) {}
+                      window.location.href = '/whatsapp';
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
                   >
                     <span>Chat on WhatsApp</span>
-                  </a>
+                  </button>
 
                   <a
                     href={`tel:${(call.customerNumber || '').replace(/[^0-9+]/g, '')}`}
