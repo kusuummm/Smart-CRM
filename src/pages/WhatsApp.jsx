@@ -29,6 +29,7 @@ import {
   LogOut,
   Wifi,
   WifiOff,
+  Settings,
   Image as ImageIcon,
 } from 'lucide-react';
 import { useToast } from '../components/Toast';
@@ -37,6 +38,8 @@ import {
   getWhatsAppLogs,
   sendWhatsAppMessage,
   getWhatsAppConfig,
+  updateWhatsAppConfig,
+  testWhatsAppConnection,
   getWhatsAppTemplates,
   createWhatsAppTemplate,
   getWhatsAppDeviceStatus,
@@ -95,6 +98,15 @@ export default function WhatsApp({ onNavigate }) {
   const [showConnectModal, setShowConnectModal] = useState(false);
   const [backendCustomers, setBackendCustomers] = useState([]);
   const [isConfigured, setIsConfigured] = useState(false);
+  const [metaConfig, setMetaConfig] = useState(null);
+  const [showMetaConfigModal, setShowMetaConfigModal] = useState(false);
+  const [waTokenInput, setWaTokenInput] = useState('');
+  const [waPhoneIdInput, setWaPhoneIdInput] = useState('');
+  const [waWabaIdInput, setWaWabaIdInput] = useState('');
+  const [waSaving, setWaSaving] = useState(false);
+  const [waTesting, setWaTesting] = useState(false);
+  const [waTestResult, setWaTestResult] = useState(null);
+
   const [liveTemplates, setLiveTemplates] = useState([]);
   const [selectedTemplateForPreview, setSelectedTemplateForPreview] = useState(null);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
@@ -123,6 +135,62 @@ export default function WhatsApp({ onNavigate }) {
         });
       }
     } catch (_) {}
+  };
+
+  const loadMetaConfig = async () => {
+    try {
+      const cfg = await getWhatsAppConfig();
+      if (cfg?.success) {
+        setMetaConfig(cfg);
+        setIsConfigured(Boolean(cfg.isConfigured));
+        setWaPhoneIdInput(cfg.phoneNumberId || '');
+        setWaWabaIdInput(cfg.wabaId || '');
+      }
+    } catch (_) {}
+  };
+
+  const handleSaveMetaConfig = async (e) => {
+    e.preventDefault();
+    if (!waPhoneIdInput.trim()) {
+      addToast('Please enter your Phone Number ID', 'error');
+      return;
+    }
+    setWaSaving(true);
+    try {
+      const payload = {
+        phoneNumberId: waPhoneIdInput.trim(),
+        wabaId: waWabaIdInput.trim(),
+      };
+      if (waTokenInput.trim()) payload.accessToken = waTokenInput.trim();
+      const res = await updateWhatsAppConfig(payload);
+      addToast(res.message || 'WhatsApp API credentials saved successfully!', 'success');
+      setWaTokenInput('');
+      await loadMetaConfig();
+      setShowMetaConfigModal(false);
+    } catch (err) {
+      addToast(err.response?.data?.message || 'Failed to save WhatsApp config', 'error');
+    } finally {
+      setWaSaving(false);
+    }
+  };
+
+  const handleTestMetaConnection = async () => {
+    setWaTesting(true);
+    setWaTestResult(null);
+    try {
+      const res = await testWhatsAppConnection({
+        token: waTokenInput.trim() || undefined,
+        phoneId: waPhoneIdInput.trim() || undefined,
+      });
+      setWaTestResult({ success: true, message: res.message });
+      addToast(res.message || 'Meta WhatsApp connection test passed!', 'success');
+    } catch (err) {
+      const msg = err.response?.data?.message || err.message || 'Connection test failed';
+      setWaTestResult({ success: false, message: msg });
+      addToast(msg, 'error');
+    } finally {
+      setWaTesting(false);
+    }
   };
 
   const startDeviceConnect = async () => {
@@ -156,6 +224,7 @@ export default function WhatsApp({ onNavigate }) {
 
   useEffect(() => {
     loadDeviceStatus();
+    loadMetaConfig();
   }, []);
 
   useEffect(() => {
@@ -176,7 +245,10 @@ export default function WhatsApp({ onNavigate }) {
           getWhatsAppTemplates(),
         ]);
         if (cfgRes.status === 'fulfilled' && cfgRes.value) {
+          setMetaConfig(cfgRes.value);
           setIsConfigured(Boolean(cfgRes.value.isConfigured));
+          setWaPhoneIdInput(cfgRes.value.phoneNumberId || '');
+          setWaWabaIdInput(cfgRes.value.wabaId || '');
         }
         if (tplRes.status === 'fulfilled' && tplRes.value?.templates) {
           setLiveTemplates(tplRes.value.templates);
@@ -510,6 +582,19 @@ export default function WhatsApp({ onNavigate }) {
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                   <span>WhatsApp Linked (+{deviceStatus.phone || 'Active'})</span>
                 </button>
+              ) : isConfigured ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    loadMetaConfig();
+                    setShowMetaConfigModal(true);
+                  }}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 hover:bg-blue-200 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-300 dark:border-blue-700 transition-colors shadow-2xs cursor-pointer"
+                  title="Meta Cloud API configured. Click to view or change credentials."
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                  <span>Meta Cloud API Active</span>
+                </button>
               ) : (
                 <button
                   type="button"
@@ -526,12 +611,31 @@ export default function WhatsApp({ onNavigate }) {
               )}
             </div>
             <p className="text-[11px] text-dark-500 font-mono mt-0.5">
-              Registered Line: +91 70657 47747 (PeYug Business) • Direct CRM Dispatch Active
+              {deviceStatus.connected
+                ? `Active Line: +${deviceStatus.phone} (${deviceStatus.name || 'Linked WhatsApp'}) • Direct Socket Dispatch Active`
+                : metaConfig?.displayPhoneNumber
+                ? `Active Meta API Line: ${metaConfig.displayPhoneNumber} (${metaConfig.verifiedName || 'Meta Cloud API'})`
+                : metaConfig?.phoneNumberId
+                ? `Meta Cloud API Active (Phone ID: ${metaConfig.phoneNumberId})`
+                : 'Direct CRM Dispatch Active • No WhatsApp account configured'}
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              loadMetaConfig();
+              setShowMetaConfigModal(true);
+            }}
+            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-dark-700 dark:text-dark-200 bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 hover:bg-dark-50 dark:hover:bg-dark-700 transition-all shadow-2xs cursor-pointer"
+            title="Configure or switch your Meta WhatsApp Business API account credentials"
+          >
+            <Settings size={13} className="text-dark-500" />
+            <span>Meta API Account</span>
+          </button>
+
           <button
             type="button"
             onClick={() => {
@@ -743,6 +847,11 @@ export default function WhatsApp({ onNavigate }) {
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 font-bold text-xs">
                       <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                       Direct WhatsApp Connected (+{deviceStatus.phone})
+                    </span>
+                  ) : isConfigured ? (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300 font-bold text-xs">
+                      <Lock size={12} className="text-blue-600" />
+                      Meta Cloud API Active {metaConfig?.displayPhoneNumber ? `(${metaConfig.displayPhoneNumber})` : ''}
                     </span>
                   ) : (
                     <button
@@ -1313,7 +1422,7 @@ export default function WhatsApp({ onNavigate }) {
                   </h3>
                   <p className="text-xs text-dark-500 font-mono mt-0.5">
                     {deviceStatus.connected
-                      ? `Active Line: +${deviceStatus.phone || 'Connected'} (${deviceStatus.name || 'PeYug'})`
+                      ? `Active Line: +${deviceStatus.phone || 'Connected'} (${deviceStatus.name || 'WhatsApp'})`
                       : 'Direct messaging without opening external apps'}
                   </p>
                 </div>
@@ -1436,6 +1545,144 @@ export default function WhatsApp({ onNavigate }) {
                 Close
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 5: Meta WhatsApp Cloud API Credentials & Account Switcher */}
+      {showMetaConfigModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-2xl border border-dark-200 dark:border-dark-700 max-w-lg w-full overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="px-5 py-4 border-b border-dark-100 dark:border-dark-700 flex items-center justify-between bg-dark-50 dark:bg-dark-900">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-xs">
+                  <Lock size={18} />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-dark-900 dark:text-white flex items-center gap-2">
+                    Meta WhatsApp API Credentials
+                  </h3>
+                  <p className="text-xs text-dark-500">
+                    Connect your own Meta WhatsApp Business Account (WABA)
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowMetaConfigModal(false)}
+                className="p-1 rounded-lg text-dark-400 hover:text-dark-600 dark:hover:text-dark-200 hover:bg-dark-200/50 cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveMetaConfig} className="p-5 overflow-y-auto flex-1 space-y-4 text-xs">
+              {metaConfig?.isConfigured && (
+                <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 rounded-xl border border-emerald-200 dark:border-emerald-800/60 flex items-center justify-between">
+                  <div>
+                    <p className="font-bold text-emerald-800 dark:text-emerald-200 flex items-center gap-1">
+                      <CheckCircle2 size={14} /> Active Account Configured
+                    </p>
+                    <p className="text-[11px] text-emerald-700 dark:text-emerald-300 font-mono mt-0.5">
+                      {metaConfig.displayPhoneNumber ? `Line: ${metaConfig.displayPhoneNumber} ` : ''}
+                      {metaConfig.verifiedName ? `(${metaConfig.verifiedName})` : ''}
+                    </p>
+                  </div>
+                  <span className="text-[10px] font-mono text-dark-400">
+                    Phone ID: {metaConfig.phoneNumberId}
+                  </span>
+                </div>
+              )}
+
+              <div>
+                <label className="block font-bold text-dark-700 dark:text-dark-300 mb-1">
+                  Phone Number ID <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={waPhoneIdInput}
+                  onChange={(e) => setWaPhoneIdInput(e.target.value)}
+                  placeholder="e.g. 1408768628982301"
+                  required
+                  className="w-full px-3 py-2 rounded-xl bg-dark-50 dark:bg-dark-900 border border-dark-200 dark:border-dark-700 text-dark-900 dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <p className="text-[10px] text-dark-400 mt-1">Found in Meta App Dashboard &gt; WhatsApp &gt; API Setup &gt; Phone number ID</p>
+              </div>
+
+              <div>
+                <label className="block font-bold text-dark-700 dark:text-dark-300 mb-1">
+                  WhatsApp Business Account (WABA) ID
+                </label>
+                <input
+                  type="text"
+                  value={waWabaIdInput}
+                  onChange={(e) => setWaWabaIdInput(e.target.value)}
+                  placeholder="e.g. 1604281820561116"
+                  className="w-full px-3 py-2 rounded-xl bg-dark-50 dark:bg-dark-900 border border-dark-200 dark:border-dark-700 text-dark-900 dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <p className="text-[10px] text-dark-400 mt-1">Found in Meta App Dashboard &gt; WhatsApp &gt; API Setup &gt; WhatsApp Business Account ID</p>
+              </div>
+
+              <div>
+                <label className="block font-bold text-dark-700 dark:text-dark-300 mb-1">
+                  Permanent System User Access Token
+                </label>
+                <input
+                  type="password"
+                  value={waTokenInput}
+                  onChange={(e) => setWaTokenInput(e.target.value)}
+                  placeholder={metaConfig?.hasToken ? `Current token: ${metaConfig.maskedToken}` : 'Paste EAAB... permanent access token'}
+                  className="w-full px-3 py-2 rounded-xl bg-dark-50 dark:bg-dark-900 border border-dark-200 dark:border-dark-700 text-dark-900 dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <p className="text-[10px] text-dark-400 mt-1">Leave blank to keep existing token. Generate from Meta Business Manager &gt; System Users with whatsapp_business_messaging permission.</p>
+              </div>
+
+              {waTestResult && (
+                <div
+                  className={`p-3 rounded-xl border text-xs ${
+                    waTestResult.success
+                      ? 'bg-emerald-50 border-emerald-200 text-emerald-800 dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-300'
+                      : 'bg-rose-50 border-rose-200 text-rose-800 dark:bg-rose-950/40 dark:border-rose-800 dark:text-rose-300'
+                  }`}
+                >
+                  <p className="font-semibold flex items-center gap-1.5">
+                    {waTestResult.success ? <CheckCircle2 size={14} /> : <AlertCircle size={14} />}
+                    {waTestResult.success ? 'Handshake Passed' : 'Handshake Failed'}
+                  </p>
+                  <p className="text-[11px] mt-0.5">{waTestResult.message}</p>
+                </div>
+              )}
+
+              <div className="pt-2 flex items-center justify-between gap-2 border-t border-dark-100 dark:border-dark-700">
+                <button
+                  type="button"
+                  onClick={handleTestMetaConnection}
+                  disabled={waTesting || (!waPhoneIdInput && !metaConfig?.phoneNumberId)}
+                  className="px-3.5 py-2 rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 text-dark-700 dark:text-dark-200 hover:bg-dark-50 dark:hover:bg-dark-700 font-bold text-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                >
+                  {waTesting ? <RefreshCw size={13} className="animate-spin" /> : <Lock size={13} />}
+                  <span>Test Handshake</span>
+                </button>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowMetaConfigModal(false)}
+                    className="px-3 py-2 rounded-xl text-xs font-semibold text-dark-600 dark:text-dark-400 hover:bg-dark-100 cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={waSaving}
+                    className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm cursor-pointer disabled:opacity-50"
+                  >
+                    {waSaving ? <RefreshCw size={13} className="animate-spin" /> : <CheckCircle2 size={13} />}
+                    <span>Save &amp; Activate</span>
+                  </button>
+                </div>
+              </div>
+            </form>
           </div>
         </div>
       )}
