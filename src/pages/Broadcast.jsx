@@ -169,7 +169,7 @@ export default function Broadcast({ onNavigate }) {
         console.warn('tel: protocol redirect:', e);
       }
     }
-    addToast(`Dialing ${phone} via CRM softphone line...`, 'info');
+    addToast(`Dialing ${phone} via CRM phone line...`, 'info');
   };
 
   // Resend to failed

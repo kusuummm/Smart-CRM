@@ -36,6 +36,8 @@ import {
   ChevronLeft,
   Smartphone,
   SlidersHorizontal,
+  Target,
+  Users,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import * as XLSX from 'xlsx';
@@ -100,10 +102,12 @@ const STATUS_CONFIG = {
   },
 };
 
-export default function ApplicationsManager({ onNavigateToCustomers }) {
+export default function ApplicationsManager({ onNavigateToCustomers, onNavigateToLeads }) {
   // Statistics State
   const [stats, setStats] = useState({
     totalCustomers: 0,
+    totalUsers: 0,
+    totalLeads: 0,
     totalApplications: 0,
     newApplications: 0,
     pendingDocuments: 0,
@@ -466,7 +470,7 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
   const handleCreateApplication = async (e) => {
     e.preventDefault();
     if (!newAppForm.customerId) {
-      toast.error('Please choose a customer');
+      toast.error('Please choose a user');
       return;
     }
     try {
@@ -566,23 +570,45 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
       {/* ============================================================== */}
       {/* 1. TOP DYNAMIC METRIC DASHBOARD (THE 10 ESSENTIAL FEATURES)     */}
       {/* ============================================================== */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-7 gap-2.5 sm:gap-3.5">
-        {/* 1. Total Registered Customers */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 xl:grid-cols-8 gap-2.5 sm:gap-3.5">
+        {/* 1. Total Registered Users */}
         <div
           onClick={() => {
             if (onNavigateToCustomers) onNavigateToCustomers();
           }}
           className="cursor-pointer bg-white dark:bg-[#15203b] hover:bg-blue-50/50 dark:hover:bg-[#1c2a4d] border border-blue-200 dark:border-blue-500/20 hover:border-blue-400 dark:hover:border-blue-500/40 rounded-xl sm:rounded-2xl p-3 sm:p-4 transition-all shadow-xs group"
+          title="Total Registered Users (separate from pipeline leads)"
         >
           <div className="flex items-center justify-between text-xs text-blue-600 dark:text-blue-400 font-semibold mb-1">
-            <span className="truncate">Total Customers</span>
-            <User size={15} className="group-hover:scale-110 transition-transform shrink-0" />
+            <span className="truncate">Total Users</span>
+            <Users size={15} className="group-hover:scale-110 transition-transform shrink-0" />
           </div>
-          <div className="text-xl sm:text-2xl font-bold text-dark-900 dark:text-white">{stats.totalCustomers}</div>
-          <p className="text-[10px] text-dark-500 dark:text-dark-400 mt-0.5 truncate">Registered customer base</p>
+          <div className="text-xl sm:text-2xl font-bold text-dark-900 dark:text-white">
+            {stats.totalUsers ?? stats.totalCustomers ?? 0}
+          </div>
+          <p className="text-[10px] text-dark-500 dark:text-dark-400 mt-0.5 truncate">Registered users</p>
         </div>
 
-        {/* 2. New Applications */}
+        {/* 2. Total Leads (Pipeline) */}
+        <div
+          onClick={() => {
+            if (onNavigateToLeads) onNavigateToLeads();
+            else if (onNavigateToCustomers) onNavigateToCustomers();
+          }}
+          className="cursor-pointer bg-white dark:bg-[#15203b] hover:bg-emerald-50/50 dark:hover:bg-[#1c2a4d] border border-emerald-200 dark:border-emerald-500/20 hover:border-emerald-400 dark:hover:border-emerald-500/40 rounded-xl sm:rounded-2xl p-3 sm:p-4 transition-all shadow-xs group"
+          title="Total Pipeline Leads (different from registered users)"
+        >
+          <div className="flex items-center justify-between text-xs text-emerald-600 dark:text-emerald-400 font-semibold mb-1">
+            <span className="truncate">Total Leads</span>
+            <Target size={15} className="group-hover:scale-110 transition-transform shrink-0 text-emerald-500" />
+          </div>
+          <div className="text-xl sm:text-2xl font-bold text-dark-900 dark:text-white">
+            {stats.totalLeads ?? 0}
+          </div>
+          <p className="text-[10px] text-dark-500 dark:text-dark-400 mt-0.5 truncate">Pipeline leads</p>
+        </div>
+
+        {/* 3. New Applications */}
         <div
           onClick={() => {
             setStatusFilter(statusFilter === 'new' ? 'all' : 'new');
@@ -726,7 +752,7 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
             <Search className="absolute left-3 top-2.5 text-dark-400" size={16} />
             <input
               type="text"
-              placeholder="Search: Application #, Customer Name, Mobile, or Certificate #..."
+              placeholder="Search: Application #, User Name, Mobile, or Certificate #..."
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
@@ -867,7 +893,7 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
             <thead className="bg-dark-50 dark:bg-[#0e172e] text-dark-600 dark:text-dark-400 uppercase tracking-wider text-[10px] border-b border-dark-200 dark:border-[#213259]">
               <tr>
                 <th className="px-4 py-3">Application #</th>
-                <th className="px-4 py-3">Customer Details</th>
+                <th className="px-4 py-3">User Details</th>
                 <th className="px-4 py-3">Type</th>
                 <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3">Payment</th>
@@ -1569,7 +1595,7 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
                   <MessageSquare size={18} />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-dark-900 dark:text-white">Customer Communication History</h3>
+                  <h3 className="text-sm font-bold text-dark-900 dark:text-white">User Communication History</h3>
                   <p className="text-xs text-dark-500 dark:text-dark-400">
                     {selectedApp.customerName} • {selectedApp.customerMobile}
                   </p>
@@ -1617,7 +1643,7 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
                 </div>
               ) : filteredTimeline.length === 0 ? (
                 <div className="py-12 text-center text-dark-400 text-xs">
-                  No communication records found for this customer.
+                  No communication records found for this user.
                 </div>
               ) : (
                 <div className="relative pl-6 border-l border-dark-200 dark:border-[#233560] space-y-4">
@@ -1682,7 +1708,7 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
             <div className="px-4 sm:px-6 py-4 bg-dark-50 dark:bg-[#14203d] border-b border-dark-200 dark:border-[#233560] flex items-center justify-between shrink-0">
               <h3 className="text-sm font-bold text-dark-900 dark:text-white flex items-center gap-2">
                 <Plus size={16} className="text-blue-600 dark:text-blue-400" />
-                <span>Initiate New Customer Application</span>
+                <span>Initiate New User Application</span>
               </h3>
               <button
                 onClick={() => setIsNewAppModalOpen(false)}
@@ -1695,10 +1721,10 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
             <form onSubmit={handleCreateApplication} className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1">
               <div>
                 <label className="text-xs text-dark-700 dark:text-dark-300 font-semibold block mb-1">
-                  Select Registered Customer *
+                  Select Registered User *
                 </label>
                 {loadingCustomers ? (
-                  <div className="text-xs text-dark-400 py-2">Loading customer directory...</div>
+                  <div className="text-xs text-dark-400 py-2">Loading user directory...</div>
                 ) : (
                   <select
                     value={newAppForm.customerId}
@@ -1706,7 +1732,7 @@ export default function ApplicationsManager({ onNavigateToCustomers }) {
                     className="w-full px-3 py-2 bg-white dark:bg-[#15203b] border border-dark-200 dark:border-[#233560] rounded-xl text-xs text-dark-900 dark:text-white"
                     required
                   >
-                    <option value="">-- Choose a Customer --</option>
+                    <option value="">-- Choose a User --</option>
                     {customersList.map((c) => (
                       <option key={c._id} value={c._id}>
                         {c.name} ({c.mobile || c.phone}) {c.company ? `• ${c.company}` : ''}

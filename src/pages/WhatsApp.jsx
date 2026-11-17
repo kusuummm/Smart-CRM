@@ -915,10 +915,10 @@ export default function WhatsApp({ onNavigate }) {
                   type="button"
                   onClick={() => setIsSoftphoneOpen(true)}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-dark-200 dark:border-dark-700 text-xs font-semibold text-dark-700 dark:text-dark-200 hover:bg-dark-50 dark:hover:bg-dark-700 transition-colors cursor-pointer"
-                  title="Call this customer via Smart Softphone"
+                  title="Call this user"
                 >
                   <Phone size={13} className="text-blue-600" />
-                  <span className="hidden sm:inline">Call Softphone</span>
+                  <span className="hidden sm:inline">Call</span>
                 </button>
 
                 <button

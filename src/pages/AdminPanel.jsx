@@ -1212,15 +1212,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                   className="inline-flex items-center gap-2 px-3.5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition-colors shadow-sm cursor-pointer"
                 >
                   <UserCheck size={17} />
-                  <span>Add Customer & Assign</span>
-                </button>
-                <button
-                  onClick={() => setIsExcelModalOpen(true)}
-                  className="inline-flex items-center gap-2 px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold transition-colors shadow-sm cursor-pointer"
-                  title="Bulk import customer accounts and assign leads by city or business filters"
-                >
-                  <FileSpreadsheet size={17} />
-                  <span>Import Customers</span>
+                  <span>Add User & Assign</span>
                 </button>
                 <button
                   onClick={openAdd}
@@ -1241,29 +1233,32 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
               <div>
                 <h3 className="text-base font-bold text-dark-900 dark:text-white flex items-center gap-2">
                   <Award className="text-blue-600 dark:text-blue-400" size={20} />
-                  <span>Customer Applications & Document Management</span>
+                  <span>User Applications & Document Management</span>
                 </h3>
                 <p className="text-xs text-dark-500 dark:text-dark-400 mt-0.5">
-                  10 Core Requirements: Registered Customers, New Apps, Pending Docs, Reviews, Approvals, Rejections, Payments, Folder, Timeline & Certificates
+                  10 Core Requirements: Registered Users, New Apps, Pending Docs, Reviews, Approvals, Rejections, Payments, Folder, Timeline & Certificates
                 </p>
               </div>
             </div>
-            <ApplicationsManager onNavigateToCustomers={() => handleNavigate('contacts')} />
+            <ApplicationsManager
+              onNavigateToCustomers={() => handleNavigate('contacts')}
+              onNavigateToLeads={() => handleNavigate('leads')}
+            />
           </div>
 
           {/* 5 Clean Metric Summary Cards */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 sm:gap-4">
-            {/* Total Customer Accounts */}
+            {/* Total Users */}
             <div
               className="bg-white dark:bg-dark-800 p-5 rounded-2xl border border-blue-200 dark:border-blue-900/60 shadow-xs relative overflow-hidden"
-              title="Total customer accounts across all leads"
+              title="Total registered user accounts across all team members"
             >
               <div className="flex items-center justify-between">
                 <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center">
                   <Users size={20} />
                 </div>
                 <span className="text-[10px] font-bold text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-950/60 px-2.5 py-0.5 rounded-full border border-blue-200 dark:border-blue-800">
-                  Customers
+                  Users
                 </span>
               </div>
               <div className="mt-3">
@@ -1271,10 +1266,10 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                   {totalSystemCustomers}
                 </p>
                 <p className="text-xs font-semibold text-dark-700 dark:text-dark-300 mt-0.5">
-                  Total Customer Accounts
+                  Total Users
                 </p>
                 <p className="text-[10px] text-dark-400 dark:text-dark-500 mt-1">
-                  🔒 Count only (details isolated to leads)
+                  🔒 Count only (details isolated to assigned members)
                 </p>
               </div>
             </div>
@@ -1452,15 +1447,15 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                     <Users size={17} />
                   </div>
                   <h3 className="text-base font-bold text-dark-900 dark:text-white">
-                    Lead Customer Workload Distribution
+                    Team User Workload Distribution
                   </h3>
                   <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 flex items-center gap-1">
                     <Shield size={11} />
-                    <span>Customer Data Protected</span>
+                    <span>User Data Protected</span>
                   </span>
                 </div>
                 <p className="text-xs text-dark-500 dark:text-dark-400 mt-1 max-w-3xl">
-                  Overview of customer count assigned to each lead. Individual customer personal details, phone numbers, and call logs are strictly restricted to each assigned lead's private panel.
+                  Overview of user count assigned to each member. Individual user personal details, phone numbers, and call logs are strictly restricted to each assigned member's private panel.
                 </p>
               </div>
 
@@ -1471,7 +1466,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                   className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold inline-flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
                 >
                   <Plus size={14} />
-                  <span>Assign New Customer</span>
+                  <span>Assign New User</span>
                 </button>
                 <button
                   type="button"
@@ -1491,7 +1486,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                   <tr className="bg-dark-50/70 dark:bg-dark-900/40 border-b border-dark-200 dark:border-dark-700 text-[11px] font-bold uppercase tracking-wider text-dark-500 dark:text-dark-400">
                     <th className="py-3 px-4">Lead / Team Member</th>
                     <th className="py-3 px-4">Status & Presence</th>
-                    <th className="py-3 px-4 text-center">Customer Count</th>
+                    <th className="py-3 px-4 text-center">User Count</th>
                     <th className="py-3 px-4 text-center">Active Pipeline Leads</th>
                     <th className="py-3 px-4 min-w-[160px]">Workload Share</th>
                     <th className="py-3 px-4 text-center">Data Isolation</th>
@@ -1568,7 +1563,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                               className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/40 dark:hover:bg-blue-900/60 text-blue-700 hover:text-blue-900 dark:text-blue-300 border border-blue-200 dark:border-blue-800 transition-all cursor-pointer hover:scale-105 shadow-2xs group"
                               title={`Click to inspect ${tc.name}'s assigned customers (${custCount})`}
                             >
-                              <span>{custCount} Customers</span>
+                              <span>{custCount} Users</span>
                               <ExternalLink size={10} className="opacity-40 group-hover:opacity-100 transition-opacity" />
                             </button>
                           </td>
@@ -1609,7 +1604,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                           </td>
 
                           <td className="py-3 px-4 text-center">
-                            <span className="text-[11px] font-medium text-dark-500 dark:text-dark-400 bg-dark-100 dark:bg-dark-700/60 px-2 py-0.5 rounded-md inline-flex items-center gap-1" title="Customer names, phone numbers, and notes are restricted to this lead">
+                            <span className="text-[11px] font-medium text-dark-500 dark:text-dark-400 bg-dark-100 dark:bg-dark-700/60 px-2 py-0.5 rounded-md inline-flex items-center gap-1" title="User names, phone numbers, and notes are restricted to this lead">
                               <Shield size={11} className="text-dark-400" />
                               <span>Details Isolated</span>
                             </span>
@@ -1620,7 +1615,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                               type="button"
                               onClick={() => openTransferModal(tc._id)}
                               className="px-2.5 py-1 rounded-lg border border-dark-200 dark:border-dark-700 hover:bg-dark-100 dark:hover:bg-dark-700 text-dark-700 dark:text-dark-300 font-semibold text-[11px] transition-colors cursor-pointer"
-                              title="Transfer customer accounts to another lead"
+                              title="Transfer user accounts to another member"
                             >
                               Transfer
                             </button>
@@ -1637,11 +1632,11 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                         type="button"
                         onClick={() => handleNavigate('admin-workload')}
                         className="flex items-center gap-2 text-left cursor-pointer group hover:underline focus:outline-none"
-                        title="Click to open Workload Balancer and allocate unassigned customers"
+                        title="Click to open Workload Balancer and allocate unassigned users"
                       >
                         <AlertTriangle size={15} className="text-amber-600 group-hover:scale-110 transition-transform" />
                         <span className="font-bold text-amber-900 dark:text-amber-200 group-hover:text-amber-700 dark:group-hover:text-amber-100 flex items-center gap-1.5">
-                          <span>Unassigned Customer Queue</span>
+                          <span>Unassigned User Queue</span>
                           <ExternalLink size={10} className="opacity-0 group-hover:opacity-75 transition-opacity" />
                         </span>
                       </button>
@@ -1654,7 +1649,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                         type="button"
                         onClick={() => handleNavigate('admin-workload')}
                         className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold bg-amber-100 hover:bg-amber-200 dark:bg-amber-950 dark:hover:bg-amber-900 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800 transition-all cursor-pointer hover:scale-105 shadow-2xs group"
-                        title="Click to distribute unassigned customers in Workload Balancer"
+                        title="Click to distribute unassigned users in Workload Balancer"
                       >
                         <span>{unassignedList.length} Unassigned</span>
                         <ExternalLink size={10} className="opacity-40 group-hover:opacity-100 transition-opacity" />
@@ -1688,12 +1683,12 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
             {/* Total System Footprint */}
             <div className="p-4 bg-dark-50/70 dark:bg-dark-800/60 border-t border-dark-100 dark:border-dark-700/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
               <span className="text-dark-500">
-                Total Customer Footprint across all leads:{' '}
-                <strong className="text-dark-900 dark:text-white font-bold">{totalSystemCustomers} customer account(s)</strong>{' '}
+                Total User Footprint across all members:{' '}
+                <strong className="text-dark-900 dark:text-white font-bold">{totalSystemCustomers} user account(s)</strong>{' '}
                 ({totalAssignedCustomers} assigned + {unassignedList.length} unassigned)
               </span>
               <span className="text-dark-400 text-[11px]">
-                🔒 Customer privacy policy: Personal contact data is inaccessible to Admin account.
+                🔒 User privacy policy: Personal contact data is inaccessible to Admin account.
               </span>
             </div>
           </div>
@@ -1756,7 +1751,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                 </div>
                 <div className="mt-4">
                   <h4 className="font-bold text-base text-dark-900 dark:text-white">Workload Balancer</h4>
-                  <p className="text-xs text-dark-500 dark:text-dark-400 mt-1">Rebalance customer portfolios, distribute unassigned accounts, and transfer workloads.</p>
+                  <p className="text-xs text-dark-500 dark:text-dark-400 mt-1">Rebalance user portfolios, distribute unassigned accounts, and transfer workloads.</p>
                 </div>
                 <div className="mt-4 pt-3 border-t border-dark-100 dark:border-dark-700/60 flex items-center justify-between text-xs font-semibold text-primary-600 dark:text-primary-400">
                   <span>Open Workload Page</span>
@@ -2174,10 +2169,10 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                                     type="button"
                                     onClick={() => openInspector(u)}
                                     className="inline-flex items-center gap-1 px-2.5 py-1 font-medium text-xs text-blue-700 hover:text-blue-800 dark:text-blue-300 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/40 dark:hover:bg-blue-900/60 rounded-lg border border-blue-200 dark:border-blue-900/40 transition-all cursor-pointer hover:shadow-xs active:scale-95"
-                                    title="Click to inspect assigned customer accounts or transfer clients"
+                                    title="Click to inspect assigned user accounts or transfer users"
                                   >
                                     <Users size={12} className="text-blue-500" />
-                                    <span>{u.assignedCustomers || 0} Clients</span>
+                                    <span>{u.assignedCustomers || 0} Users</span>
                                     <ExternalLink size={10} className="opacity-40 ml-0.5" />
                                   </button>
                                 </div>
@@ -2463,15 +2458,15 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                 <Users size={32} className="mx-auto mb-3 opacity-40" />
                 <p className="font-semibold text-dark-700 dark:text-dark-300">
                   {agentGridFilter === 'online'
-                    ? 'No leads currently online'
+                    ? 'No members currently online'
                     : agentGridFilter === 'offline'
-                    ? 'No leads currently offline'
-                    : 'No leads registered yet'}
+                    ? 'No members currently offline'
+                    : 'No members registered yet'}
                 </p>
                 <p className="text-xs text-dark-400 mt-1">
                   {agentGridFilter === 'online'
-                    ? 'Leads will appear as Online as soon as they log into their portal.'
-                    : 'Registered leads appear in this dashboard.'}
+                    ? 'Members will appear as Online as soon as they log into their portal.'
+                    : 'Registered team members appear in this dashboard.'}
                 </p>
               </div>
             ) : (
@@ -2523,10 +2518,10 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                                 <button
                                   type="button"
                                   onClick={() => handleRoleClick(agent)}
-                                  className="text-xs font-semibold text-dark-500 hover:text-primary-600 dark:text-dark-400 dark:hover:text-primary-400 cursor-pointer hover:underline transition-colors"
+                                  className="text-xs font-semibold text-dark-500 hover:text-primary-600 dark:text-dark-400 dark:hover:text-primary-400 cursor-pointer hover:underline transition-colors capitalize"
                                   title="Click to change user role"
                                 >
-                                  Lead
+                                  {agent.role === 'telecaller' ? 'Telecaller' : agent.role === 'admin' ? 'Admin' : agent.role === 'manager' ? 'Manager' : agent.role ? agent.role.charAt(0).toUpperCase() + agent.role.slice(1) : 'Member'}
                                 </button>
                                 <span className="text-dark-300">•</span>
                                 <button
@@ -2548,7 +2543,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                             type="button"
                             onClick={() => setAgentGridFilter(agent.isOnline ? 'online' : 'offline')}
                             className="cursor-pointer active:scale-95 transition-transform"
-                            title={`Click to filter ${agent.isOnline ? 'Online' : 'Offline'} leads`}
+                            title={`Click to filter ${agent.isOnline ? 'Online' : 'Offline'} members`}
                           >
                             {agent.isOnline ? (
                               <span
@@ -2568,20 +2563,20 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                           </button>
                         </div>
 
-                        {/* Agent Contact Details (Clickable links) */}
-                        <div className="mt-4 p-3 rounded-xl bg-dark-50/60 dark:bg-dark-900/40 border border-dark-100 dark:border-dark-700/60 space-y-1">
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-dark-400 font-medium">Email:</span>
+                        {/* Agent Contact Details (Clean responsive rows) */}
+                        <div className="mt-4 p-3 rounded-xl bg-dark-50/60 dark:bg-dark-900/40 border border-dark-100 dark:border-dark-700/60 space-y-2">
+                          <div className="flex items-start gap-2 text-xs">
+                            <Mail size={13} className="text-dark-400 mt-0.5 shrink-0" />
                             <a
                               href={`mailto:${agent.email}`}
-                              className="font-semibold text-dark-800 dark:text-dark-200 hover:text-primary-600 dark:hover:text-primary-400 truncate max-w-[180px] transition-colors"
+                              className="font-semibold text-dark-800 dark:text-dark-200 hover:text-primary-600 dark:hover:text-primary-400 break-all transition-colors leading-tight"
                               title={`Click to send email to ${agent.email}`}
                             >
                               {agent.email}
                             </a>
                           </div>
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-dark-400 font-medium">Phone:</span>
+                          <div className="flex items-center gap-2 text-xs">
+                            <Phone size={13} className="text-dark-400 shrink-0" />
                             {agent.phone ? (
                               <a
                                 href={`tel:${agent.phone}`}
@@ -2591,12 +2586,12 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                                 {agent.phone}
                               </a>
                             ) : (
-                              <span className="font-semibold text-dark-400">Not configured</span>
+                              <span className="font-medium text-dark-400 italic">No phone configured</span>
                             )}
                           </div>
                         </div>
 
-                        {/* Stats metrics: Assigned Leads & Assigned Clients (Clickable Buttons) */}
+                        {/* Stats metrics: Assigned Leads & Assigned Users (Clickable Buttons) */}
                         <div className="grid grid-cols-2 gap-3 mt-4">
                           <button
                             type="button"
@@ -2617,13 +2612,13 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                             type="button"
                             onClick={() => openInspector(agent)}
                             className="p-3.5 rounded-xl bg-blue-50/70 hover:bg-blue-100/80 dark:bg-blue-950/30 dark:hover:bg-blue-900/50 border border-blue-200 hover:border-blue-300 dark:border-blue-900/50 dark:hover:border-blue-800 text-center shadow-2xs transition-all cursor-pointer active:scale-95 group"
-                            title="Click to inspect assigned customer accounts and reassign clients"
+                            title="Click to inspect assigned user accounts and reassign users"
                           >
                             <p className="text-2xl font-black text-blue-600 dark:text-blue-400 group-hover:scale-105 transition-transform">
                               {agent.assignedCustomers || 0}
                             </p>
                             <p className="text-xs font-bold text-blue-700 dark:text-blue-300 mt-0.5 flex items-center justify-center gap-1">
-                              <Users size={12} /> Assigned Clients
+                              <Users size={12} /> Assigned Users
                               <ExternalLink size={10} className="opacity-40 ml-0.5" />
                             </p>
                           </button>
@@ -2667,7 +2662,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
         <div className="space-y-6">
           <PageHeader
             title="Workload Balancer & Reassignment"
-            subtitle="Rebalance customer portfolios and distribute unassigned accounts across your telecalling team."
+            subtitle="Rebalance user portfolios and distribute unassigned accounts across your telecalling team."
             action={
               <div className="flex items-center gap-2.5">
                 <button
@@ -2683,20 +2678,20 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                   className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition-colors shadow-sm cursor-pointer"
                 >
                   <UserCheck size={16} />
-                  <span>Add Customer & Assign</span>
+                  <span>Add User & Assign</span>
                 </button>
                 <button
                   onClick={() => openTransferModal('')}
                   className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-sm font-semibold transition-colors shadow-sm cursor-pointer"
                 >
                   <ArrowRightLeft size={16} />
-                  <span>Bulk Transfer Clients</span>
+                  <span>Bulk Transfer Users</span>
                 </button>
               </div>
             }
           />
           <div className="space-y-6">
-          {/* Unassigned Customer Alert Queue */}
+          {/* Unassigned User Alert Queue */}
           {unassignedList.length > 0 && (
             <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-800 rounded-2xl p-5 shadow-xs">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -2706,10 +2701,10 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                   </div>
                   <div>
                     <h4 className="text-base font-bold text-amber-900 dark:text-amber-200">
-                      {unassignedList.length} Customer Account(s) Are Currently Unassigned!
+                      {unassignedList.length} User Account(s) Are Currently Unassigned!
                     </h4>
                     <p className="text-xs text-amber-800 dark:text-amber-300 mt-0.5">
-                      These customers are not being actively nurtured by any agent. Distribute them now in one click.
+                      These users are not being actively nurtured by any agent. Distribute them now in one click.
                     </p>
                   </div>
                 </div>
@@ -2723,7 +2718,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                     <option value="">Select Target User...</option>
                     {telecallers.map((tc) => (
                       <option key={tc._id} value={tc._id}>
-                        {tc.name} ({tc.assignedCustomers || 0} clients)
+                        {tc.name} ({tc.assignedCustomers || 0} users)
                       </option>
                     ))}
                   </select>
@@ -2750,7 +2745,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                   User Workload Balancer & Reassignment Tool
                 </h3>
                 <p className="text-xs sm:text-sm text-dark-500 dark:text-dark-400 mt-1 max-w-2xl">
-                  Rebalance customer portfolios or instantly transfer all assigned accounts and active leads when a user is on leave, reassigned, or inactive.
+                  Rebalance user portfolios or instantly transfer all assigned accounts and active leads when a member is on leave, reassigned, or inactive.
                 </p>
               </div>
               <button
@@ -2814,10 +2809,10 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                         type="button"
                         onClick={() => openInspector(tc)}
                         className="bg-dark-50 hover:bg-dark-100/80 dark:bg-dark-900/40 dark:hover:bg-dark-800/80 p-3 rounded-xl border border-dark-100 hover:border-dark-200 dark:border-dark-700/50 text-left transition-all cursor-pointer active:scale-95 group"
-                        title="Click to inspect assigned customer accounts"
+                        title="Click to inspect assigned user accounts"
                       >
                         <div className="flex items-center justify-between">
-                          <span className="text-xs text-dark-500 dark:text-dark-400">Assigned Clients</span>
+                          <span className="text-xs text-dark-500 dark:text-dark-400">Assigned Users</span>
                           <ExternalLink size={10} className="opacity-40" />
                         </div>
                         <p className="text-xl font-bold text-dark-900 dark:text-white mt-0.5 group-hover:text-primary-600 transition-colors">
@@ -3218,11 +3213,11 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                   type="button"
                   onClick={() => handleNavigate('contacts')}
                   className="p-4 rounded-xl bg-dark-50 dark:bg-dark-900/50 hover:bg-white dark:hover:bg-dark-800 border border-dark-100 dark:border-dark-700/60 hover:border-primary-500 dark:hover:border-primary-500 hover:shadow-md cursor-pointer transition-colors text-left group flex flex-col justify-between"
-                  title="Click to view Customer Accounts"
+                  title="Click to view User Accounts"
                 >
                   <div className="flex items-center justify-between w-full">
                     <span className="text-xs text-dark-500 dark:text-dark-400 font-medium group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
-                      Customer Accounts
+                      User Accounts
                     </span>
                     <ChevronRight size={14} className="text-dark-400 group-hover:text-primary-600 dark:group-hover:text-primary-400 group-hover:translate-x-0.5 transition-all" />
                   </div>
@@ -3937,9 +3932,9 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                   <div className="p-4 rounded-xl bg-blue-50/80 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/50 flex items-start gap-3 text-xs text-blue-900 dark:text-blue-300">
                     <Shield size={18} className="text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
                     <div>
-                      <p className="font-bold">Customer & Client Privacy Isolation Policy Active</p>
+                      <p className="font-bold">User Privacy Isolation Policy Active</p>
                       <p className="mt-0.5 text-blue-800 dark:text-blue-300 leading-relaxed">
-                        Administrators have full executive visibility into productivity timelines, outreach graphs, and conversion analytics. In accordance with strict lead isolation, individual customer/client contact records, phone numbers, and call logs assigned to <strong>{inspectorUser.name}</strong> remain strictly private and accessible only within the lead portal.
+                        Administrators have full executive visibility into productivity timelines, outreach graphs, and conversion analytics. In accordance with strict lead isolation, individual user contact records, phone numbers, and call logs assigned to <strong>{inspectorUser.name}</strong> remain strictly private and accessible only within the member portal.
                       </p>
                     </div>
                   </div>
@@ -4231,7 +4226,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                             <thead>
                               <tr className="border-b border-dark-100 dark:border-dark-700/60 bg-dark-50/60 dark:bg-dark-900/40 text-dark-500 dark:text-dark-400 uppercase tracking-wider text-[11px] font-semibold">
                                 <th className="py-2.5 px-4">Status</th>
-                                <th className="py-2.5 px-4">Customer</th>
+                                <th className="py-2.5 px-4">User</th>
                                 <th className="py-2.5 px-4">Category</th>
                                 <th className="py-2.5 px-4">Priority</th>
                                 <th className="py-2.5 px-4">Schedule</th>
@@ -4264,7 +4259,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                                       </button>
                                     </td>
                                     <td className="py-3 px-4 font-semibold text-dark-900 dark:text-white">
-                                      <p className="font-bold text-xs">{task.customerName || task.customerId?.name || 'Customer'}</p>
+                                      <p className="font-bold text-xs">{task.customerName || task.customerId?.name || 'User'}</p>
                                       {(task.phone || task.customerId?.mobile) && (
                                         <p className="text-[11px] text-dark-500 font-normal">{task.phone || task.customerId?.mobile}</p>
                                       )}
@@ -5155,7 +5150,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                   type="text"
                   value={taskSearchQuery}
                   onChange={(e) => setTaskSearchQuery(e.target.value)}
-                  placeholder="Search customer, phone, note..."
+                  placeholder="Search user, phone, note..."
                   className="w-full pl-9 pr-3.5 py-2 text-xs rounded-xl border border-dark-200 dark:border-dark-700 bg-dark-50/50 dark:bg-dark-900/50 text-dark-900 dark:text-white placeholder-dark-400 focus:outline-none focus:border-primary-500"
                 />
               </div>
@@ -5257,7 +5252,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                   <thead>
                     <tr className="border-b border-dark-100 dark:border-dark-700/60 bg-dark-50/60 dark:bg-dark-900/40 text-dark-500 dark:text-dark-400 uppercase tracking-wider text-[11px] font-semibold">
                       <th className="py-3 px-4">Status</th>
-                      <th className="py-3 px-4">Customer / Contact</th>
+                      <th className="py-3 px-4">User / Contact</th>
                       <th className="py-3 px-4">Assigned Lead</th>
                       <th className="py-3 px-4">Category</th>
                       <th className="py-3 px-4">Priority</th>
@@ -5310,7 +5305,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                           <td className="py-3.5 px-4 font-semibold text-dark-900 dark:text-white">
                             <div>
                               <div className="flex items-center gap-1.5 flex-wrap">
-                                <p className="font-bold text-xs">{task.customerName || task.customerId?.name || 'Customer'}</p>
+                                <p className="font-bold text-xs">{task.customerName || task.customerId?.name || 'User'}</p>
                                 {task.company && (
                                   <span className="text-[10px] px-1.5 py-0.2 rounded bg-dark-100 dark:bg-dark-700 text-dark-600 dark:text-dark-300 font-medium">
                                     {task.company}
@@ -5476,7 +5471,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
       {(currentView === 'admin-applications' || currentView === 'applications') && (
         <div className="space-y-6">
           <PageHeader
-            title="Customer Applications & Document Management"
+            title="User Applications & Document Management"
             subtitle="Track new applications, document reviews, approvals, payments, and issue final certificates."
             action={
               <button
@@ -5484,11 +5479,14 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                 className="inline-flex items-center gap-2 px-3.5 py-2.5 border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 hover:bg-dark-50 dark:hover:bg-dark-700 text-dark-700 dark:text-dark-200 rounded-xl text-sm font-medium transition-colors shadow-xs"
               >
                 <Users size={16} />
-                <span>Registered Customers</span>
+                <span>Registered Users</span>
               </button>
             }
           />
-          <ApplicationsManager onNavigateToCustomers={() => handleNavigate('contacts')} />
+          <ApplicationsManager
+            onNavigateToCustomers={() => handleNavigate('contacts')}
+            onNavigateToLeads={() => handleNavigate('leads')}
+          />
         </div>
       )}
 
@@ -5891,14 +5889,14 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
       <Modal
         isOpen={isTransferModalOpen}
         onClose={() => setIsTransferModalOpen(false)}
-        title="Transfer Workload & Assigned Customers"
+        title="Transfer Workload & Assigned Users"
         size="md"
       >
         <div className="space-y-4">
           <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 flex items-start gap-2.5">
             <Info size={17} className="text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
             <p className="text-xs text-amber-800 dark:text-amber-200 leading-relaxed">
-              This action will transfer all assigned customer accounts and associated leads from the source user to the target user in bulk.
+              This action will transfer all assigned user accounts and associated leads from the source user to the target user in bulk.
             </p>
           </div>
 
@@ -5994,18 +5992,18 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
       <Modal
         isOpen={isAddCustomerModalOpen}
         onClose={() => setIsAddCustomerModalOpen(false)}
-        title="Add New Customer & Assign Member"
+        title="Add New User & Assign Member"
         size="lg"
       >
         <form onSubmit={handleCreateCustomerAndAssign} className="space-y-4">
           <p className="text-xs text-dark-500 dark:text-dark-400">
-            Create an individual customer account and automatically generate their pipeline lead with immediate assignment to a team member.
+            Create an individual user account and automatically generate their pipeline lead with immediate assignment to a team member.
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <div>
               <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1">
-                Customer Full Name <span className="text-rose-500">*</span>
+                User Full Name <span className="text-rose-500">*</span>
               </label>
               <input
                 type="text"
@@ -6103,7 +6101,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
               <option value="">Leave Unassigned (Add to Unassigned Workload Queue)</option>
               {telecallers.map((tc) => (
                 <option key={tc._id} value={tc._id}>
-                  {tc.name} ({tc.assignedCustomers || 0} active clients) {tc.status === 'offline' ? '• Offline' : '• Online'}
+                  {tc.name} ({tc.assignedCustomers || 0} active users) {tc.status === 'offline' ? '• Offline' : '• Online'}
                 </option>
               ))}
             </select>
@@ -6139,7 +6137,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
               className="px-5 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
             >
               {isCreatingCustomer ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
-              <span>Create Customer & Assign</span>
+              <span>Create User & Assign</span>
             </button>
           </div>
         </form>
@@ -6169,7 +6167,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                 .filter((u) => u.role === 'telecaller' || u.role === 'admin')
                 .map((u) => (
                   <option key={u._id} value={u._id}>
-                    {u.name} — {u.role === 'admin' ? 'Administrator' : 'Member'} ({u.assignedLeads || 0} leads, {u.assignedCustomers || 0} clients)
+                    {u.name} — {u.role === 'admin' ? 'Administrator' : 'Member'} ({u.assignedLeads || 0} leads, {u.assignedCustomers || 0} users)
                   </option>
                 ))}
             </select>
@@ -6218,7 +6216,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1">
-                Customer / Contact Name <span className="text-red-500">*</span>
+                User / Contact Name <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"

@@ -798,7 +798,7 @@ export default function Contacts({ onNavigate }) {
                     aiSummary: {
                       sentiment: 'Positive',
                       score: 93,
-                      summary: `Live softphone call completed with ${activeCallContact.name}. Actual talk time: ${durFormatted}.`,
+                      summary: `Live phone call completed with ${activeCallContact.name}. Actual talk time: ${durFormatted}.`,
                       keyPoints: ['Real Microphone Voice Recording', `Talk time: ${durFormatted}`, 'Direct Call'],
                       followUps: ['Review recorded audio conversation'],
                     },

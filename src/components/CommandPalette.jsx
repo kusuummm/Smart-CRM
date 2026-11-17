@@ -56,9 +56,9 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }) {
     ...(isAdmin ? [{ id: 'admin', title: 'Admin & System Control Panel', category: 'Navigation', icon: Shield, shortcut: 'G P', action: () => onNavigate?.('admin-panel') }] : []),
 
     // Quick Actions
-    { id: 'new-lead', title: 'Assign Customer to Lead', category: 'Quick Actions', icon: Plus, action: () => onNavigate?.('leads') },
+    { id: 'new-lead', title: 'Assign User to Lead', category: 'Quick Actions', icon: Plus, action: () => onNavigate?.('leads') },
     { id: 'new-whatsapp', title: 'Send WhatsApp Direct Message', category: 'Quick Actions', icon: MessageSquare, action: () => onNavigate?.('whatsapp') },
-    { id: 'make-call', title: 'Open Softphone / Call Dialer', category: 'Quick Actions', icon: PhoneCall, action: () => onNavigate?.('call-history') },
+    { id: 'make-call', title: 'Open Phone Dialer', category: 'Quick Actions', icon: PhoneCall, action: () => onNavigate?.('call-history') },
     { id: 'theme-toggle', title: darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode', category: 'Quick Actions', icon: darkMode ? Sun : Moon, action: () => toggleDarkMode() },
   ];
 

@@ -163,7 +163,7 @@ export default function SoftphoneModal({
   const startCallSequence = (cust) => {
     cleanupCallSession();
     const effectiveCust = cust || targetContact || {
-      name: 'Customer',
+      name: 'User',
       phone: dialNumber,
       leadStatus: 'Direct Lead',
     };
@@ -380,7 +380,7 @@ export default function SoftphoneModal({
       keyPoints: [
         `Actual Talk Time: ${durFormatted}`,
         `Disposition: ${outcomeLabel}`,
-        callNotes ? `Note: ${callNotes}` : 'Direct Web Softphone conversation',
+        callNotes ? `Note: ${callNotes}` : 'Direct Web Dialer conversation',
       ],
       followUps: [
         disposition === 'deal_won'
@@ -485,7 +485,7 @@ export default function SoftphoneModal({
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-sm font-bold text-dark-900 dark:text-white">Smart Softphone</h3>
+                <h3 className="text-sm font-bold text-dark-900 dark:text-white">Phone Dialer</h3>
                 {callState === 'ringing' && (
                   <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300 animate-pulse">
                     <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />

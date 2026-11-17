@@ -232,15 +232,15 @@ export default function Header({
 
       {/* Right Section: Balance, User Profile, Quick Actions, Logout */}
       <div className="flex items-center gap-3 sm:gap-4">
-        {/* Quick Softphone Dialpad Button */}
+        {/* Quick Phone Dialer Button */}
         <button
           type="button"
           onClick={() => window.dispatchEvent(new CustomEvent('smartcrm:open-softphone'))}
           className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg bg-emerald-600/90 hover:bg-emerald-600 text-white border border-emerald-500/60 transition-all cursor-pointer shadow-xs"
-          title="Open CRM Softphone Dialer"
+          title="Open Phone Dialer"
         >
           <PhoneCall size={13} />
-          <span className="hidden md:inline">Softphone</span>
+          <span className="hidden md:inline">Dialer</span>
         </button>
 
         {/* Available Balance Pill */}
