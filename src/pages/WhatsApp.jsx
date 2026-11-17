@@ -107,25 +107,16 @@ export default function WhatsApp({ onNavigate }) {
                 return matchId || matchPhone;
               }).reverse();
 
-              const msgs = custLogs.length > 0
-                ? custLogs.map((l) => ({
-                    id: l._id,
-                    sender: 'agent',
-                    text: l.message,
-                    time: new Date(l.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                    status: l.status === 'read' ? 'read' : l.status === 'delivered' ? 'delivered' : 'sent',
-                    deliveryMode: l.deliveryMode || 'cloud_api',
-                  }))
-                : [
-                    {
-                      id: `m_${c._id || idx}_1`,
-                      sender: 'agent',
-                      text: `Hello ${c.name}, thank you for contacting us. How can we help you today?`,
-                      time: '10:00 AM',
-                      status: 'read',
-                      deliveryMode: 'cloud_api',
-                    },
-                  ];
+              const msgs = custLogs.map((l) => ({
+                id: l._id,
+                sender: 'agent',
+                text: l.message,
+                time: new Date(l.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                status: l.status === 'read' ? 'read' : l.status === 'delivered' ? 'delivered' : l.status === 'failed' ? 'failed' : 'sent',
+                deliveryMode: l.deliveryMode || 'cloud_api',
+                errorMsg: l.error || '',
+                is24hClosed: Boolean(String(l.error || '').includes('131047')),
+              }));
 
               const lastLog = custLogs[custLogs.length - 1];
 
@@ -134,10 +125,10 @@ export default function WhatsApp({ onNavigate }) {
                 customerName: c.name,
                 phone: c.mobile || c.phone || '',
                 leadStatus: c.status || 'Active Lead',
-                lastMessage: lastLog ? lastLog.message : (c.remarks || 'Connected via WhatsApp'),
+                lastMessage: lastLog ? lastLog.message : 'No conversation yet',
                 timestamp: lastLog
                   ? new Date(lastLog.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                  : 'Recent',
+                  : '',
                 unread: 0,
                 avatarColor: ['bg-emerald-600', 'bg-blue-600', 'bg-slate-600', 'bg-amber-600'][idx % 4],
                 messages: msgs,
@@ -174,9 +165,9 @@ export default function WhatsApp({ onNavigate }) {
   // Official Approved PeYug Meta Templates & Quick Presets
   const quickTemplates = [
     {
-      label: 'नमस्ते PeYug',
-      templateName: 'peyug_missed_call_h_v1',
-      text: `नमस्ते 🙏\nआपका कॉल प्राप्त हुआ।\nPeYug से जुड़ने के लिए धन्यवाद।\nहमारी टीम जल्द ही आपसे संपर्क करेगी।\n\n📌 हमारी सेवाएं:\n✔ डेली डिपॉज़िट\n✔ इमरजेंसी लोन\n✔ सुरक्षित डिजिटल भुगतान\n\nअधिक जानकारी के लिए WhatsApp पर "Hi" लिखें।`,
+      label: 'Welcome to PeYug',
+      templateName: 'welcome_to_peyug',
+      text: 'Welcome to PeYug – The New Era of Payment! Android: https://play.google.com/store/apps/details?id=com.safesoftware.passbook.jinl iOS: https://apps.apple.com/in/app/peyug/id6753785405',
     },
     {
       label: 'PeYug परिवार Welcome',
@@ -202,6 +193,21 @@ export default function WhatsApp({ onNavigate }) {
       label: 'Account Activate',
       templateName: 'peyug_account_activate_h_v1',
       text: `🚀 आपका अकाउंट अभी तक सक्रिय नहीं हुआ है।\n\nआज ही शुरुआत करें और पाएं:\n✅ आसान जमा सुविधा\n✅ इमरजेंसी सहायता\n✅ डिजिटल भुगतान सुविधा\n\nReply करें: "START"`,
+    },
+    {
+      label: 'सुरक्षा & विश्वास',
+      templateName: 'peyug_security_trust_h_v1',
+      text: `🔐 आपका पैसा, आपकी सुरक्षा।\n\nPeYug में:\n✔ सुरक्षित ट्रांजेक्शन\n✔ डिजिटल रिकॉर्ड\n✔ तेज़ सपोर्ट\n\nविश्वास ही हमारी ताकत है। 🙏`,
+    },
+    {
+      label: 'Refer & Earn',
+      templateName: 'peyug_about',
+      text: `⭐ REFER करें • EARN करें\nPeYug के साथ Extra Income कमाएँ!\nहर सफल रेफ़रल पर तुरंत ₹100 कमाएँ + 1% Monthly Cashback!`,
+    },
+    {
+      label: 'UPI Launch',
+      templateName: 'peyug_anouncement_upi_',
+      text: `We are proud to introduce PeYug - The New Era of Payment (UPI App). Built with innovation, trust and technology.`,
     },
   ];
 
@@ -266,7 +272,7 @@ export default function WhatsApp({ onNavigate }) {
         type: templateName ? 'template' : 'custom',
       });
 
-      if (res?.isCloudApi || res?.deliveredVia === 'cloud_api') {
+      if (res?.success && (res?.isCloudApi || res?.deliveredVia === 'cloud_api')) {
         addToast(`Real WhatsApp message delivered to ${activeChat.customerName} ✓✓`, 'success');
         setConversations((prev) =>
           prev.map((c) => {
@@ -282,16 +288,28 @@ export default function WhatsApp({ onNavigate }) {
           })
         );
       } else {
-        // If delivered or bridged
-        const msgNotice = res?.warning || res?.notice || `Message logged for ${activeChat.customerName}`;
-        addToast(msgNotice, 'info');
+        const is24h = Boolean(res?.is24hWindowClosed || String(res?.error || '').includes('131047'));
+        const failNotice = is24h
+          ? 'Customer 24h window closed (Meta #131047). Standard free text not delivered. Send an approved template below or click "Send via Web".'
+          : (res?.error || res?.warning || `Could not deliver message to ${activeChat.customerName}`);
+
+        addToast(failNotice, is24h ? 'warning' : 'error');
+
         setConversations((prev) =>
           prev.map((c) => {
             if (c.id === activeChat.id) {
               return {
                 ...c,
                 messages: c.messages.map((m) =>
-                  m.id === newMsg.id ? { ...m, status: 'delivered', deliveryMode: res?.deliveredVia || 'cloud_api' } : m
+                  m.id === newMsg.id
+                    ? {
+                        ...m,
+                        status: 'failed',
+                        is24hClosed: is24h,
+                        errorMsg: failNotice,
+                        waLink: res?.waLink || getDirectWhatsAppUrl(activeChat.phone, trimmed),
+                      }
+                    : m
                 ),
               };
             }
@@ -574,6 +592,20 @@ export default function WhatsApp({ onNavigate }) {
                 </span>
               </div>
 
+              {activeChat.messages.length === 0 && (
+                <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+                  <div className="w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-950/60 flex items-center justify-center text-emerald-600 dark:text-emerald-400 mb-3 shadow-2xs">
+                    <MessageSquare size={22} />
+                  </div>
+                  <h4 className="text-sm font-bold text-dark-800 dark:text-white">
+                    Start conversation with {activeChat.customerName}
+                  </h4>
+                  <p className="text-xs text-dark-500 dark:text-dark-400 max-w-sm mt-1">
+                    Select an approved PeYug template below or type a message. If the customer hasn't messaged in the last 24 hours, send an approved template or use WhatsApp Web.
+                  </p>
+                </div>
+              )}
+
               {activeChat.messages.map((msg) => {
                 const isAgent = msg.sender === 'agent';
                 return (
@@ -589,6 +621,11 @@ export default function WhatsApp({ onNavigate }) {
                       }`}
                     >
                       <p className="text-xs leading-relaxed whitespace-pre-wrap">{msg.text}</p>
+                      {msg.status === 'failed' && msg.is24hClosed && (
+                        <div className="mt-1.5 p-1.5 bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 rounded-lg text-[10px] text-amber-800 dark:text-amber-300">
+                          <span>24h window closed by Meta. Click &quot;Send via Web&quot; or select an approved template below.</span>
+                        </div>
+                      )}
                       <div className="flex items-center justify-end gap-1 mt-1 text-[10px] text-dark-400">
                         <span>{msg.time}</span>
                         {isAgent && (
@@ -598,15 +635,19 @@ export default function WhatsApp({ onNavigate }) {
                             ) : msg.status === 'delivered' ? (
                               <CheckCheck size={13} className="text-dark-400" />
                             ) : msg.status === 'failed' ? (
-                              <button
-                                type="button"
-                                onClick={() => handleSendMessage(msg.text, 'direct_web')}
-                                className="inline-flex items-center gap-1 text-rose-500 hover:text-rose-600 font-semibold cursor-pointer"
-                                title="Failed to dispatch. Click to send directly via WhatsApp Web"
-                              >
-                                <AlertCircle size={13} />
-                                <span className="text-[9px]">Send via Web</span>
-                              </button>
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[10px] text-rose-500 font-semibold flex items-center gap-0.5">
+                                  <AlertCircle size={11} /> Failed
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleSendMessage(msg.text, 'direct_web')}
+                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-[9px] cursor-pointer shadow-2xs"
+                                  title="Failed to dispatch. Click to send directly via WhatsApp Web"
+                                >
+                                  <ExternalLink size={10} /> Send via Web
+                                </button>
+                              </div>
                             ) : (
                               <Check size={13} className="text-dark-400" />
                             )}
