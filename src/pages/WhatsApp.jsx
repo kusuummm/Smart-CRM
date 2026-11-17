@@ -25,6 +25,7 @@ import {
   Eye,
   CheckCircle2,
   Copy,
+  Smartphone,
   Image as ImageIcon,
 } from 'lucide-react';
 import { useToast } from '../components/Toast';
