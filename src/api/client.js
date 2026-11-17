@@ -3,7 +3,11 @@ import axios from 'axios';
 // Base URL comes from a Vite env var so it's easy to point at a different
 // backend (e.g. a deployed one) without changing code. Falls back to the
 // local dev backend if VITE_API_URL isn't set.
-const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const baseURL =
+  import.meta.env.VITE_API_URL ||
+  (typeof window !== 'undefined' && window.location.hostname.endsWith('.onrender.com')
+    ? 'https://smart-crm-backend-yslw.onrender.com/api'
+    : 'http://localhost:5000/api');
 
 const api = axios.create({ baseURL });
 
