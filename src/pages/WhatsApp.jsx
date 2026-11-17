@@ -790,9 +790,19 @@ export default function WhatsApp({ onNavigate }) {
                                 </button>
                               </div>
                             ) : (
-                              <span className="inline-flex items-center gap-1" title="Sent to WhatsApp network (waiting for phone delivery)">
-                                <Check size={13} className="text-dark-400" />
-                              </span>
+                              <div className="flex items-center gap-1.5">
+                                <span className="inline-flex items-center gap-0.5" title="Sent to WhatsApp network (waiting for phone delivery)">
+                                  <Check size={13} className="text-dark-400" />
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleSendMessage(msg.text, 'direct_web')}
+                                  className="text-dark-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors cursor-pointer p-0.5"
+                                  title="Open in WhatsApp Web to verify or chat directly"
+                                >
+                                  <ExternalLink size={10} />
+                                </button>
+                              </div>
                             )}
                           </span>
                         )}
@@ -939,7 +949,7 @@ export default function WhatsApp({ onNavigate }) {
                 {selectedTemplateForPreview.hasImage !== false && (
                   <div className="relative w-full h-36 bg-slate-200 dark:bg-dark-700 overflow-hidden">
                     <img
-                      src="https://images.unsplash.com/photo-1556742049-0a67c5574f73?w=800"
+                      src="https://peyug.in/assets/images/banner/PeYug.png"
                       alt="PeYug Header"
                       className="w-full h-full object-cover"
                     />
