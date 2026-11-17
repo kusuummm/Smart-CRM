@@ -26,6 +26,7 @@ import {
   Trash2,
   Plus,
   Filter,
+  Mail,
 } from 'lucide-react';
 import { getUsers } from '../api/users';
 import { bulkImportLeads } from '../api/leads';

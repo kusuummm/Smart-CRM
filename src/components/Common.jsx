@@ -24,7 +24,7 @@ export function StatCard({ title, value, icon: Icon, trend, trendUp = true, colo
             </div>
           )}
         </div>
-        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${colorClasses[color]}`}><Icon size={24} /></div>
+        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${colorClasses[color]}`}>{Icon ? <Icon size={24} /> : null}</div>
       </div>
     </div>
   );
