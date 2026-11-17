@@ -172,6 +172,49 @@ export default function WhatsApp({ onNavigate }) {
     init();
   }, []);
 
+  // Background poll to sync live message delivery statuses (sent -> delivered -> read)
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const logsRes = await getWhatsAppLogs({ limit: 50 });
+        if (logsRes?.logs && logsRes.logs.length > 0) {
+          const freshLogs = logsRes.logs;
+          setConversations((prev) =>
+            prev.map((conv) => {
+              const cleanMobile = (conv.phone || '').replace(/\D/g, '').slice(-10);
+              const updatedMessages = conv.messages.map((m) => {
+                const matchedLog = freshLogs.find(
+                  (l) =>
+                    (m.id && String(l._id) === String(m.id)) ||
+                    (l.message === m.text && cleanMobile && String(l.phone || '').includes(cleanMobile))
+                );
+                if (matchedLog && matchedLog.status && matchedLog.status !== m.status) {
+                  return {
+                    ...m,
+                    id: matchedLog._id || m.id,
+                    status:
+                      matchedLog.status === 'read'
+                        ? 'read'
+                        : matchedLog.status === 'delivered'
+                        ? 'delivered'
+                        : matchedLog.status === 'failed'
+                        ? 'failed'
+                        : 'sent',
+                    errorMsg: matchedLog.error || m.errorMsg,
+                  };
+                }
+                return m;
+              });
+              return { ...conv, messages: updatedMessages };
+            })
+          );
+        }
+      } catch (_) {}
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   const activeChat = conversations.find((c) => c.id === activeChatId) || (conversations.length > 0 ? conversations[0] : null);
 
   // Auto-scroll chat to latest message
@@ -356,7 +399,7 @@ export default function WhatsApp({ onNavigate }) {
       });
 
       if (res?.success && (res?.isCloudApi || res?.deliveredVia === 'cloud_api')) {
-        addToast(`Real WhatsApp message delivered to ${activeChat.customerName} ✓✓`, 'success');
+        addToast(`Message dispatched to WhatsApp network ✓ (Waiting for delivery to recipient phone)`, 'success');
         const deliveredBody = res?.message || trimmed;
         setConversations((prev) =>
           prev.map((c) => {
@@ -366,7 +409,7 @@ export default function WhatsApp({ onNavigate }) {
                 lastMessage: deliveredBody,
                 messages: c.messages.map((m) =>
                   m.id === newMsg.id
-                    ? { ...m, text: deliveredBody, status: 'delivered', deliveryMode: 'cloud_api' }
+                    ? { ...m, text: deliveredBody, status: 'sent', deliveryMode: 'cloud_api' }
                     : m
                 ),
               };
@@ -667,14 +710,21 @@ export default function WhatsApp({ onNavigate }) {
                 backgroundSize: '16px 16px',
               }}
             >
-              {/* Encryption & Mode notice */}
-              <div className="text-center my-1">
-                <span
-                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg border text-[11px] font-medium shadow-2xs bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200/80 dark:border-emerald-800/80 text-emerald-800 dark:text-emerald-300"
-                >
+              {/* Encryption & Mode notice with Delivery Legend */}
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-2 px-3 py-1.5 rounded-xl border text-[11px] font-medium shadow-2xs bg-emerald-50/90 dark:bg-emerald-950/40 border-emerald-200/80 dark:border-emerald-800/80 text-emerald-800 dark:text-emerald-300 my-1">
+                <span className="inline-flex items-center gap-1.5">
                   <Lock size={11} className="shrink-0" />
-                  <span>
-                    Real-time messages delivered directly to customer phones via Meta WhatsApp Cloud API (PeYug Business)
+                  <span>Meta WhatsApp Cloud API Active (PeYug Business)</span>
+                </span>
+                <span className="inline-flex items-center gap-3 text-[10px] text-dark-500 dark:text-dark-400">
+                  <span className="inline-flex items-center gap-1" title="Single grey check: Sent to WhatsApp network">
+                    <Check size={11} className="text-dark-400" /> Sent (✓)
+                  </span>
+                  <span className="inline-flex items-center gap-1" title="Double grey check: Delivered to recipient's phone">
+                    <CheckCheck size={11} className="text-dark-400" /> Delivered (✓✓)
+                  </span>
+                  <span className="inline-flex items-center gap-1" title="Blue double check: Read by customer">
+                    <CheckCheck size={11} className="text-blue-500" /> Read (✓✓)
                   </span>
                 </span>
               </div>
@@ -716,27 +766,33 @@ export default function WhatsApp({ onNavigate }) {
                       <div className="flex items-center justify-end gap-1 mt-1 text-[10px] text-dark-400">
                         <span>{msg.time}</span>
                         {isAgent && (
-                          <span>
+                          <span className="inline-flex items-center gap-1">
                             {msg.status === 'read' ? (
-                              <CheckCheck size={13} className="text-blue-500" />
+                              <span title="Read by customer">
+                                <CheckCheck size={13} className="text-blue-500" />
+                              </span>
                             ) : msg.status === 'delivered' ? (
-                              <CheckCheck size={13} className="text-dark-400" />
+                              <span title="Delivered to customer's phone">
+                                <CheckCheck size={13} className="text-dark-400" />
+                              </span>
                             ) : msg.status === 'failed' ? (
                               <div className="flex items-center gap-1.5">
-                                <span className="text-[10px] text-rose-500 font-semibold flex items-center gap-0.5">
+                                <span className="text-[10px] text-rose-500 font-semibold flex items-center gap-0.5" title={msg.errorMsg || 'Failed'}>
                                   <AlertCircle size={11} /> Failed
                                 </span>
                                 <button
                                   type="button"
                                   onClick={() => handleSendMessage(msg.text, 'direct_web')}
                                   className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-[9px] cursor-pointer shadow-2xs"
-                                  title="Failed to dispatch. Click to send directly via WhatsApp Web"
+                                  title="Click to send directly via WhatsApp Web"
                                 >
                                   <ExternalLink size={10} /> Send via Web
                                 </button>
                               </div>
                             ) : (
-                              <Check size={13} className="text-dark-400" />
+                              <span className="inline-flex items-center gap-1" title="Sent to WhatsApp network (waiting for phone delivery)">
+                                <Check size={13} className="text-dark-400" />
+                              </span>
                             )}
                           </span>
                         )}
