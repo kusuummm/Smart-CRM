@@ -26,3 +26,13 @@ export const updateWhatsAppConfig = (payload) =>
 
 export const testWhatsAppConnection = (payload) =>
   api.post('/whatsapp/test-connection', payload).then((res) => res.data);
+
+// Built-in Real WhatsApp Device Connection (Baileys Web Client)
+export const getWhatsAppDeviceStatus = () =>
+  api.get('/whatsapp/device/status').then((res) => res.data);
+
+export const connectWhatsAppDevice = () =>
+  api.post('/whatsapp/device/connect').then((res) => res.data);
+
+export const disconnectWhatsAppDevice = () =>
+  api.post('/whatsapp/device/disconnect').then((res) => res.data);
