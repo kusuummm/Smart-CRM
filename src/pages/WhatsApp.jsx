@@ -21,10 +21,21 @@ import {
   AlertCircle,
   AlertTriangle,
   Lock,
+  X,
+  Eye,
+  CheckCircle2,
+  Copy,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { useToast } from '../components/Toast';
 import { useAuth } from '../context/AuthContext';
-import { getWhatsAppLogs, sendWhatsAppMessage, getWhatsAppConfig } from '../api/whatsapp';
+import {
+  getWhatsAppLogs,
+  sendWhatsAppMessage,
+  getWhatsAppConfig,
+  getWhatsAppTemplates,
+  createWhatsAppTemplate,
+} from '../api/whatsapp';
 import { getCustomers } from '../api/customers';
 
 // Clean SVG for official WhatsApp badge icon
@@ -79,18 +90,34 @@ export default function WhatsApp({ onNavigate }) {
   const [sending, setSending] = useState(false);
   const [backendCustomers, setBackendCustomers] = useState([]);
   const [isConfigured, setIsConfigured] = useState(false);
+  const [liveTemplates, setLiveTemplates] = useState([]);
+  const [selectedTemplateForPreview, setSelectedTemplateForPreview] = useState(null);
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [templateSearch, setTemplateSearch] = useState('');
+  const [newTemplateForm, setNewTemplateForm] = useState({
+    name: '',
+    category: 'MARKETING',
+    bodyText: '',
+    hasImage: true,
+  });
+  const [creatingTemplate, setCreatingTemplate] = useState(false);
 
-  // Load backend logs, customers, and configuration
+  // Load backend logs, customers, configuration, and templates
   useEffect(() => {
     async function init() {
       try {
-        const [custRes, logsRes, cfgRes] = await Promise.allSettled([
+        const [custRes, logsRes, cfgRes, tplRes] = await Promise.allSettled([
           getCustomers({ limit: 100 }),
           getWhatsAppLogs({ limit: 100 }),
           getWhatsAppConfig(),
+          getWhatsAppTemplates(),
         ]);
         if (cfgRes.status === 'fulfilled' && cfgRes.value) {
           setIsConfigured(Boolean(cfgRes.value.isConfigured));
+        }
+        if (tplRes.status === 'fulfilled' && tplRes.value?.templates) {
+          setLiveTemplates(tplRes.value.templates);
         }
         if (custRes.status === 'fulfilled' && custRes.value?.customers) {
           const list = custRes.value.customers;
@@ -162,54 +189,110 @@ export default function WhatsApp({ onNavigate }) {
     return `https://web.whatsapp.com/send?phone=${digits}${textParam}`;
   };
 
-  // Official Approved PeYug Meta Templates & Quick Presets
+  // Official Approved PeYug Meta Templates & Quick Presets (100% Exact Meta Text)
   const quickTemplates = [
     {
-      label: 'Welcome to PeYug',
+      label: 'Welcome to PeYug (Official)',
       templateName: 'welcome_to_peyug',
-      text: 'Welcome to PeYug – The New Era of Payment! Android: https://play.google.com/store/apps/details?id=com.safesoftware.passbook.jinl iOS: https://apps.apple.com/in/app/peyug/id6753785405',
+      category: 'MARKETING',
+      hasImage: true,
+      text: `Welcome to PeYug – The New Era of Payment!\n\nहमारी Sales Team से जुड़ने के लिए धन्यवाद।\nअब आप Peyug के साथ सुरक्षित और आसान डिजिटल पेमेंट का अनुभव ले सकते हैं।\n\n📲 Peyug App डाउनलोड करें:\nAndroid 👉 https://play.google.com/store/apps/details?id=com.safesoftware.passbook.jinl \niOS 👉 https://apps.apple.com/in/app/peyug/id6753785405 \n\nलिखे ; https://peyug.in/contact \nE-mail: contact@peyug.in \n\nकिसी भी सहायता के लिए हम हमेशा आपके साथ हैं।\n— Team PeYug`,
+      buttons: [{ text: 'https://www.peyug.in', url: 'https://www.peyug.in/' }],
+    },
+    {
+      label: 'मिस्ड कॉल / फॉलो-अप (Hindi)',
+      templateName: 'peyug_missed_call_h_v1',
+      category: 'MARKETING',
+      hasImage: true,
+      text: `नमस्ते 🙏\nआपका कॉल प्राप्त हुआ।\nPeYug से जुड़ने के लिए धन्यवाद।\nहमारी टीम जल्द ही आपसे संपर्क करेगी।\n\n📌 हमारी सेवाएं:\n✔ डेली डिपॉज़िट\n✔ इमरजेंसी लोन, डिपॉज़िट लोन\n✔ सुरक्षित डिजिटल भुगतान\n\nअधिक जानकारी के लिए WhatsApp पर "Hi" लिखें।\n\n🎥 PeYug वीडियो: https://www.youtube.com/shorts/SyFXZpIh6jY\n🌐 वेबसाइट: https://peyug.in/`,
     },
     {
       label: 'PeYug परिवार Welcome',
       templateName: 'peyug_family_welcome_h_v1',
-      text: `🎉 PeYug परिवार में आपका स्वागत है।\n\nअब आप:\n✅ डेली बचत कर सकते हैं\n✅ इमरजेंसी लोन सहायता पा सकते हैं\n✅ घर बैठे डिजिटल कलेक्शन कर सकते हैं\n\nहमारा लक्ष्य: “हर व्यक्ति को आर्थिक रूप से मज़बूत बनाना।” 💙\n🌐 वेबसाइट: https://peyug.in/`,
+      category: 'MARKETING',
+      hasImage: true,
+      text: `🎉 PeYug परिवार में आपका स्वागत है।\n\nअब आप:\n✅ डेली बचत कर सकते हैं\n✅ इमरजेंसी लोन सहायता पा सकते हैं\n✅ घर बैठे डिजिटल कलेक्शन कर सकते हैं\n\nहमारा लक्ष्य: “हर व्यक्ति को आर्थिक रूप से मज़बूत बनाना।” 💙\n\n🎥 PeYug वीडियो: https://www.youtube.com/shorts/SyFXZpIh6jY\n🌐 वेबसाइट: https://peyug.in/`,
     },
     {
-      label: 'EMI Reminder',
-      templateName: 'peyug_emi_reminder_h_v1',
-      text: `🙏 नमस्ते,\nआपकी ईएमआई / भुगतान की डीउ डेट पास है।\n\nकृपया समय पर भुगतान करके अपना रिकॉर्ड अच्छा बनाए रखें।\n\nकिसी सहायता के लिए Reply करें।`,
-    },
-    {
-      label: 'इमरजेंसी लोन',
-      templateName: 'peyug_emergency_loan_h_v1',
-      text: `⚡ इमरजेंसी लोन सहायता\n\nकृपया अपनी आवश्यकता चुनें:\n🔘 पर्सनल लोन\n🔘 बिजनेस लोन\n🔘 मेडिकल इमरजेंसी\n🔘 शिक्षा की जरूरत\n\nहमारी टीम आपको जल्द से जल्द सहायता प्रदान करेगी। 💙`,
-    },
-    {
-      label: 'डेली डिपॉज़िट',
+      label: 'डेली डिपॉज़िट सेवा',
       templateName: 'peyug_daily_deposit_h_v1',
-      text: `💰 डेली डिपॉज़िट सेवा\n\nआप कितना डिपॉज़िट शुरू करना चाहते हैं?\n🔘 ₹100 प्रतिदिन\n🔘 ₹200 प्रतिदिन\n🔘 ₹500 प्रतिदिन\n🔘 अपनी मर्ज़ी की राशि\n\nआज ही अपनी बचत शुरू करें और अपने सपनों को पूरा करें। 🙏`,
+      category: 'MARKETING',
+      hasImage: true,
+      text: `💰 डेली डिपॉज़िट सेवा\n\nआप कितना डिपॉज़िट शुरू करना चाहते हैं?\n\n🔘 ₹100 प्रतिदिन\n🔘 ₹200 प्रतिदिन\n🔘 ₹500 प्रतिदिन\n🔘 अपनी मर्ज़ी की राशि\n\nआज ही अपनी बचत शुरू करें और अपने सपनों को पूरा करें। 🙏\n\n🎥 PeYug वीडियो: https://www.youtube.com/shorts/SyFXZpIh6jY\n🌐 वेबसाइट: https://peyug.in/`,
     },
     {
-      label: 'Account Activate',
+      label: 'इमरजेंसी लोन सहायता',
+      templateName: 'peyug_emergency_loan_h_v1',
+      category: 'MARKETING',
+      hasImage: true,
+      text: `⚡ इमरजेंसी लोन सहायता\n\nकृपया अपनी आवश्यकता चुनें:\n\n🔘 पर्सनल लोन\n🔘 बिजनेस लोन\n🔘 मेडिकल इमरजेंसी\n🔘 शिक्षा की जरूरत\n\nहमारी टीम आपको जल्द से जल्द सहायता प्रदान करेगी। 💙\n\n🎥 PeYug वीडियो: https://www.youtube.com/shorts/SyFXZpIh6jY\n🌐 वेबसाइट: https://peyug.in/`,
+    },
+    {
+      label: 'EMI / भुगतान रिमाइंडर',
+      templateName: 'peyug_emi_reminder_h_v1',
+      category: 'MARKETING',
+      hasImage: true,
+      text: `🙏 नमस्ते,\nआपकी ईएमआई / भुगतान की डीउ डेट पास है।\n\nकृपया समय पर भुगतान करके अपना रिकॉर्ड अच्छा बनाए रखें।\n\nकिसी सहायता के लिए Reply करें।\n\n🎥 PeYug वीडियो: https://www.youtube.com/shorts/SyFXZpIh6jY\n🌐 वेबसाइट: https://peyug.in/`,
+    },
+    {
+      label: 'Account Activate (START)',
       templateName: 'peyug_account_activate_h_v1',
-      text: `🚀 आपका अकाउंट अभी तक सक्रिय नहीं हुआ है।\n\nआज ही शुरुआत करें और पाएं:\n✅ आसान जमा सुविधा\n✅ इमरजेंसी सहायता\n✅ डिजिटल भुगतान सुविधा\n\nReply करें: "START"`,
+      category: 'MARKETING',
+      hasImage: true,
+      text: `🚀 आपका अकाउंट अभी तक सक्रिय नहीं हुआ है।\n\nआज ही शुरुआत करें और पाएं:\n✅ आसान जमा सुविधा\n✅ इमरजेंसी सहायता\n✅ डिजिटल भुगतान सुविधा\n\nReply करें: "START"\n\n🎥 PeYug वीडियो: https://www.youtube.com/shorts/SyFXZpIh6jY\n🌐 वेबसाइट: https://peyug.in/`,
     },
     {
       label: 'सुरक्षा & विश्वास',
       templateName: 'peyug_security_trust_h_v1',
-      text: `🔐 आपका पैसा, आपकी सुरक्षा।\n\nPeYug में:\n✔ सुरक्षित ट्रांजेक्शन\n✔ डिजिटल रिकॉर्ड\n✔ तेज़ सपोर्ट\n\nविश्वास ही हमारी ताकत है। 🙏`,
+      category: 'MARKETING',
+      hasImage: true,
+      text: `🔐 आपका पैसा, आपकी सुरक्षा।\n\nPeYug में:\n✔ सुरक्षित ट्रांजेक्शन\n✔ डिजिटल रिकॉर्ड\n✔ आसान भुगतान\n✔ तेज़ सपोर्ट\n\nविश्वास ही हमारी सबसे बड़ी ताकत है। 🙏\n\n🎥 PeYug वीडियो: https://www.youtube.com/shorts/SyFXZpIh6jY\n🌐 वेबसाइट: https://peyug.in/`,
     },
     {
-      label: 'Refer & Earn',
+      label: 'PeYug Refer & Earn',
       templateName: 'peyug_about',
-      text: `⭐ REFER करें • EARN करें\nPeYug के साथ Extra Income कमाएँ!\nहर सफल रेफ़रल पर तुरंत ₹100 कमाएँ + 1% Monthly Cashback!`,
+      category: 'MARKETING',
+      hasImage: false,
+      text: `⭐ REFER करें • EARN करें\nPeYug - The New Era of Payment  ( UPI app )के साथ Extra Income कमाएँ!\n⿡ हर रेफ़रल पर ₹100 Cashback\n\nबस PeYug अकाउंट बनाएँ → लिंक शेयर करें →\nहर सफल रेफ़रल पर तुरंत ₹100 कमाएँ!\n\n⿢ 1% Monthly Cashback (Average Balance)\n\nजिस यूज़र को आप refer करें,\nवह जितना Average Balance रखेगा,\nउसका 1% हर महीने आपको Cashback मिलेगा!\n\n⿣ FD / RD / Daily Deposit पर 2% तक Cashback\nReferred user जितना deposit करेगा,\nआपको 2% तक  cashback !  \n\n"आज ही डाउनलोड करें"  \nAndroid  : https://play.google.com/store/apps/detailsid=com.safesoftware.passbook.jinl&hl=en_IN \nIOS ; https://apps.apple.com/in/app/peyug/id6753785405`,
     },
     {
-      label: 'UPI Launch',
+      label: 'PeYug UPI Launch',
       templateName: 'peyug_anouncement_upi_',
-      text: `We are proud to introduce PeYug - The New Era of Payment (UPI App). Built with innovation, trust and technology.`,
+      category: 'MARKETING',
+      hasImage: false,
+      text: `We are proud to introduce\n\nPeYug The New Era of Payment\n\nBuilt with innovation, trust and technology, PeYug is designed to deliver a secure, seamless and smarter digital payment experience for everyone.\n\nFrom instant UPI transactions to advanced security layers, PeYug represents our commitment to empowering India's digital future. A step forward in convenience. A leap forward in financial technology.\n\nOur vision is simple: To make digital payments more accessible, more rellable, and more powerful.\n\nJoin us as we begin this exciting journey.\n\nPeYug - The New Era of Payment\n\nDownload : PeYug ( UPI App)  \nIOS: https://apps.apple.com/in/app/peyug/id6753785405  ,\nAndroid : https://play.google.com/store/apps/details?id=com.safesoftware.passbook.jinl&hl=en_IN`,
+    },
+    {
+      label: 'बचत करना हुआ आसान',
+      templateName: 'peyug_saving_h_v1',
+      category: 'MARKETING',
+      hasImage: true,
+      text: `💰 अब पैसे बचत करना हुआ और आसान!\nPeYug App के साथ पाएँ:\n\n✅ डेली डिपॉज़िट सुविधा\n✅ इमरजेंसी लोन सहायता\n✅ सुरक्षित डिजिटल ट्रांजेक्शन\n✅ आसान और भरोसेमंद सेवा\n\nआज ही जुड़ें और अपने भविष्य को सुरक्षित बनाएं। 🚀\n\n📲 अधिक जानकारी के लिए अभी Reply करें — "START"\n\n🎥 PeYug वीडियो: https://www.youtube.com/shorts/SyFXZpIh6jY\n🌐 वेबसाइट: https://peyug.in/`,
+    },
+    {
+      label: 'Lead Capture (Hindi)',
+      templateName: 'peyug_lead_capture_h_v1',
+      category: 'MARKETING',
+      hasImage: true,
+      text: `नमस्ते 🙏\nPeYug में आपका स्वागत है।\nकृपया नीचे दी गई जानकारी भेजें:\n\n1️⃣ आपका नाम\n2️⃣ शहर का नाम\n3️⃣ आपका व्यवसाय / काम\n4️⃣ आपको किस सेवा की आवश्यकता है?\n\n✔ डेली डिपॉज़िट ✔ लोन ✔ QR पेमेंट ✔ बिजनेस कलेक्शन\n\nहमारी टीम तुरंत आपकी सहायता करेगी।\n\n🎥 PeYug वीडियो: https://www.youtube.com/shorts/SyFXZpIh6jY\n🌐 वेबसाइट: https://peyug.in/`,
+    },
+    {
+      label: 'PeYug Menu Flow',
+      templateName: 'peyug_flow_welcome_h_v1',
+      category: 'MARKETING',
+      hasImage: true,
+      text: `🙏 नमस्ते, PeYug में आपका स्वागत है।\nहम आपके पैसों को सुरक्षित और आसान तरीके से मैनेज करने में मदद करते हैं।\n\nकृपया नीचे एक विकल्प चुनें 👇\n\n1️⃣ डेली डिपॉज़िट\n2️⃣ इमरजेंसी लोन\n3️⃣ QR पेमेंट सेवा\n4️⃣ रेफरल\n5️⃣ ग्राहक सहायता\n\n🎥 PeYug वीडियो: https://www.youtube.com/shorts/SyFXZpIh6jY\n🌐 वेबसाइट: https://peyug.in/`,
+    },
+    {
+      label: 'Missed Call Follow-up (v2)',
+      templateName: 'peyug_missed_call_v2',
+      category: 'MARKETING',
+      hasImage: true,
+      text: `नमस्ते 🙏\nआपका कॉल प्राप्त हुआ।\n\nPeYug से जुड़ने के लिए धन्यवाद।\nहमारी टीम जल्द ही आपसे संपर्क करेगी।\n\n📌 सेवाएं:\n✔ Daily Deposit\n✔ Emergency Loan, Deposit Loan\n✔ सुरक्षित डिजिटल भुगतान\n\nअधिक जानकारी के लिए WhatsApp पर "Hi" लिखें।\n\n🎥 PeYug Video: https://youtu.be/peyug_intro`,
     },
   ];
+
+  const allTemplates = liveTemplates.length > 0 ? liveTemplates : quickTemplates;
 
   // Send message handler with Meta Cloud API + Direct WhatsApp Web 1-click bridge
   const handleSendMessage = async (textToSend, mode = 'smart', templateName = null) => {
@@ -274,13 +357,17 @@ export default function WhatsApp({ onNavigate }) {
 
       if (res?.success && (res?.isCloudApi || res?.deliveredVia === 'cloud_api')) {
         addToast(`Real WhatsApp message delivered to ${activeChat.customerName} ✓✓`, 'success');
+        const deliveredBody = res?.message || trimmed;
         setConversations((prev) =>
           prev.map((c) => {
             if (c.id === activeChat.id) {
               return {
                 ...c,
+                lastMessage: deliveredBody,
                 messages: c.messages.map((m) =>
-                  m.id === newMsg.id ? { ...m, status: 'delivered', deliveryMode: 'cloud_api' } : m
+                  m.id === newMsg.id
+                    ? { ...m, text: deliveredBody, status: 'delivered', deliveryMode: 'cloud_api' }
+                    : m
                 ),
               };
             }
@@ -662,19 +749,46 @@ export default function WhatsApp({ onNavigate }) {
             </div>
 
             {/* Quick Reply Templates: shrink-0 */}
-            <div className="px-4 py-2 border-t border-dark-100 dark:border-dark-700/60 bg-slate-50 dark:bg-dark-900/40 flex items-center gap-2 overflow-x-auto scrollbar-none shrink-0">
-              <span className="text-[11px] font-semibold text-dark-400 whitespace-nowrap flex items-center gap-1">
-                <Sparkles size={12} className="text-emerald-500" /> Templates:
-              </span>
-              {quickTemplates.map((t, idx) => (
+            <div className="px-3.5 py-2 border-t border-dark-100 dark:border-dark-700/60 bg-slate-50 dark:bg-dark-900/40 flex items-center justify-between gap-2 overflow-x-auto scrollbar-none shrink-0">
+              <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none">
+                <span className="text-[11px] font-semibold text-dark-500 whitespace-nowrap flex items-center gap-1">
+                  <Sparkles size={12} className="text-emerald-500" /> Templates:
+                </span>
+                {allTemplates.slice(0, 6).map((t, idx) => {
+                  const tplLabel = t.label || t.name;
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setSelectedTemplateForPreview(t)}
+                      className="px-2.5 py-1 rounded-lg text-[11px] font-medium bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 text-dark-700 dark:text-dark-300 hover:border-emerald-400 hover:text-emerald-600 whitespace-nowrap transition-colors shadow-2xs flex items-center gap-1 cursor-pointer"
+                      title="Preview full message & send to customer"
+                    >
+                      <span>{tplLabel}</span>
+                      <Eye size={10} className="text-dark-400" />
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="flex items-center gap-1.5 shrink-0">
                 <button
-                  key={idx}
-                  onClick={() => handleSendMessage(t.text, 'smart', t.templateName)}
-                  className="px-2.5 py-1 rounded-lg text-[11px] font-medium bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 text-dark-700 dark:text-dark-300 hover:border-emerald-400 hover:text-emerald-600 whitespace-nowrap transition-colors shadow-2xs"
+                  type="button"
+                  onClick={() => setShowTemplateModal(true)}
+                  className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-300 dark:bg-emerald-950/60 dark:border-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 whitespace-nowrap transition-colors flex items-center gap-1 shadow-2xs cursor-pointer"
+                  title="Browse all approved Meta templates"
                 >
-                  {t.label}
+                  <FileText size={12} /> All ({allTemplates.length})
                 </button>
-              ))}
+                <button
+                  type="button"
+                  onClick={() => setShowCreateModal(true)}
+                  className="px-2 py-1 rounded-lg text-[11px] font-bold bg-dark-100 text-dark-700 border border-dark-300 dark:bg-dark-800 dark:border-dark-700 dark:text-dark-300 hover:bg-dark-200 whitespace-nowrap transition-colors flex items-center gap-1 shadow-2xs cursor-pointer"
+                  title="Create & register a custom template with Meta"
+                >
+                  <Plus size={12} /> New
+                </button>
+              </div>
             </div>
 
             {/* Message Input Bar: shrink-0 PINNED AT BOTTOM */}
@@ -730,6 +844,356 @@ export default function WhatsApp({ onNavigate }) {
           </div>
         )}
       </div>
+
+      {/* MODAL 1: Real Live Template Preview Modal (What Customer Receives On WhatsApp) */}
+      {selectedTemplateForPreview && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-2xl border border-dark-200 dark:border-dark-700 max-w-lg w-full overflow-hidden flex flex-col max-h-[90vh]">
+            {/* Modal Header */}
+            <div className="px-5 py-3.5 border-b border-dark-100 dark:border-dark-700 flex items-center justify-between bg-dark-50 dark:bg-dark-900">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-full bg-emerald-600 text-white flex items-center justify-center">
+                  <WhatsAppIcon className="w-4 h-4 fill-white" fill="#ffffff" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-dark-900 dark:text-white flex items-center gap-1.5">
+                    WhatsApp Message Preview
+                    <span className="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300">
+                      Approved Meta Template
+                    </span>
+                  </h3>
+                  <p className="text-[11px] text-dark-500">
+                    Template: <code className="text-emerald-600 dark:text-emerald-400 font-mono font-medium">{selectedTemplateForPreview.templateName || selectedTemplateForPreview.name}</code>
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedTemplateForPreview(null)}
+                className="p-1 rounded-lg text-dark-400 hover:text-dark-600 dark:hover:text-dark-200 hover:bg-dark-200/50 cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Simulated WhatsApp Phone Chat Bubble */}
+            <div className="p-4 sm:p-5 overflow-y-auto flex-1 bg-[#efeae2] dark:bg-dark-950 flex flex-col items-center">
+              <div className="w-full max-w-md bg-white dark:bg-dark-800 rounded-xl shadow-md border border-dark-200 dark:border-dark-700 overflow-hidden text-dark-900 dark:text-slate-100">
+                {/* Header Image if template includes image */}
+                {selectedTemplateForPreview.hasImage !== false && (
+                  <div className="relative w-full h-36 bg-slate-200 dark:bg-dark-700 overflow-hidden">
+                    <img
+                      src="https://images.unsplash.com/photo-1556742049-0a67c5574f73?w=800"
+                      alt="PeYug Header"
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute top-2 left-2 px-2 py-0.5 rounded bg-black/60 text-white text-[10px] font-medium flex items-center gap-1">
+                      <ImageIcon size={11} /> Meta Header Image
+                    </div>
+                  </div>
+                )}
+
+                {/* Body Text */}
+                <div className="p-3.5 text-xs sm:text-sm leading-relaxed whitespace-pre-wrap font-sans">
+                  {selectedTemplateForPreview.bodyText || selectedTemplateForPreview.text}
+                </div>
+
+                {/* Buttons (e.g. Website link) */}
+                {((selectedTemplateForPreview.buttons && selectedTemplateForPreview.buttons.length > 0) || (selectedTemplateForPreview.templateName === 'welcome_to_peyug' || selectedTemplateForPreview.name === 'welcome_to_peyug')) && (
+                  <div className="border-t border-dark-100 dark:border-dark-700/80 px-3 py-2 bg-slate-50 dark:bg-dark-900/50 flex flex-col gap-1.5">
+                    <a
+                      href="https://www.peyug.in"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full py-1.5 px-3 rounded-lg text-center text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 shadow-2xs hover:bg-emerald-50 dark:hover:bg-emerald-950/40 flex items-center justify-center gap-1"
+                    >
+                      <ExternalLink size={12} /> Visit https://www.peyug.in
+                    </a>
+                  </div>
+                )}
+
+                <div className="px-3 py-1 bg-dark-50/50 dark:bg-dark-900/30 flex justify-end">
+                  <span className="text-[10px] text-dark-400">Delivered directly via Meta WhatsApp Cloud API ✓✓</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="p-3.5 sm:p-4 border-t border-dark-100 dark:border-dark-700 bg-white dark:bg-dark-800 flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const text = selectedTemplateForPreview.bodyText || selectedTemplateForPreview.text;
+                    setMessageInput(text);
+                    addToast('Template copied into message input!', 'info');
+                    setSelectedTemplateForPreview(null);
+                  }}
+                  className="px-3 py-2 rounded-xl border border-dark-200 dark:border-dark-700 text-xs font-semibold text-dark-700 dark:text-dark-300 hover:bg-dark-100 dark:hover:bg-dark-700 flex items-center gap-1.5 cursor-pointer"
+                  title="Copy this template into the text box below"
+                >
+                  <Copy size={13} /> Copy to Input
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const text = selectedTemplateForPreview.bodyText || selectedTemplateForPreview.text;
+                    handleSendMessage(text, 'direct_web');
+                    setSelectedTemplateForPreview(null);
+                  }}
+                  className="px-3 py-2 rounded-xl border border-emerald-300 dark:border-emerald-800 text-xs font-semibold text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 flex items-center gap-1.5 cursor-pointer"
+                  title="Send via WhatsApp Web deep link"
+                >
+                  <ExternalLink size={13} /> Send via Web
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedTemplateForPreview(null)}
+                  className="px-3 py-2 rounded-xl text-xs font-semibold text-dark-600 dark:text-dark-400 hover:bg-dark-100 dark:hover:bg-dark-700 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const text = selectedTemplateForPreview.bodyText || selectedTemplateForPreview.text;
+                    const name = selectedTemplateForPreview.templateName || selectedTemplateForPreview.name;
+                    handleSendMessage(text, 'smart', name);
+                    setSelectedTemplateForPreview(null);
+                  }}
+                  disabled={sending}
+                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm flex items-center gap-1.5 shadow-sm cursor-pointer"
+                >
+                  <Send size={14} /> Send to Customer Now
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 2: Browse All Approved Meta Templates */}
+      {showTemplateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-2xl border border-dark-200 dark:border-dark-700 max-w-3xl w-full overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="px-5 py-4 border-b border-dark-100 dark:border-dark-700 flex items-center justify-between bg-dark-50 dark:bg-dark-900">
+              <div>
+                <h3 className="text-base font-bold text-dark-900 dark:text-white flex items-center gap-2">
+                  <Sparkles size={16} className="text-emerald-500" />
+                  Meta WhatsApp Approved Templates ({allTemplates.length})
+                </h3>
+                <p className="text-xs text-dark-500">
+                  Select an approved template to preview exactly what the recipient sees and send with 1 click.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowTemplateModal(false)}
+                className="p-1 rounded-lg text-dark-400 hover:text-dark-600 dark:hover:text-dark-200 hover:bg-dark-200/50 cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Search Filter */}
+            <div className="p-3.5 border-b border-dark-100 dark:border-dark-700/60 bg-white dark:bg-dark-800">
+              <div className="relative">
+                <Search size={15} className="absolute left-3 top-2.5 text-dark-400" />
+                <input
+                  type="text"
+                  value={templateSearch}
+                  onChange={(e) => setTemplateSearch(e.target.value)}
+                  placeholder="Search templates by title, keyword, loan, deposit, reminder..."
+                  className="w-full pl-9 pr-4 py-2 text-xs rounded-xl bg-dark-50 dark:bg-dark-900 border border-dark-200 dark:border-dark-700 text-dark-900 dark:text-white placeholder:text-dark-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+            </div>
+
+            {/* Templates Grid */}
+            <div className="p-4 sm:p-5 overflow-y-auto flex-1 grid grid-cols-1 md:grid-cols-2 gap-3.5 bg-dark-50/50 dark:bg-dark-950/50">
+              {allTemplates
+                .filter((t) => {
+                  const s = templateSearch.toLowerCase();
+                  const name = (t.templateName || t.name || '').toLowerCase();
+                  const label = (t.label || '').toLowerCase();
+                  const body = (t.bodyText || t.text || '').toLowerCase();
+                  return !s || name.includes(s) || label.includes(s) || body.includes(s);
+                })
+                .map((t, idx) => {
+                  const tplText = t.bodyText || t.text || '';
+                  const tplName = t.templateName || t.name;
+                  const tplLabel = t.label || t.name;
+                  return (
+                    <div
+                      key={idx}
+                      className="p-3.5 rounded-xl bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 hover:border-emerald-400 shadow-2xs flex flex-col justify-between gap-3 transition-colors"
+                    >
+                      <div>
+                        <div className="flex items-center justify-between gap-2 mb-1.5">
+                          <h4 className="text-xs font-bold text-dark-900 dark:text-white truncate">
+                            {tplLabel}
+                          </h4>
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300">
+                            {t.status || 'APPROVED'}
+                          </span>
+                        </div>
+                        <p className="text-[10px] font-mono text-dark-400 mb-2">{tplName}</p>
+                        <p className="text-xs text-dark-600 dark:text-dark-300 line-clamp-3 leading-relaxed whitespace-pre-wrap font-sans">
+                          {tplText}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center justify-end gap-2 pt-2 border-t border-dark-100 dark:border-dark-700/60">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedTemplateForPreview(t);
+                            setShowTemplateModal(false);
+                          }}
+                          className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 hover:bg-emerald-100 flex items-center gap-1 cursor-pointer"
+                        >
+                          <Eye size={12} /> Preview & Send
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 3: Create & Register New Meta WhatsApp Template */}
+      {showCreateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-2xl border border-dark-200 dark:border-dark-700 max-w-lg w-full overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="px-5 py-4 border-b border-dark-100 dark:border-dark-700 flex items-center justify-between bg-dark-50 dark:bg-dark-900">
+              <div>
+                <h3 className="text-base font-bold text-dark-900 dark:text-white flex items-center gap-2">
+                  <Plus size={16} className="text-emerald-500" />
+                  Create New WhatsApp Template
+                </h3>
+                <p className="text-xs text-dark-500">
+                  Submit a customized message template directly to Meta WhatsApp Business API for approval.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowCreateModal(false)}
+                className="p-1 rounded-lg text-dark-400 hover:text-dark-600 dark:hover:text-dark-200 hover:bg-dark-200/50 cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (!newTemplateForm.name.trim() || !newTemplateForm.bodyText.trim()) {
+                  addToast('Please provide both template name and body text', 'error');
+                  return;
+                }
+                setCreatingTemplate(true);
+                try {
+                  const res = await createWhatsAppTemplate(newTemplateForm);
+                  addToast(res.message || 'Template submitted to Meta successfully!', 'success');
+                  setShowCreateModal(false);
+                  setNewTemplateForm({ name: '', category: 'MARKETING', bodyText: '', hasImage: true });
+                  const updated = await getWhatsAppTemplates();
+                  if (updated?.templates) setLiveTemplates(updated.templates);
+                } catch (err) {
+                  addToast(err.response?.data?.message || err.message || 'Failed to submit template', 'error');
+                } finally {
+                  setCreatingTemplate(false);
+                }
+              }}
+              className="p-5 overflow-y-auto flex-1 space-y-4"
+            >
+              <div>
+                <label className="block text-xs font-bold text-dark-700 dark:text-dark-300 mb-1">
+                  Template Name (unique identifier)
+                </label>
+                <input
+                  type="text"
+                  value={newTemplateForm.name}
+                  onChange={(e) =>
+                    setNewTemplateForm({
+                      ...newTemplateForm,
+                      name: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '_'),
+                    })
+                  }
+                  placeholder="e.g. peyug_special_offer_v1"
+                  required
+                  className="w-full px-3 py-2 text-xs rounded-xl bg-dark-50 dark:bg-dark-900 border border-dark-200 dark:border-dark-700 text-dark-900 dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+                <p className="text-[10px] text-dark-400 mt-1">Lowercase letters, numbers, and underscores only</p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-dark-700 dark:text-dark-300 mb-1">
+                  Category
+                </label>
+                <select
+                  value={newTemplateForm.category}
+                  onChange={(e) => setNewTemplateForm({ ...newTemplateForm, category: e.target.value })}
+                  className="w-full px-3 py-2 text-xs rounded-xl bg-dark-50 dark:bg-dark-900 border border-dark-200 dark:border-dark-700 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                >
+                  <option value="MARKETING">Marketing (Offers, Announcements, Greetings)</option>
+                  <option value="UTILITY">Utility (Account Updates, Receipts, Alerts)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-dark-700 dark:text-dark-300 mb-1">
+                  Message Body (What customer will receive)
+                </label>
+                <textarea
+                  rows={5}
+                  value={newTemplateForm.bodyText}
+                  onChange={(e) => setNewTemplateForm({ ...newTemplateForm, bodyText: e.target.value })}
+                  placeholder="Enter the full exact text including Hindi, emojis, links..."
+                  required
+                  className="w-full px-3 py-2 text-xs rounded-xl bg-dark-50 dark:bg-dark-900 border border-dark-200 dark:border-dark-700 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="hasImageToggle"
+                  checked={newTemplateForm.hasImage}
+                  onChange={(e) => setNewTemplateForm({ ...newTemplateForm, hasImage: e.target.checked })}
+                  className="rounded text-emerald-600 focus:ring-emerald-500"
+                />
+                <label htmlFor="hasImageToggle" className="text-xs text-dark-700 dark:text-dark-300 cursor-pointer">
+                  Include Top Header Image Banner (Recommended for PeYug templates)
+                </label>
+              </div>
+
+              <div className="pt-3 border-t border-dark-100 dark:border-dark-700 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowCreateModal(false)}
+                  className="px-3 py-2 rounded-xl text-xs font-semibold text-dark-600 dark:text-dark-400 hover:bg-dark-100 dark:hover:bg-dark-700 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={creatingTemplate}
+                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm cursor-pointer"
+                >
+                  {creatingTemplate ? <RefreshCw size={13} className="animate-spin" /> : <Send size={13} />}
+                  Submit to Meta for Approval
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

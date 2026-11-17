@@ -15,6 +15,12 @@ export const sendFollowUpReminder = (payload) =>
 export const getWhatsAppConfig = () =>
   api.get('/whatsapp/config').then((res) => res.data);
 
+export const getWhatsAppTemplates = () =>
+  api.get('/whatsapp/templates').then((res) => res.data);
+
+export const createWhatsAppTemplate = (payload) =>
+  api.post('/whatsapp/templates', payload).then((res) => res.data);
+
 export const updateWhatsAppConfig = (payload) =>
   api.put('/whatsapp/config', payload).then((res) => res.data);
 
