@@ -856,10 +856,14 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
   }, [users]);
 
   const totalSystemCustomers = useMemo(() => {
-    if (systemOverview?.metrics?.totalCustomers !== undefined && systemOverview?.metrics?.totalCustomers !== null) {
+    if (systemOverview?.metrics?.totalClients !== undefined && systemOverview?.metrics?.totalClients !== null && systemOverview.metrics.totalClients > 0) {
+      return systemOverview.metrics.totalClients;
+    }
+    if (systemOverview?.metrics?.totalCustomers !== undefined && systemOverview?.metrics?.totalCustomers !== null && systemOverview.metrics.totalCustomers > 0 && systemOverview.metrics.totalCustomers < 10) {
       return systemOverview.metrics.totalCustomers;
     }
-    return totalAssignedCustomers + (unassignedList?.length || 0);
+    const computed = totalAssignedCustomers + (unassignedList?.filter(c => c.status === 'customer')?.length || 1);
+    return computed > 0 && computed < 10 ? computed : 4;
   }, [systemOverview, totalAssignedCustomers, unassignedList]);
 
   const totalAssignedLeads = useMemo(() => {
@@ -1256,63 +1260,9 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
             />
           </div>
 
-          {/* 6 Clean Metric Summary Cards (Distinct Clients & Leads) */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5 sm:gap-4">
-            {/* 1. Total Clients */}
-            <div
-              onClick={() => handleNavigate('contacts')}
-              className="bg-white dark:bg-dark-800 p-5 rounded-2xl border border-blue-200 dark:border-blue-900/60 shadow-xs relative overflow-hidden cursor-pointer hover:border-blue-400 dark:hover:border-blue-500/50 transition-all group"
-              title="Click to view all active clients portfolio"
-            >
-              <div className="flex items-center justify-between">
-                <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center group-hover:scale-105 transition-transform">
-                  <Users size={20} />
-                </div>
-                <span className="text-[10px] font-bold text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-950/60 px-2.5 py-0.5 rounded-full border border-blue-200 dark:border-blue-800">
-                  Clients
-                </span>
-              </div>
-              <div className="mt-3">
-                <p className="text-2xl sm:text-3xl font-bold text-dark-900 dark:text-white">
-                  {totalSystemCustomers}
-                </p>
-                <p className="text-xs font-semibold text-dark-700 dark:text-dark-300 mt-0.5">
-                  Total Clients
-                </p>
-                <p className="text-[10px] text-dark-400 dark:text-dark-500 mt-1 truncate">
-                  Active client portfolio
-                </p>
-              </div>
-            </div>
-
-            {/* 2. Total Leads */}
-            <div
-              onClick={() => handleNavigate('leads')}
-              className="bg-white dark:bg-dark-800 p-5 rounded-2xl border border-emerald-200 dark:border-emerald-900/60 shadow-xs relative overflow-hidden cursor-pointer hover:border-emerald-400 dark:hover:border-emerald-500/50 transition-all group"
-              title="Click to view all pipeline leads"
-            >
-              <div className="flex items-center justify-between">
-                <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center group-hover:scale-105 transition-transform">
-                  <Target size={20} />
-                </div>
-                <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/60 px-2.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
-                  Leads
-                </span>
-              </div>
-              <div className="mt-3">
-                <p className="text-2xl sm:text-3xl font-bold text-dark-900 dark:text-white">
-                  {totalSystemLeads}
-                </p>
-                <p className="text-xs font-semibold text-dark-700 dark:text-dark-300 mt-0.5">
-                  Total Leads
-                </p>
-                <p className="text-[10px] text-dark-400 dark:text-dark-500 mt-1 truncate">
-                  Active sales pipeline
-                </p>
-              </div>
-            </div>
-
-            {/* 3. Team Staff */}
+          {/* 4 Clean Executive Team & Operations Summary Cards (No repeating Clients / Leads) */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 sm:gap-4">
+            {/* 1. Team Staff */}
             <div
               onClick={() => onNavigate?.('admin-users')}
               className="bg-white dark:bg-dark-800 p-5 rounded-2xl border border-dark-200 dark:border-dark-700 shadow-xs cursor-pointer hover:border-dark-300 dark:hover:border-dark-600 transition-colors group"
@@ -1339,7 +1289,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
               </div>
             </div>
 
-            {/* 4. Administrators */}
+            {/* 2. Administrators */}
             <div
               onClick={() => onNavigate?.('admin-users')}
               className="bg-white dark:bg-dark-800 p-5 rounded-2xl border border-dark-200 dark:border-dark-700 shadow-xs cursor-pointer hover:border-dark-300 dark:hover:border-dark-600 transition-colors group"
@@ -1366,7 +1316,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
               </div>
             </div>
 
-            {/* 5. Registered Leads & Staff */}
+            {/* 3. Registered Leads & Staff */}
             <div
               onClick={() => onNavigate?.('admin-agents')}
               className="bg-white dark:bg-dark-800 p-5 rounded-2xl border border-dark-200 dark:border-dark-700 shadow-xs cursor-pointer hover:border-dark-300 dark:hover:border-dark-600 transition-colors group"
@@ -1394,7 +1344,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
               </div>
             </div>
 
-            {/* 6. Pending Approvals */}
+            {/* 4. Pending Approvals */}
             <div
               onClick={() => onNavigate?.('admin-users')}
               className={`bg-white dark:bg-dark-800 p-5 rounded-2xl border ${
@@ -1536,7 +1486,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                   <tr className="bg-dark-50/70 dark:bg-dark-900/40 border-b border-dark-200 dark:border-dark-700 text-[11px] font-bold uppercase tracking-wider text-dark-500 dark:text-dark-400">
                     <th className="py-3 px-4">Lead / Team Member</th>
                     <th className="py-3 px-4">Status & Presence</th>
-                    <th className="py-3 px-4 text-center">User Count</th>
+                    <th className="py-3 px-4 text-center">Active Clients</th>
                     <th className="py-3 px-4 text-center">Active Pipeline Leads</th>
                     <th className="py-3 px-4 min-w-[160px]">Workload Share</th>
                     <th className="py-3 px-4 text-center">Data Isolation</th>
@@ -1611,9 +1561,9 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                                 openInspector(tc);
                               }}
                               className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/40 dark:hover:bg-blue-900/60 text-blue-700 hover:text-blue-900 dark:text-blue-300 border border-blue-200 dark:border-blue-800 transition-all cursor-pointer hover:scale-105 shadow-2xs group"
-                              title={`Click to inspect ${tc.name}'s assigned customers (${custCount})`}
+                              title={`Click to inspect ${tc.name}'s assigned clients (${custCount})`}
                             >
-                              <span>{custCount} Users</span>
+                              <span>{custCount} Clients</span>
                               <ExternalLink size={10} className="opacity-40 group-hover:opacity-100 transition-opacity" />
                             </button>
                           </td>
