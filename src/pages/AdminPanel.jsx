@@ -865,28 +865,24 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
   }, [users]);
 
   const totalSystemCustomers = useMemo(() => {
-    if (systemOverview?.metrics?.totalClients !== undefined && systemOverview?.metrics?.totalClients !== null && systemOverview.metrics.totalClients > 0) {
+    if (systemOverview?.metrics?.totalClients !== undefined && systemOverview?.metrics?.totalClients !== null) {
       return systemOverview.metrics.totalClients;
     }
     if (systemOverview?.metrics?.totalCustomers !== undefined && systemOverview?.metrics?.totalCustomers !== null) {
-      const leads = systemOverview?.metrics?.totalLeads || 7;
-      if (systemOverview.metrics.totalCustomers > leads) {
-        return systemOverview.metrics.totalCustomers - leads;
-      }
       return systemOverview.metrics.totalCustomers;
     }
-    return 4;
-  }, [systemOverview]);
+    return totalAssignedCustomers;
+  }, [systemOverview, totalAssignedCustomers]);
 
   const totalAssignedLeads = useMemo(() => {
     return users.reduce((sum, u) => sum + (u.assignedLeads || 0), 0);
   }, [users]);
 
   const totalSystemLeads = useMemo(() => {
-    if (systemOverview?.metrics?.totalLeads !== undefined && systemOverview?.metrics?.totalLeads !== null && systemOverview.metrics.totalLeads > 0) {
+    if (systemOverview?.metrics?.totalLeads !== undefined && systemOverview?.metrics?.totalLeads !== null) {
       return systemOverview.metrics.totalLeads;
     }
-    return totalAssignedLeads > 0 ? totalAssignedLeads : 7;
+    return totalAssignedLeads;
   }, [systemOverview, totalAssignedLeads]);
 
   const onlineTelecallersCount = useMemo(() => {

@@ -572,14 +572,14 @@ export default function ApplicationsManager({
   }, [timelineData, timelineFilter]);
 
   const effectiveClientsCount =
-    totalClients !== undefined && totalClients !== null && totalClients > 0
+    totalClients !== undefined && totalClients !== null
       ? totalClients
-      : (stats.totalClients ?? ((stats.totalCustomers && stats.totalLeads && stats.totalCustomers > stats.totalLeads) ? stats.totalCustomers - stats.totalLeads : (stats.totalCustomers ?? 4)));
+      : (stats.totalClients ?? stats.totalCustomers ?? 0);
 
   const effectiveLeadsCount =
-    totalLeads !== undefined && totalLeads !== null && totalLeads > 0
+    totalLeads !== undefined && totalLeads !== null
       ? totalLeads
-      : (stats.totalLeads || 0);
+      : (stats.totalLeads ?? 0);
 
   return (
     <div className="space-y-4 sm:space-y-6 max-w-full">
