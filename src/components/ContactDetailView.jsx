@@ -683,90 +683,23 @@ export default function ContactDetailView({
       {/* Sub-tab 1: Contact Details Page matching Screenshots 2 & 3 */}
       {activeSubTab === 'contact' && (
         <>
-          {/* Interactive Calling Mode Selector */}
-          <div className="p-3.5 rounded-lg bg-white dark:bg-dark-800 border border-[#d9d9d9] dark:border-dark-700 shadow-2xs space-y-2">
-            <div className="flex items-center justify-between flex-wrap gap-2">
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-[13px] font-semibold text-dark-800 dark:text-dark-100">
-                  Calling Mode:
-                </span>
-                <span className="text-[12px] text-dark-500">
-                  {callingMode === 'web_softphone'
-                    ? 'In-CRM Web Dialer (Default — Mic & Speaker with Live Audio Recording & AI Summaries)'
-                    : callingMode === 'superfone'
-                    ? 'Superfone Mobile App Bridge ("Call from Web" Mode)'
-                    : 'Device SIM (Windows Phone Link / Mobile)'}
-                </span>
-              </div>
-
-              {/* Mode Toggle Buttons */}
-              <div className="flex items-center gap-1 bg-dark-50 dark:bg-dark-900 p-0.5 rounded-lg border border-dark-200 dark:border-dark-700">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setCallingMode('web_softphone');
-                    try { localStorage.setItem('smartcrm_calling_mode', 'web_softphone'); } catch (_) {}
-                    addToast('Calling mode set to In-CRM Web Dialer', 'info');
-                  }}
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${
-                    callingMode === 'web_softphone'
-                      ? 'bg-emerald-600 text-white shadow-xs'
-                      : 'text-dark-600 dark:text-dark-300 hover:text-dark-900'
-                  }`}
-                >
-                  <Headphones size={12} />
-                  <span>Web Dialer</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setCallingMode('superfone');
-                    try { localStorage.setItem('smartcrm_calling_mode', 'superfone'); } catch (_) {}
-                    addToast('Calling mode set to Superfone Mobile Bridge', 'info');
-                  }}
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${
-                    callingMode === 'superfone'
-                      ? 'bg-blue-600 text-white shadow-xs'
-                      : 'text-dark-600 dark:text-dark-300 hover:text-dark-900'
-                  }`}
-                >
-                  <Smartphone size={12} />
-                  <span>Superfone</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setCallingMode('sim');
-                    try { localStorage.setItem('smartcrm_calling_mode', 'sim'); } catch (_) {}
-                    addToast('Calling mode set to Device SIM', 'info');
-                  }}
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${
-                    callingMode === 'sim'
-                      ? 'bg-blue-600 text-white shadow-xs'
-                      : 'text-dark-600 dark:text-dark-300 hover:text-dark-900'
-                  }`}
-                >
-                  <Phone size={12} />
-                  <span>SIM</span>
-                </button>
-              </div>
+          {/* In-CRM Calling Status */}
+          <div className="p-3 rounded-xl bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 shadow-2xs flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-[13px] font-semibold text-dark-800 dark:text-dark-100">
+                Calling Status:
+              </span>
+              <span className="text-[12px] text-dark-500">
+                In-CRM Web Dialer Active (High-fidelity browser calling with live audio recording & AI call summaries)
+              </span>
             </div>
-
-            {callingMode === 'superfone' && (
-              <div className="p-2.5 rounded-md bg-[#fffbe6] dark:bg-amber-950/20 border border-[#ffe58f] dark:border-amber-900/40 text-[#d48806] dark:text-amber-200 text-[12px] flex items-center justify-center gap-1.5 flex-wrap">
-                <span className="font-semibold">Superfone:</span>
-                <span>Go to Call History on mobile app</span>
-                <span>&gt;</span>
-                <span>Click</span>
-                <span className="inline-flex items-center px-1 py-0.5 rounded border border-[#ffd591] bg-white dark:bg-dark-800 text-[10px]">
-                  📞
-                </span>
-                <span>icon</span>
-                <span>&gt;</span>
-                <span>Turn on 'Call from Web' mode</span>
-              </div>
-            )}
+            <div className="flex items-center gap-1.5">
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                <Headphones size={12} />
+                <span>Web Dialer Ready</span>
+              </span>
+            </div>
           </div>
 
           {/* Contact Main Card matching Reference */}

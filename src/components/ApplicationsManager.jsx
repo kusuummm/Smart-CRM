@@ -574,7 +574,7 @@ export default function ApplicationsManager({
   const effectiveClientsCount =
     totalClients !== undefined && totalClients !== null && totalClients > 0
       ? totalClients
-      : (stats.totalClients ?? stats.totalCustomers ?? 0);
+      : (stats.totalClients ?? ((stats.totalCustomers && stats.totalLeads && stats.totalCustomers > stats.totalLeads) ? stats.totalCustomers - stats.totalLeads : (stats.totalCustomers ?? 4)));
 
   const effectiveLeadsCount =
     totalLeads !== undefined && totalLeads !== null && totalLeads > 0

@@ -627,7 +627,7 @@ export default function Contacts({ onNavigate }) {
     setViewingContact(null);
   };
 
-  // Create Contact Submit
+  // Create Contact Submit (Strict Uniqueness: Mobile, Email, Business Name)
   const handleSaveContact = async (e) => {
     e.preventDefault();
     if (!form.firstName.trim()) {
@@ -639,47 +639,88 @@ export default function Contacts({ onNavigate }) {
       return;
     }
 
+    const cleanPhone = form.phone.trim().replace(/\D/g, '').slice(-10);
+    if (!cleanPhone || cleanPhone.length < 10) {
+      addToast('Please enter a valid 10-digit mobile number', 'error');
+      return;
+    }
+
+    const rawEmail = (form.email || '').trim().toLowerCase();
+    const rawCompany = (form.businessName || form.additionalInfo || '').trim();
+
+    // Instant local duplicate pre-check
+    const duplicatePhone = contacts.find((c) => {
+      const p = (c.phone || c.mobile || '').replace(/\D/g, '').slice(-10);
+      return p && p === cleanPhone;
+    });
+    if (duplicatePhone) {
+      addToast(`Mobile number ending in ${cleanPhone} is already registered (${duplicatePhone.name}). Existing numbers cannot register again.`, 'error');
+      return;
+    }
+
+    if (rawEmail && !rawEmail.endsWith('@example.com')) {
+      const duplicateEmail = contacts.find((c) => (c.email || '').toLowerCase() === rawEmail);
+      if (duplicateEmail) {
+        addToast(`Email address "${rawEmail}" is already registered (${duplicateEmail.name}). Existing emails cannot register again.`, 'error');
+        return;
+      }
+    }
+
+    if (rawCompany) {
+      const duplicateCompany = contacts.find((c) => (c.additionalInfo || c.company || '').toLowerCase() === rawCompany.toLowerCase());
+      if (duplicateCompany) {
+        addToast(`Business "${rawCompany}" is already registered (${duplicateCompany.name}). Existing businesses cannot register again.`, 'error');
+        return;
+      }
+    }
+
     setSavingContact(true);
     const fullName = `${form.firstName.trim()} ${form.lastName.trim()}`.trim();
-    const newContactObj = {
-      id: Date.now().toString(),
-      name: fullName,
-      phone: form.phone.trim(),
-      additionalInfo: form.additionalInfo || '-',
-      email: form.email || '-',
-      tags: form.leadGroup !== 'Select lead group' ? form.leadGroup : '-',
-      leadStage: form.leadStage !== 'Select lead stage' ? form.leadStage : 'New',
-      source: form.sourceType || 'call',
-      city: form.city || '-',
-    };
 
     try {
       const res = await createCustomer({
         name: fullName,
-        mobile: form.phone.trim(),
-        email: form.email || `${form.firstName.toLowerCase()}@example.com`,
+        mobile: cleanPhone,
+        phone: cleanPhone,
+        email: rawEmail || undefined,
+        company: rawCompany || '',
         city: form.city || 'Delhi',
         assignedTelecaller: form.assignedTo || (user?.name || 'Unassigned'),
-      }).catch(() => null);
-      if (res?.customer?._id) {
-        newContactObj.id = res.customer._id;
-      }
-    } catch {}
+      });
 
-    setContacts((prev) => {
-      const updated = [newContactObj, ...prev];
-      try {
-        localStorage.setItem('smartcrm_contacts', JSON.stringify(updated));
-      } catch {}
-      return updated;
-    });
-    addToast(`Contact "${fullName}" created successfully!`, 'success');
-    setSavingContact(false);
-    setIsCreateModalOpen(false);
-    setForm(initialForm);
+      const newContactObj = {
+        id: res?.customer?._id || Date.now().toString(),
+        name: fullName,
+        phone: cleanPhone,
+        additionalInfo: rawCompany || '-',
+        email: rawEmail || '-',
+        tags: form.leadGroup !== 'Select lead group' ? form.leadGroup : '-',
+        leadStage: form.leadStage !== 'Select lead stage' ? form.leadStage : 'New',
+        source: form.sourceType || 'call',
+        city: form.city || '-',
+        assignedTelecaller: form.assignedTo || (user?.name || 'Unassigned'),
+        createdAt: new Date().toISOString(),
+      };
+
+      setContacts((prev) => {
+        const updated = [newContactObj, ...prev];
+        try {
+          localStorage.setItem('smartcrm_contacts', JSON.stringify(updated));
+        } catch {}
+        return updated;
+      });
+
+      addToast(`Contact "${fullName}" created successfully!`, 'success');
+      setIsCreateModalOpen(false);
+      setForm(initialForm);
+    } catch (err) {
+      addToast(err.response?.data?.message || err.message || 'Failed to create contact', 'error');
+    } finally {
+      setSavingContact(false);
+    }
   };
 
-  // Dedicated Superfone Full Page Contact Detail View
+  // Dedicated In-CRM Full Page Contact Detail View
   if (viewingContact) {
     return (
       <div className="relative">

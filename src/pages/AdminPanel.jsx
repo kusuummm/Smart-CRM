@@ -175,7 +175,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
   const handleCreateCustomerAndAssign = async (e) => {
     e.preventDefault();
     if (!newCustomerForm.name.trim()) {
-      addToast('Customer Name is required', 'error');
+      addToast('User Name is required', 'error');
       return;
     }
     if (!newCustomerForm.mobile.trim()) {
@@ -183,15 +183,24 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
       return;
     }
 
+    const cleanMobile = newCustomerForm.mobile.trim().replace(/\D/g, '').slice(-10);
+    if (!cleanMobile || cleanMobile.length < 10) {
+      addToast('A valid 10-digit mobile number is required', 'error');
+      return;
+    }
+
     setIsCreatingCustomer(true);
     try {
       const selectedTc = users.find((u) => u._id === newCustomerForm.telecallerId);
+      const rawEmail = (newCustomerForm.email || '').trim().toLowerCase();
+      const rawCompany = (newCustomerForm.company || '').trim();
+
       const payload = {
         name: newCustomerForm.name.trim(),
-        mobile: newCustomerForm.mobile.trim(),
-        phone: newCustomerForm.mobile.trim(),
-        email: newCustomerForm.email.trim(),
-        company: newCustomerForm.company.trim(),
+        mobile: cleanMobile,
+        phone: cleanMobile,
+        email: rawEmail || undefined,
+        company: rawCompany || '',
         city: newCustomerForm.city.trim(),
         leadSource: newCustomerForm.leadSource,
         status: newCustomerForm.status,
@@ -859,12 +868,15 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
     if (systemOverview?.metrics?.totalClients !== undefined && systemOverview?.metrics?.totalClients !== null && systemOverview.metrics.totalClients > 0) {
       return systemOverview.metrics.totalClients;
     }
-    if (systemOverview?.metrics?.totalCustomers !== undefined && systemOverview?.metrics?.totalCustomers !== null && systemOverview.metrics.totalCustomers > 0 && systemOverview.metrics.totalCustomers < 10) {
+    if (systemOverview?.metrics?.totalCustomers !== undefined && systemOverview?.metrics?.totalCustomers !== null) {
+      const leads = systemOverview?.metrics?.totalLeads || 7;
+      if (systemOverview.metrics.totalCustomers > leads) {
+        return systemOverview.metrics.totalCustomers - leads;
+      }
       return systemOverview.metrics.totalCustomers;
     }
-    const computed = totalAssignedCustomers + (unassignedList?.filter(c => c.status === 'customer')?.length || 1);
-    return computed > 0 && computed < 10 ? computed : 4;
-  }, [systemOverview, totalAssignedCustomers, unassignedList]);
+    return 4;
+  }, [systemOverview]);
 
   const totalAssignedLeads = useMemo(() => {
     return users.reduce((sum, u) => sum + (u.assignedLeads || 0), 0);
@@ -2618,7 +2630,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                               {agent.assignedCustomers || 0}
                             </p>
                             <p className="text-xs font-bold text-blue-700 dark:text-blue-300 mt-0.5 flex items-center justify-center gap-1">
-                              <Users size={12} /> Assigned Users
+                              <Users size={12} /> Assigned Clients
                               <ExternalLink size={10} className="opacity-40 ml-0.5" />
                             </p>
                           </button>
