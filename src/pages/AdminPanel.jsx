@@ -158,7 +158,14 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
 
   // Add Customer & Assign Lead Modal State
   const [isAddCustomerModalOpen, setIsAddCustomerModalOpen] = useState(false);
+  const [isAssignRequired, setIsAssignRequired] = useState(false);
   const [isCreatingCustomer, setIsCreatingCustomer] = useState(false);
+
+  const openAddClientModal = (requireAssign = false) => {
+    setNewCustomerForm(initialNewCustomerForm);
+    setIsAssignRequired(requireAssign);
+    setIsAddCustomerModalOpen(true);
+  };
   const initialNewCustomerForm = {
     name: '',
     mobile: '',
@@ -175,7 +182,11 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
   const handleCreateCustomerAndAssign = async (e) => {
     e.preventDefault();
     if (!newCustomerForm.name.trim()) {
-      addToast('User Name is required', 'error');
+      addToast('Client Name is required', 'error');
+      return;
+    }
+    if (isAssignRequired && !newCustomerForm.telecallerId) {
+      addToast('Please select a team member to assign this client', 'error');
       return;
     }
     if (!newCustomerForm.mobile.trim()) {
@@ -1228,18 +1239,18 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                   <span className="hidden sm:inline">Users Roster</span>
                 </button>
                 <button
-                  onClick={() => setIsAddCustomerModalOpen(true)}
+                  onClick={() => openAddClientModal(true)}
                   className="inline-flex items-center gap-2 px-3.5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition-colors shadow-sm cursor-pointer"
                 >
                   <UserCheck size={17} />
-                  <span>Add User & Assign</span>
+                  <span>Add Client & Assign</span>
                 </button>
                 <button
-                  onClick={openAdd}
-                  className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-sm font-semibold transition-colors shadow-sm"
+                  onClick={() => openAddClientModal(false)}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-sm font-semibold transition-colors shadow-sm cursor-pointer"
                 >
                   <UserPlus size={17} />
-                  <span>Add User</span>
+                  <span>Add Client</span>
                 </button>
               </div>
             }
@@ -1470,11 +1481,11 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
               <div className="flex items-center gap-2 self-start sm:self-auto">
                 <button
                   type="button"
-                  onClick={() => setIsAddCustomerModalOpen(true)}
+                  onClick={() => openAddClientModal(true)}
                   className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold inline-flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
                 >
                   <Plus size={14} />
-                  <span>Assign New User</span>
+                  <span>Assign New Client</span>
                 </button>
                 <button
                   type="button"
@@ -2682,18 +2693,18 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                   <RefreshCw size={17} className={refreshing ? 'animate-spin text-primary-600' : ''} />
                 </button>
                 <button
-                  onClick={() => setIsAddCustomerModalOpen(true)}
+                  onClick={() => openAddClientModal(true)}
                   className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition-colors shadow-sm cursor-pointer"
                 >
                   <UserCheck size={16} />
-                  <span>Add User & Assign</span>
+                  <span>Add Client & Assign</span>
                 </button>
                 <button
                   onClick={() => openTransferModal('')}
                   className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-sm font-semibold transition-colors shadow-sm cursor-pointer"
                 >
                   <ArrowRightLeft size={16} />
-                  <span>Bulk Transfer Users</span>
+                  <span>Bulk Transfer Clients</span>
                 </button>
               </div>
             }
@@ -5899,14 +5910,14 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
       <Modal
         isOpen={isTransferModalOpen}
         onClose={() => setIsTransferModalOpen(false)}
-        title="Transfer Workload & Assigned Users"
+        title="Transfer Workload & Assigned Clients"
         size="md"
       >
         <div className="space-y-4">
           <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 flex items-start gap-2.5">
             <Info size={17} className="text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
             <p className="text-xs text-amber-800 dark:text-amber-200 leading-relaxed">
-              This action will transfer all assigned user accounts and associated leads from the source user to the target user in bulk.
+              This action will transfer all assigned client accounts and associated leads from the source member to the target member in bulk.
             </p>
           </div>
 
@@ -6002,18 +6013,20 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
       <Modal
         isOpen={isAddCustomerModalOpen}
         onClose={() => setIsAddCustomerModalOpen(false)}
-        title="Add New User & Assign Member"
+        title={isAssignRequired ? "Add New Client & Assign Member" : "Add New Client"}
         size="lg"
       >
         <form onSubmit={handleCreateCustomerAndAssign} className="space-y-4">
           <p className="text-xs text-dark-500 dark:text-dark-400">
-            Create an individual user account and automatically generate their pipeline lead with immediate assignment to a team member.
+            {isAssignRequired
+              ? "Create an individual client account and automatically generate their pipeline lead with immediate assignment to a team member."
+              : "Create an individual client account with direct entry into your CRM pipeline."}
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <div>
               <label className="block text-xs font-semibold text-dark-700 dark:text-dark-300 mb-1">
-                User Full Name <span className="text-rose-500">*</span>
+                Client Full Name <span className="text-rose-500">*</span>
               </label>
               <input
                 type="text"
@@ -6111,7 +6124,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
               <option value="">Leave Unassigned (Add to Unassigned Workload Queue)</option>
               {telecallers.map((tc) => (
                 <option key={tc._id} value={tc._id}>
-                  {tc.name} ({tc.assignedCustomers || 0} active users) {tc.status === 'offline' ? '• Offline' : '• Online'}
+                  {tc.name} ({tc.assignedCustomers || 0} active clients) {tc.status === 'offline' ? '• Offline' : '• Online'}
                 </option>
               ))}
             </select>
@@ -6147,7 +6160,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
               className="px-5 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
             >
               {isCreatingCustomer ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
-              <span>Create User & Assign</span>
+              <span>{isAssignRequired ? "Create Client & Assign" : "Create Client"}</span>
             </button>
           </div>
         </form>
