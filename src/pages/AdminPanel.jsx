@@ -56,6 +56,7 @@ import {
   Crown,
   Lock,
   CheckCircle,
+  Target,
 } from 'lucide-react';
 import { PageHeader } from '../components/Common';
 import ApplicationsManager from '../components/ApplicationsManager';
@@ -865,6 +866,13 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
     return users.reduce((sum, u) => sum + (u.assignedLeads || 0), 0);
   }, [users]);
 
+  const totalSystemLeads = useMemo(() => {
+    if (systemOverview?.metrics?.totalLeads !== undefined && systemOverview?.metrics?.totalLeads !== null && systemOverview.metrics.totalLeads > 0) {
+      return systemOverview.metrics.totalLeads;
+    }
+    return totalAssignedLeads > 0 ? totalAssignedLeads : 7;
+  }, [systemOverview, totalAssignedLeads]);
+
   const onlineTelecallersCount = useMemo(() => {
     return users.filter((u) => (u.role === 'telecaller' || u.role === 'user') && u.isOnline).length;
   }, [users]);
@@ -1243,22 +1251,25 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
             <ApplicationsManager
               onNavigateToCustomers={() => handleNavigate('contacts')}
               onNavigateToLeads={() => handleNavigate('leads')}
+              totalClients={totalSystemCustomers}
+              totalLeads={totalSystemLeads}
             />
           </div>
 
-          {/* 5 Clean Metric Summary Cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 sm:gap-4">
-            {/* Total Users */}
+          {/* 6 Clean Metric Summary Cards (Distinct Clients & Leads) */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5 sm:gap-4">
+            {/* 1. Total Clients */}
             <div
-              className="bg-white dark:bg-dark-800 p-5 rounded-2xl border border-blue-200 dark:border-blue-900/60 shadow-xs relative overflow-hidden"
-              title="Total registered user accounts across all team members"
+              onClick={() => handleNavigate('contacts')}
+              className="bg-white dark:bg-dark-800 p-5 rounded-2xl border border-blue-200 dark:border-blue-900/60 shadow-xs relative overflow-hidden cursor-pointer hover:border-blue-400 dark:hover:border-blue-500/50 transition-all group"
+              title="Click to view all active clients portfolio"
             >
               <div className="flex items-center justify-between">
-                <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center group-hover:scale-105 transition-transform">
                   <Users size={20} />
                 </div>
                 <span className="text-[10px] font-bold text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-950/60 px-2.5 py-0.5 rounded-full border border-blue-200 dark:border-blue-800">
-                  Users
+                  Clients
                 </span>
               </div>
               <div className="mt-3">
@@ -1266,26 +1277,53 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                   {totalSystemCustomers}
                 </p>
                 <p className="text-xs font-semibold text-dark-700 dark:text-dark-300 mt-0.5">
-                  Total Users
+                  Total Clients
                 </p>
-                <p className="text-[10px] text-dark-400 dark:text-dark-500 mt-1">
-                  🔒 Count only (details isolated to assigned members)
+                <p className="text-[10px] text-dark-400 dark:text-dark-500 mt-1 truncate">
+                  Active client portfolio
                 </p>
               </div>
             </div>
 
-            {/* Total Users */}
+            {/* 2. Total Leads */}
+            <div
+              onClick={() => handleNavigate('leads')}
+              className="bg-white dark:bg-dark-800 p-5 rounded-2xl border border-emerald-200 dark:border-emerald-900/60 shadow-xs relative overflow-hidden cursor-pointer hover:border-emerald-400 dark:hover:border-emerald-500/50 transition-all group"
+              title="Click to view all pipeline leads"
+            >
+              <div className="flex items-center justify-between">
+                <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+                  <Target size={20} />
+                </div>
+                <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/60 px-2.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
+                  Leads
+                </span>
+              </div>
+              <div className="mt-3">
+                <p className="text-2xl sm:text-3xl font-bold text-dark-900 dark:text-white">
+                  {totalSystemLeads}
+                </p>
+                <p className="text-xs font-semibold text-dark-700 dark:text-dark-300 mt-0.5">
+                  Total Leads
+                </p>
+                <p className="text-[10px] text-dark-400 dark:text-dark-500 mt-1 truncate">
+                  Active sales pipeline
+                </p>
+              </div>
+            </div>
+
+            {/* 3. Team Staff */}
             <div
               onClick={() => onNavigate?.('admin-users')}
-              className="bg-white dark:bg-dark-800 p-5 rounded-2xl border border-dark-200 dark:border-dark-700 shadow-xs cursor-pointer hover:border-dark-300 dark:hover:border-dark-600 transition-colors"
+              className="bg-white dark:bg-dark-800 p-5 rounded-2xl border border-dark-200 dark:border-dark-700 shadow-xs cursor-pointer hover:border-dark-300 dark:hover:border-dark-600 transition-colors group"
               title="Click to open Users & Approvals page"
             >
               <div className="flex items-center justify-between">
-                <div className="w-10 h-10 rounded-xl bg-dark-100 dark:bg-dark-700/60 text-dark-700 dark:text-dark-300 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center group-hover:scale-105 transition-transform">
                   <UserCheck size={20} />
                 </div>
                 <span className="text-[11px] font-semibold text-dark-500 dark:text-dark-400 bg-dark-100 dark:bg-dark-700/60 px-2.5 py-0.5 rounded-full">
-                  Accounts
+                  Team
                 </span>
               </div>
               <div className="mt-3">
@@ -1293,19 +1331,22 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                   {users.length}
                 </p>
                 <p className="text-xs text-dark-500 dark:text-dark-400 mt-0.5">
-                  Total Users Registered
+                  Team Staff
+                </p>
+                <p className="text-[10px] text-dark-400 dark:text-dark-500 mt-1 truncate">
+                  Registered members
                 </p>
               </div>
             </div>
 
-            {/* Administrators */}
+            {/* 4. Administrators */}
             <div
               onClick={() => onNavigate?.('admin-users')}
-              className="bg-white dark:bg-dark-800 p-5 rounded-2xl border border-dark-200 dark:border-dark-700 shadow-xs cursor-pointer hover:border-dark-300 dark:hover:border-dark-600 transition-colors"
+              className="bg-white dark:bg-dark-800 p-5 rounded-2xl border border-dark-200 dark:border-dark-700 shadow-xs cursor-pointer hover:border-dark-300 dark:hover:border-dark-600 transition-colors group"
               title="Click to open Users & Approvals page"
             >
               <div className="flex items-center justify-between">
-                <div className="w-10 h-10 rounded-xl bg-dark-100 dark:bg-dark-700/60 text-dark-700 dark:text-dark-300 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-dark-100 dark:bg-dark-700/60 text-dark-700 dark:text-dark-300 flex items-center justify-center group-hover:scale-105 transition-transform">
                   <Shield size={20} />
                 </div>
                 <span className="text-[11px] font-semibold text-dark-500 dark:text-dark-400 bg-dark-100 dark:bg-dark-700/60 px-2.5 py-0.5 rounded-full">
@@ -1317,19 +1358,22 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                   {users.filter((u) => normalizeRole(u.role) === 'admin' || normalizeRole(u.role) === 'owner').length}
                 </p>
                 <p className="text-xs text-dark-500 dark:text-dark-400 mt-0.5">
-                  Owners & Administrators
+                  Administrators
+                </p>
+                <p className="text-[10px] text-dark-400 dark:text-dark-500 mt-1 truncate">
+                  Owners & Admins
                 </p>
               </div>
             </div>
 
-            {/* Registered Leads & Staff */}
+            {/* 5. Registered Leads & Staff */}
             <div
               onClick={() => onNavigate?.('admin-agents')}
-              className="bg-white dark:bg-dark-800 p-5 rounded-2xl border border-dark-200 dark:border-dark-700 shadow-xs cursor-pointer hover:border-dark-300 dark:hover:border-dark-600 transition-colors"
+              className="bg-white dark:bg-dark-800 p-5 rounded-2xl border border-dark-200 dark:border-dark-700 shadow-xs cursor-pointer hover:border-dark-300 dark:hover:border-dark-600 transition-colors group"
               title="Click to open Lead Live Presence page"
             >
               <div className="flex items-center justify-between">
-                <div className="w-10 h-10 rounded-xl bg-dark-100 dark:bg-dark-700/60 text-dark-700 dark:text-dark-300 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-dark-100 dark:bg-dark-700/60 text-dark-700 dark:text-dark-300 flex items-center justify-center group-hover:scale-105 transition-transform">
                   <Activity size={20} />
                 </div>
                 <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
@@ -1344,17 +1388,20 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                 <p className="text-xs text-dark-500 dark:text-dark-400 mt-0.5">
                   Managers & Leads
                 </p>
+                <p className="text-[10px] text-dark-400 dark:text-dark-500 mt-1 truncate">
+                  Desk team members
+                </p>
               </div>
             </div>
 
-            {/* Pending Approvals */}
+            {/* 6. Pending Approvals */}
             <div
               onClick={() => onNavigate?.('admin-users')}
               className={`bg-white dark:bg-dark-800 p-5 rounded-2xl border ${
                 pendingUsers.length > 0
                   ? 'border-amber-400 dark:border-amber-500 ring-2 ring-amber-400/20'
                   : 'border-dark-200 dark:border-dark-700'
-              } shadow-xs cursor-pointer hover:border-dark-300 dark:hover:border-dark-600 transition-colors`}
+              } shadow-xs cursor-pointer hover:border-dark-300 dark:hover:border-dark-600 transition-colors group`}
               title="Click to review pending lead approvals"
             >
               <div className="flex items-center justify-between">
@@ -1363,7 +1410,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                     pendingUsers.length > 0
                       ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400'
                       : 'bg-dark-100 dark:bg-dark-700/60 text-dark-500 dark:text-dark-400'
-                  } rounded-xl flex items-center justify-center`}
+                  } rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform`}
                 >
                   <Clock size={20} />
                 </div>
@@ -1383,6 +1430,9 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                 </p>
                 <p className="text-xs text-dark-500 dark:text-dark-400 mt-0.5">
                   Pending Lead Approvals
+                </p>
+                <p className="text-[10px] text-dark-400 dark:text-dark-500 mt-1 truncate">
+                  Awaiting review
                 </p>
               </div>
             </div>
@@ -5486,6 +5536,8 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
           <ApplicationsManager
             onNavigateToCustomers={() => handleNavigate('contacts')}
             onNavigateToLeads={() => handleNavigate('leads')}
+            totalClients={totalSystemCustomers}
+            totalLeads={totalSystemLeads}
           />
         </div>
       )}

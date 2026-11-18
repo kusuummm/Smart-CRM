@@ -102,10 +102,16 @@ const STATUS_CONFIG = {
   },
 };
 
-export default function ApplicationsManager({ onNavigateToCustomers, onNavigateToLeads }) {
+export default function ApplicationsManager({
+  onNavigateToCustomers,
+  onNavigateToLeads,
+  totalClients,
+  totalLeads,
+}) {
   // Statistics State
   const [stats, setStats] = useState({
     totalCustomers: 0,
+    totalClients: 0,
     totalUsers: 0,
     totalLeads: 0,
     totalApplications: 0,
@@ -565,28 +571,38 @@ export default function ApplicationsManager({ onNavigateToCustomers, onNavigateT
     return timelineData.timeline.filter((item) => item.type === timelineFilter);
   }, [timelineData, timelineFilter]);
 
+  const effectiveClientsCount =
+    totalClients !== undefined && totalClients !== null && totalClients > 0
+      ? totalClients
+      : (stats.totalClients ?? stats.totalCustomers ?? 0);
+
+  const effectiveLeadsCount =
+    totalLeads !== undefined && totalLeads !== null && totalLeads > 0
+      ? totalLeads
+      : (stats.totalLeads || 0);
+
   return (
     <div className="space-y-4 sm:space-y-6 max-w-full">
       {/* ============================================================== */}
       {/* 1. TOP DYNAMIC METRIC DASHBOARD (THE 10 ESSENTIAL FEATURES)     */}
       {/* ============================================================== */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 xl:grid-cols-8 gap-2.5 sm:gap-3.5">
-        {/* 1. Total Registered Users */}
+        {/* 1. Total Registered Clients */}
         <div
           onClick={() => {
             if (onNavigateToCustomers) onNavigateToCustomers();
           }}
           className="cursor-pointer bg-white dark:bg-[#15203b] hover:bg-blue-50/50 dark:hover:bg-[#1c2a4d] border border-blue-200 dark:border-blue-500/20 hover:border-blue-400 dark:hover:border-blue-500/40 rounded-xl sm:rounded-2xl p-3 sm:p-4 transition-all shadow-xs group"
-          title="Total Registered Users (separate from pipeline leads)"
+          title="Total Registered Clients (separate from pipeline leads)"
         >
           <div className="flex items-center justify-between text-xs text-blue-600 dark:text-blue-400 font-semibold mb-1">
-            <span className="truncate">Total Users</span>
+            <span className="truncate">Total Clients</span>
             <Users size={15} className="group-hover:scale-110 transition-transform shrink-0" />
           </div>
           <div className="text-xl sm:text-2xl font-bold text-dark-900 dark:text-white">
-            {stats.totalUsers ?? stats.totalCustomers ?? 0}
+            {effectiveClientsCount}
           </div>
-          <p className="text-[10px] text-dark-500 dark:text-dark-400 mt-0.5 truncate">Registered users</p>
+          <p className="text-[10px] text-dark-500 dark:text-dark-400 mt-0.5 truncate">Active clients</p>
         </div>
 
         {/* 2. Total Leads (Pipeline) */}
@@ -596,14 +612,14 @@ export default function ApplicationsManager({ onNavigateToCustomers, onNavigateT
             else if (onNavigateToCustomers) onNavigateToCustomers();
           }}
           className="cursor-pointer bg-white dark:bg-[#15203b] hover:bg-emerald-50/50 dark:hover:bg-[#1c2a4d] border border-emerald-200 dark:border-emerald-500/20 hover:border-emerald-400 dark:hover:border-emerald-500/40 rounded-xl sm:rounded-2xl p-3 sm:p-4 transition-all shadow-xs group"
-          title="Total Pipeline Leads (different from registered users)"
+          title="Total Pipeline Leads (separate from active clients)"
         >
           <div className="flex items-center justify-between text-xs text-emerald-600 dark:text-emerald-400 font-semibold mb-1">
             <span className="truncate">Total Leads</span>
             <Target size={15} className="group-hover:scale-110 transition-transform shrink-0 text-emerald-500" />
           </div>
           <div className="text-xl sm:text-2xl font-bold text-dark-900 dark:text-white">
-            {stats.totalLeads ?? 0}
+            {effectiveLeadsCount}
           </div>
           <p className="text-[10px] text-dark-500 dark:text-dark-400 mt-0.5 truncate">Pipeline leads</p>
         </div>
