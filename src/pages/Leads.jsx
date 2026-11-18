@@ -1389,23 +1389,25 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
             </select>
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-dark-700 mb-1.5 dark:text-gray-300">
-              Assigned Member
-            </label>
-            <select
-              value={form.telecallerId || ''}
-              onChange={(e) => setForm({ ...form, telecallerId: e.target.value })}
-              className="w-full px-3 py-2 border border-dark-200 dark:border-dark-700 rounded-lg text-sm bg-white dark:bg-dark-800 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 font-medium"
-            >
-              <option value="">Keep Current / Unassigned</option>
-              {telecallers.map((tc) => (
-                <option key={tc._id} value={tc._id}>
-                  {tc.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          {isAdmin && (
+            <div>
+              <label className="block text-xs font-semibold text-dark-700 mb-1.5 dark:text-gray-300">
+                Assigned Member
+              </label>
+              <select
+                value={form.telecallerId || ''}
+                onChange={(e) => setForm({ ...form, telecallerId: e.target.value })}
+                className="w-full px-3 py-2 border border-dark-200 dark:border-dark-700 rounded-lg text-sm bg-white dark:bg-dark-800 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 font-medium"
+              >
+                <option value="">Keep Current / Unassigned</option>
+                {telecallers.map((tc) => (
+                  <option key={tc._id} value={tc._id}>
+                    {tc.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div>
             <label className="block text-xs font-semibold text-dark-700 mb-1.5 dark:text-gray-300">Follow-up Remarks / Notes *</label>
