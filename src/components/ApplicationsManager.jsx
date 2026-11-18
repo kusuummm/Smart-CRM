@@ -55,6 +55,7 @@ import {
   getCustomerCommunicationHistory,
 } from '../api/applications';
 import { getCustomers } from '../api/customers';
+import { getLeads } from '../api/leads';
 
 // Helper to resolve static file URL with auth token for secure download/preview
 const getFullUrl = (url) => {
@@ -195,10 +196,21 @@ export default function ApplicationsManager({
   // Load Statistics
   const fetchStats = useCallback(async () => {
     try {
-      const res = await getApplicationStats();
-      if (res.success) {
-        setStats(res.stats);
+      const [appStatsRes, leadsRes, custsRes] = await Promise.all([
+        getApplicationStats().catch(() => ({})),
+        getLeads({ limit: 1 }).catch(() => ({ total: 0 })),
+        getCustomers({ limit: 1 }).catch(() => ({ total: 0 })),
+      ]);
+
+      const baseStats = appStatsRes.success ? { ...appStatsRes.stats } : {};
+      if (leadsRes && leadsRes.total !== undefined) {
+        baseStats.totalLeads = leadsRes.total;
       }
+      if (custsRes && custsRes.total !== undefined) {
+        baseStats.totalClients = custsRes.total;
+        baseStats.totalCustomers = custsRes.total;
+      }
+      setStats((prev) => ({ ...prev, ...baseStats }));
     } catch (err) {
       console.warn('Failed to fetch application stats:', err.message);
     }

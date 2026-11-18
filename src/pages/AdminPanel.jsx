@@ -90,6 +90,7 @@ import {
   rejectUser,
 } from '../api/users';
 import { getCustomers, createCustomer, updateCustomer, bulkAssignCustomers } from '../api/customers';
+import { getLeads } from '../api/leads';
 import { getFollowUps, createFollowUp, updateFollowUp, deleteFollowUp } from '../api/followups';
 import { testEmailDelivery } from '../api/emails';
 import { getWhatsAppConfig, updateWhatsAppConfig, testWhatsAppConnection } from '../api/whatsapp';
@@ -116,6 +117,8 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
   // Data states
   const [users, setUsers] = useState([]);
   const [systemOverview, setSystemOverview] = useState(null);
+  const [liveLeadsCount, setLiveLeadsCount] = useState(null);
+  const [liveClientsCount, setLiveClientsCount] = useState(null);
   const [auditLogs, setAuditLogs] = useState([]);
   const [unassignedList, setUnassignedList] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -474,12 +477,14 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
     else setRefreshing(true);
 
     try {
-      const [usersData, overviewData, auditData, unassignedData, followUpsData] = await Promise.all([
+      const [usersData, overviewData, auditData, unassignedData, followUpsData, leadsData, clientsData] = await Promise.all([
         getUsers(),
         getSystemOverview().catch(() => ({ overview: null })),
         getAuditLogs().catch(() => ({ activities: [] })),
         getCustomers({ unassigned: 'true', limit: 100 }).catch(() => ({ customers: [] })),
         getFollowUps({ limit: 100 }).catch(() => ({ followUps: [] })),
+        getLeads({ limit: 1 }).catch(() => ({ total: 0 })),
+        getCustomers({ limit: 1 }).catch(() => ({ total: 0 })),
       ]);
 
       setUsers(usersData.users || []);
@@ -487,6 +492,8 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
       setAuditLogs(auditData.activities || []);
       setUnassignedList(unassignedData.customers || []);
       if (followUpsData.followUps) setTasksList(followUpsData.followUps);
+      if (leadsData && leadsData.total !== undefined) setLiveLeadsCount(leadsData.total);
+      if (clientsData && clientsData.total !== undefined) setLiveClientsCount(clientsData.total);
     } catch (error) {
       addToast(error.response?.data?.message || 'Failed to load admin data', 'error');
     } finally {
@@ -876,6 +883,9 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
   }, [users]);
 
   const totalSystemCustomers = useMemo(() => {
+    if (liveClientsCount !== null && liveClientsCount !== undefined) {
+      return liveClientsCount;
+    }
     if (systemOverview?.metrics?.totalClients !== undefined && systemOverview?.metrics?.totalClients !== null) {
       return systemOverview.metrics.totalClients;
     }
@@ -883,18 +893,21 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
       return systemOverview.metrics.totalCustomers;
     }
     return totalAssignedCustomers;
-  }, [systemOverview, totalAssignedCustomers]);
+  }, [liveClientsCount, systemOverview, totalAssignedCustomers]);
 
   const totalAssignedLeads = useMemo(() => {
     return users.reduce((sum, u) => sum + (u.assignedLeads || 0), 0);
   }, [users]);
 
   const totalSystemLeads = useMemo(() => {
+    if (liveLeadsCount !== null && liveLeadsCount !== undefined) {
+      return liveLeadsCount;
+    }
     if (systemOverview?.metrics?.totalLeads !== undefined && systemOverview?.metrics?.totalLeads !== null) {
       return systemOverview.metrics.totalLeads;
     }
     return totalAssignedLeads;
-  }, [systemOverview, totalAssignedLeads]);
+  }, [liveLeadsCount, systemOverview, totalAssignedLeads]);
 
   const onlineTelecallersCount = useMemo(() => {
     return users.filter((u) => (u.role === 'telecaller' || u.role === 'user') && u.isOnline).length;
