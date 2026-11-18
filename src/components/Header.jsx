@@ -129,16 +129,34 @@ export default function Header({
     ? user.email.split('@')[0].toUpperCase()
     : 'USER';
   const displayPhone = user?.phone || '';
-  const displayBalance = user?.balance !== undefined
-    ? formatCurrency(user.balance)
-    : (() => {
-        try {
-          const cached = typeof window !== 'undefined' ? localStorage.getItem('crm_wallet_balance') : null;
-          return cached ? formatCurrency(cached) : '₹0.0';
-        } catch {
-          return '₹0.0';
-        }
-      })();
+
+  const [liveBalance, setLiveBalance] = useState(() => {
+    if (user?.balance !== undefined) return formatCurrency(user.balance);
+    try {
+      const cached = typeof window !== 'undefined' ? localStorage.getItem('crm_wallet_balance') : null;
+      return cached ? formatCurrency(cached) : '₹0.0';
+    } catch {
+      return '₹0.0';
+    }
+  });
+
+  useEffect(() => {
+    if (user?.balance !== undefined) {
+      setLiveBalance(formatCurrency(user.balance));
+    }
+  }, [user?.balance]);
+
+  useEffect(() => {
+    const handleWalletUpdated = (e) => {
+      if (e.detail?.balance !== undefined) {
+        setLiveBalance(formatCurrency(e.detail.balance));
+      }
+    };
+    window.addEventListener('smartcrm:wallet-updated', handleWalletUpdated);
+    return () => window.removeEventListener('smartcrm:wallet-updated', handleWalletUpdated);
+  }, []);
+
+  const displayBalance = liveBalance;
 
   return (
     <header className="fixed top-0 left-0 right-0 h-16 w-full bg-[#0b1329]/95 backdrop-blur-md border-b border-[#1c2c54]/80 flex items-center justify-between px-4 sm:px-6 z-30 shadow-md shadow-black/20">
