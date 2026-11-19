@@ -36,3 +36,5 @@ export const getCallersProgressReport = (params = {}) =>
 export const getCallersProgressDetail = (params = {}) =>
   api.get('/users/callers-progress-detail', { params }).then((res) => res.data);
 
+export const seedDemoData = () => api.post('/users/seed-data').then((res) => res.data);
+
