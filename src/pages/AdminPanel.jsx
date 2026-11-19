@@ -88,7 +88,6 @@ import {
   getAuditLogs,
   approveUser,
   rejectUser,
-  seedDemoData,
 } from '../api/users';
 import { getCustomers, createCustomer, updateCustomer, bulkAssignCustomers } from '../api/customers';
 import { getLeads } from '../api/leads';
@@ -471,20 +470,6 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
   const [roleChangeUser, setRoleChangeUser] = useState(null);
   const [newSelectedRole, setNewSelectedRole] = useState('member');
   const [roleChangeSaving, setRoleChangeSaving] = useState(false);
-  const [seedingData, setSeedingData] = useState(false);
-
-  const handleSeedStarterData = async () => {
-    setSeedingData(true);
-    try {
-      const res = await seedDemoData();
-      addToast(res.message || 'Starter clients, leads, and applications populated successfully!', 'success');
-      await loadData();
-    } catch (err) {
-      addToast(err.response?.data?.message || err.message || 'Failed to seed starter data', 'error');
-    } finally {
-      setSeedingData(false);
-    }
-  };
 
   // Load core admin data
   const loadData = useCallback(async (isSilent = false) => {
@@ -1266,18 +1251,6 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                   <Users size={16} />
                   <span className="hidden sm:inline">Users Roster</span>
                 </button>
-                {totalSystemCustomers === 0 && (
-                  <button
-                    onClick={handleSeedStarterData}
-                    disabled={seedingData}
-                    className="inline-flex items-center gap-2 px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold transition-colors shadow-sm cursor-pointer disabled:opacity-50"
-                    title="Populate starter clients, pipeline leads, and sample applications"
-                  >
-                    <Sparkles size={16} className={seedingData ? 'animate-spin' : ''} />
-                    <span className="hidden sm:inline">{seedingData ? 'Populating...' : 'Populate Starter Data'}</span>
-                    <span className="sm:hidden">{seedingData ? '...' : 'Seed Data'}</span>
-                  </button>
-                )}
                 <button
                   onClick={() => openAddClientModal(true)}
                   className="inline-flex items-center gap-2 px-3.5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition-colors shadow-sm cursor-pointer"

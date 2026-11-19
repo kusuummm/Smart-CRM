@@ -56,7 +56,6 @@ import {
 } from '../api/applications';
 import { getCustomers } from '../api/customers';
 import { getLeads } from '../api/leads';
-import { seedDemoData } from '../api/users';
 
 // Helper to resolve static file URL with auth token for secure download/preview
 const getFullUrl = (url) => {
@@ -194,23 +193,6 @@ export default function ApplicationsManager({
     paymentAmount: 0,
     paymentReference: '',
   });
-
-  const [isSeeding, setIsSeeding] = useState(false);
-
-  const handleQuickSeed = async () => {
-    setIsSeeding(true);
-    try {
-      const res = await seedDemoData();
-      toast.success(res.message || 'Starter clients, leads, and applications populated successfully!');
-      await fetchStats();
-      await fetchApplications();
-      if (onDataRefresh) await onDataRefresh();
-    } catch (err) {
-      toast.error(err.response?.data?.message || err.message || 'Failed to populate starter data');
-    } finally {
-      setIsSeeding(false);
-    }
-  };
 
   // Load Statistics
   const fetchStats = useCallback(async () => {
@@ -614,35 +596,6 @@ export default function ApplicationsManager({
 
   return (
     <div className="space-y-4 sm:space-y-6 max-w-full">
-      {/* Fresh Database Quick Onboarding Banner */}
-      {effectiveClientsCount === 0 && effectiveLeadsCount === 0 && (
-        <div className="bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-emerald-500/10 border border-blue-500/20 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
-          <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0 mt-0.5">
-              <Sparkles size={20} />
-            </div>
-            <div>
-              <h4 className="text-sm font-bold text-dark-900 dark:text-white">
-                Fresh Database (0 Clients, 0 Pipeline Leads)
-              </h4>
-              <p className="text-xs text-dark-500 dark:text-dark-400 mt-0.5 max-w-xl">
-                Your database is ready. Click <strong>Populate Starter Data</strong> to instantly load realistic starter clients, pipeline leads, and sample applications, or click <strong>+ New Application</strong> / <strong>Add Client</strong> to register your own.
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2.5 shrink-0">
-            <button
-              onClick={handleQuickSeed}
-              disabled={isSeeding}
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-xs cursor-pointer transition-all disabled:opacity-50"
-            >
-              <Sparkles size={14} className={isSeeding ? 'animate-spin' : ''} />
-              <span>{isSeeding ? 'Populating...' : 'Populate Starter Data'}</span>
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* ============================================================== */}
       {/* 1. TOP DYNAMIC METRIC DASHBOARD (THE 10 ESSENTIAL FEATURES)     */}
       {/* ============================================================== */}
