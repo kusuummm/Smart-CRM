@@ -36,6 +36,11 @@ export const isAdmin = (user) => normalizeRole(user?.role) === 'admin';
 export const isManager = (user) => normalizeRole(user?.role) === 'manager';
 export const isMember = (user) => normalizeRole(user?.role) === 'member';
 
+export const isAuthorizedCRMRole = (user) => {
+  const r = (user?.role || '').toLowerCase().trim();
+  return r === 'admin' || r === 'owner' || r === 'member' || r === 'telecaller';
+};
+
 export const isAdminOrOwner = (user) => {
   const lvl = getRoleLevel(user);
   return lvl >= 3; // admin or owner

@@ -5,6 +5,11 @@ import { clearApiCache } from '../api/client';
 
 const AuthContext = createContext(null);
 
+const isAllowedCrmRole = (role) => {
+  const r = (role || '').toLowerCase().trim();
+  return r === 'admin' || r === 'owner' || r === 'member' || r === 'telecaller';
+};
+
 const loadAccounts = () => {
   try {
     return JSON.parse(localStorage.getItem('crm_accounts') || '[]');
@@ -20,22 +25,22 @@ const saveAccounts = (list) => {
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
     const saved = localStorage.getItem('crm_user');
-    return saved ? JSON.parse(saved) : null;
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (isAllowedCrmRole(parsed.role)) {
+          return parsed;
+        }
+      } catch {}
+    }
+    return null;
   });
-  // Every account ever logged into on this browser, so the user can quickly
-  // switch between them (like Instagram/Google's account switcher) without
-  // re-entering a password each time. Each entry carries its own JWT.
+
   const [accounts, setAccounts] = useState(loadAccounts);
-  // True while the user is on the "add another account" flow - lets Login
-  // render even though someone is already signed in, without disturbing
-  // their current session unless they actually complete a new login.
   const [addingAccount, setAddingAccount] = useState(false);
-  // Starts true whenever a token exists, so the app can show a loading
-  // state instead of flashing the Login screen while we verify the token.
   const [authLoading, setAuthLoading] = useState(() => !!localStorage.getItem('crm_token'));
 
-  // On first load, if we have a token from a previous session, verify it's
-  // still valid (and the account is still active) by asking the backend.
+  // On first load, verify token and role
   useEffect(() => {
     const token = localStorage.getItem('crm_token');
     if (!token) {
@@ -45,15 +50,21 @@ export function AuthProvider({ children }) {
 
     getMeRequest()
       .then((data) => {
+        if (!isAllowedCrmRole(data.user?.role)) {
+          localStorage.removeItem('crm_token');
+          localStorage.removeItem('crm_user');
+          clearApiCache();
+          setUser(null);
+          return;
+        }
         setUser(data.user);
         localStorage.setItem('crm_user', JSON.stringify(data.user));
       })
       .catch(() => {
-        // Token expired, invalid, or account disabled - clear everything.
         localStorage.removeItem('crm_token');
         localStorage.removeItem('crm_user');
         clearApiCache();
-    setUser(null);
+        setUser(null);
       })
       .finally(() => setAuthLoading(false));
   }, []);
@@ -94,12 +105,22 @@ export function AuthProvider({ children }) {
   };
 
   const loginWithSession = (authData) => {
+    if (!isAllowedCrmRole(authData.user?.role)) {
+      logout();
+      return;
+    }
     handleAuthSuccess(authData);
   };
 
   const login = async (email, password) => {
     try {
       const data = await loginRequest(email, password);
+      if (!isAllowedCrmRole(data.user?.role)) {
+        return {
+          success: false,
+          message: 'Access denied. Only admin and member accounts are authorized to access the CRM.',
+        };
+      }
       handleAuthSuccess(data);
       return { success: true, user: data.user };
     } catch (error) {
@@ -112,7 +133,7 @@ export function AuthProvider({ children }) {
     try {
       await logoutRequest();
     } catch {
-      // Even if the server call fails (e.g. offline), still log out locally.
+      // Offline fallback
     }
     clearApiCache();
     setUser(null);
@@ -126,18 +147,12 @@ export function AuthProvider({ children }) {
     setAccounts([]);
   };
 
-  // Updates the in-memory + persisted user after a successful profile edit,
-  // so every component reading `user` from context (Header, Sidebar, etc.)
-  // reflects the change immediately without needing a page refresh.
   const updateUser = (updatedUser) => {
     setUser(updatedUser);
     localStorage.setItem('crm_user', JSON.stringify(updatedUser));
     rememberAccount(updatedUser, localStorage.getItem('crm_token'));
   };
 
-  // Switches the active session to an already-remembered account without
-  // asking for a password again. Validates the stored token is still good
-  // first, since it may have expired or been revoked since it was saved.
   const switchAccount = async (accountId) => {
     const account = loadAccounts().find((a) => a.id === accountId);
     if (!account) return { success: false, message: 'Account not found' };
@@ -149,13 +164,14 @@ export function AuthProvider({ children }) {
     clearApiCache();
     try {
       const data = await getMeRequest();
+      if (!isAllowedCrmRole(data.user?.role)) {
+        throw new Error('Access denied. Role not authorized.');
+      }
       localStorage.setItem('crm_user', JSON.stringify(data.user));
       setUser(data.user);
       rememberAccount(data.user, account.token);
       return { success: true };
     } catch {
-      // That saved session is no longer valid (expired/revoked/disabled) -
-      // restore whatever was active before and drop the stale entry.
       if (previousToken) localStorage.setItem('crm_token', previousToken);
       else localStorage.removeItem('crm_token');
       if (previousUser) localStorage.setItem('crm_user', previousUser);
@@ -164,13 +180,10 @@ export function AuthProvider({ children }) {
       const next = loadAccounts().filter((a) => a.id !== accountId);
       saveAccounts(next);
       setAccounts(next);
-      return { success: false, message: 'That session has expired. Please log in again.' };
+      return { success: false, message: 'That session has expired or is unauthorized. Please log in again.' };
     }
   };
 
-  // Forgets a remembered account on this device. If it's the currently
-  // active one, this is a full logout (revokes the session server-side
-  // too); otherwise it just removes the locally-saved quick-switch entry.
   const removeAccount = async (accountId) => {
     if (user && accountId === user.id) {
       await logout();
@@ -182,7 +195,22 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, accounts, login, loginWithSession, logout, updateUser, switchAccount, removeAccount, addingAccount, startAddAccount: () => setAddingAccount(true), cancelAddAccount: () => setAddingAccount(false), authLoading }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        accounts,
+        login,
+        loginWithSession,
+        logout,
+        updateUser,
+        switchAccount,
+        removeAccount,
+        addingAccount,
+        startAddAccount: () => setAddingAccount(true),
+        cancelAddAccount: () => setAddingAccount(false),
+        authLoading,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

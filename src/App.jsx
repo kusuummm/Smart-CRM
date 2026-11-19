@@ -7,7 +7,8 @@ import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import { Toaster } from 'react-hot-toast';
 import ErrorBoundary from './components/ErrorBoundary';
-import { isAdminOrOwner, isManager, isOwner } from './utils/permissions';
+import { isAdminOrOwner, isManager, isOwner, isAuthorizedCRMRole } from './utils/permissions';
+import { ShieldAlert } from 'lucide-react';
 
 // Core synchronous pages for instant initial paint
 import Login from './pages/Login';
@@ -702,7 +703,7 @@ function AppLayout() {
 }
 
 function AppRoutes() {
-  const { user, authLoading, addingAccount, cancelAddAccount } = useAuth();
+  const { user, authLoading, addingAccount, cancelAddAccount, logout } = useAuth();
 
   if (authLoading) {
     return (
@@ -718,6 +719,28 @@ function AppRoutes() {
         isAddingAccount={addingAccount && !!user}
         onCancelAdd={cancelAddAccount}
       />
+    );
+  }
+
+  if (!isAuthorizedCRMRole(user)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#10192e] dark:bg-dark-950 p-4">
+        <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-2xl p-8 max-w-md w-full text-center border border-red-200 dark:border-red-900/40">
+          <div className="w-14 h-14 bg-red-100 dark:bg-red-950/60 text-red-600 dark:text-red-400 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <ShieldAlert size={28} />
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Access Denied</h2>
+          <p className="text-sm text-gray-600 dark:text-gray-300 mb-6 leading-relaxed">
+            Other than Admin and Member, no one can access the CRM. Your account is not authorized to access this CRM.
+          </p>
+          <button
+            onClick={logout}
+            className="w-full py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl font-semibold text-sm transition-colors cursor-pointer"
+          >
+            Sign Out
+          </button>
+        </div>
+      </div>
     );
   }
 

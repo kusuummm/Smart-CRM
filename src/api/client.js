@@ -30,19 +30,27 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// If the backend ever says the token is invalid/expired, log the user out
-// client-side so they aren't stuck looking at a broken app.
+// If the backend ever says the token is invalid/expired (or signed out by another device),
+// log the user out client-side and display single-device notice.
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     const isLoginRequest = error.config?.url?.includes('/auth/login');
     if (error.response?.status === 401 && !isLoginRequest) {
+      const errorMsg = error.response?.data?.message || '';
+      if (
+        errorMsg.includes('another device') ||
+        errorMsg.includes('admin account') ||
+        errorMsg.includes('signed out')
+      ) {
+        try {
+          sessionStorage.setItem('crm_session_notice', errorMsg);
+        } catch {}
+      }
       clearApiCache();
       localStorage.removeItem('crm_token');
       localStorage.removeItem('crm_user');
-      // Full reload is the simplest reliable way to bounce back to the
-      // Login screen from anywhere in the app.
-      if (!window.location.href.includes('login')) {
+      if (typeof window !== 'undefined' && !window.location.href.includes('login')) {
         window.location.reload();
       }
     }
