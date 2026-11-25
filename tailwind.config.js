@@ -6,6 +6,8 @@ export default {
     extend: {
       fontFamily: {
         sans: [
+          'var(--app-font-family)',
+          '"Plus Jakarta Sans"',
           'Inter',
           '-apple-system',
           'BlinkMacSystemFont',
@@ -16,11 +18,18 @@ export default {
           'sans-serif',
         ],
         heading: [
+          'var(--app-font-family)',
+          '"Plus Jakarta Sans"',
           'Inter',
           '-apple-system',
           'BlinkMacSystemFont',
           '"Segoe UI"',
           'Roboto',
+          'sans-serif',
+        ],
+        jakarta: [
+          '"Plus Jakarta Sans"',
+          'Inter',
           'sans-serif',
         ],
         inter: [

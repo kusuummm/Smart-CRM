@@ -31,6 +31,7 @@ import {
   ChevronRight,
   GripVertical,
   ExternalLink,
+  MessageCircle,
 } from 'lucide-react';
 import { PageHeader } from '../components/Common';
 import Modal from '../components/Modal';
@@ -280,15 +281,6 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
     }
 
     const targetLabel = leadStatusLabels[form.status] || form.status;
-    const ok = await confirm({
-      title: 'Update Follow-up Status',
-      message: `Are you sure you want to update follow-up status to "${targetLabel}" for "${editingLead?.customerName}"? Notification emails will be dispatched to both lead and customer.`,
-      confirmText: 'Update & Send Emails',
-      cancelText: 'Cancel',
-      type: 'primary',
-    });
-    if (!ok) return;
-
     setSaving(true);
     try {
       const payload = { status: form.status, remark: form.remark };
@@ -297,7 +289,7 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
       }
       const data = await updateLeadStatus(editingLead._id, payload);
       setLeads((prev) => prev.map((l) => (l._id === editingLead._id ? data.lead : l)));
-      addToast(`Follow-up status updated to "${targetLabel}" & notification emails sent!`, 'success');
+      addToast(`Follow-up status updated to "${targetLabel}"!`, 'success');
       setIsModalOpen(false);
     } catch (error) {
       addToast(error.response?.data?.message || 'Failed to update follow-up status', 'error');
@@ -496,34 +488,104 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <PageHeader
-          title={isAdmin ? 'Company Follow-up & Lead Pipeline' : 'My Follow-up & Lead Pipeline'}
+          title={isAdmin ? 'Lead & Follow-up Pipeline' : 'My Follow-up Pipeline'}
           subtitle={
             isAdmin
-              ? 'Oversee all customer follow-up statuses, lead assignments, and automated email notifications'
-              : 'Manage customer follow-up statuses through the pipeline with automated email notifications'
+              ? 'Track prospect pipelines, assign leads to team members, and monitor follow-ups.'
+              : 'Manage your assigned leads, log customer follow-ups, and book client meetings.'
           }
         />
 
-        {/* ADMIN EXCLUSIVE: Bulk Excel Import & Assign Customer to Lead Buttons */}
-        {isAdmin && (
-          <div className="flex-shrink-0 flex items-center gap-2.5">
+        <div className="flex-shrink-0 flex items-center gap-2.5">
+          {isAdmin && (
             <button
               onClick={() => setIsExcelModalOpen(true)}
-              className="inline-flex items-center gap-2 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors cursor-pointer"
+              className="inline-flex items-center gap-2 px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors cursor-pointer"
               title="Bulk import customer accounts and assign leads by city or business filters"
             >
               <FileSpreadsheet size={16} />
-              <span>Import Customers (Excel/CSV)</span>
+              <span className="hidden sm:inline">Import (Excel/CSV)</span>
+              <span className="sm:hidden">Import</span>
             </button>
-            <button
-              onClick={openAssignCustomerModal}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors cursor-pointer"
-            >
-              <UserPlus size={16} />
-              <span>Assign Customer to Lead</span>
-            </button>
+          )}
+          <button
+            onClick={openAssignCustomerModal}
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors cursor-pointer"
+            title="Create a lead follow-up for a customer"
+          >
+            <UserPlus size={16} />
+            <span>Assign / Add Lead</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Quick Pipeline Health KPI Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+        <div
+          onClick={() => handleStatusFilter('')}
+          className={`p-4 rounded-2xl border transition-all cursor-pointer ${
+            statusFilter === ''
+              ? 'bg-primary-50 dark:bg-primary-950/40 border-primary-300 dark:border-primary-700 shadow-xs ring-2 ring-primary-500/20'
+              : 'bg-white dark:bg-dark-800 border-dark-200 dark:border-dark-700 hover:border-dark-300 shadow-2xs'
+          }`}
+        >
+          <div className="flex items-center justify-between text-dark-500 dark:text-dark-400">
+            <span className="text-xs font-semibold">Total Pipeline</span>
+            <Layers size={17} className="text-primary-600 dark:text-primary-400" />
           </div>
-        )}
+          <p className="text-2xl font-bold text-dark-900 dark:text-white mt-1.5">{pipelineStats.all || leads.length}</p>
+          <span className="text-[11px] text-dark-400 mt-0.5 block">All active records</span>
+        </div>
+
+        <div
+          onClick={() => handleStatusFilter('new')}
+          className={`p-4 rounded-2xl border transition-all cursor-pointer ${
+            statusFilter === 'new'
+              ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-700 shadow-xs ring-2 ring-emerald-500/20'
+              : 'bg-white dark:bg-dark-800 border-dark-200 dark:border-dark-700 hover:border-dark-300 shadow-2xs'
+          }`}
+        >
+          <div className="flex items-center justify-between text-dark-500 dark:text-dark-400">
+            <span className="text-xs font-semibold">Action Required</span>
+            <Sparkles size={17} className="text-emerald-600 dark:text-emerald-400" />
+          </div>
+          <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-1.5">
+            {(pipelineStats.new || 0) + (pipelineStats.contacted || 0)}
+          </p>
+          <span className="text-[11px] text-dark-400 mt-0.5 block">New &amp; contacted leads</span>
+        </div>
+
+        <div
+          onClick={() => handleStatusFilter('meeting')}
+          className={`p-4 rounded-2xl border transition-all cursor-pointer ${
+            statusFilter === 'meeting'
+              ? 'bg-sky-50 dark:bg-sky-950/40 border-sky-300 dark:border-sky-700 shadow-xs ring-2 ring-sky-500/20'
+              : 'bg-white dark:bg-dark-800 border-dark-200 dark:border-dark-700 hover:border-dark-300 shadow-2xs'
+          }`}
+        >
+          <div className="flex items-center justify-between text-dark-500 dark:text-dark-400">
+            <span className="text-xs font-semibold">Meetings Booked</span>
+            <Calendar size={17} className="text-sky-600 dark:text-sky-400" />
+          </div>
+          <p className="text-2xl font-bold text-sky-600 dark:text-sky-400 mt-1.5">{pipelineStats.meeting || 0}</p>
+          <span className="text-[11px] text-dark-400 mt-0.5 block">Scheduled demo meetings</span>
+        </div>
+
+        <div
+          onClick={() => handleStatusFilter('converted')}
+          className={`p-4 rounded-2xl border transition-all cursor-pointer ${
+            statusFilter === 'converted'
+              ? 'bg-teal-50 dark:bg-teal-950/40 border-teal-300 dark:border-teal-700 shadow-xs ring-2 ring-teal-500/20'
+              : 'bg-white dark:bg-dark-800 border-dark-200 dark:border-dark-700 hover:border-dark-300 shadow-2xs'
+          }`}
+        >
+          <div className="flex items-center justify-between text-dark-500 dark:text-dark-400">
+            <span className="text-xs font-semibold">Won / Converted</span>
+            <CheckCircle2 size={17} className="text-teal-600 dark:text-teal-400" />
+          </div>
+          <p className="text-2xl font-bold text-teal-600 dark:text-teal-400 mt-1.5">{pipelineStats.converted || 0}</p>
+          <span className="text-[11px] text-dark-400 mt-0.5 block">Successfully closed deals</span>
+        </div>
       </div>
 
       {/* 1. Sleek Filter Pills Bar */}
@@ -591,7 +653,7 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
             <button
               type="button"
               onClick={() => handleSetViewMode('table')}
-              className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-md transition-all ${
+              className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-md transition-all cursor-pointer ${
                 viewMode === 'table'
                   ? 'bg-white dark:bg-dark-800 text-primary-600 dark:text-primary-400 shadow-2xs font-bold'
                   : 'text-dark-500 hover:text-dark-900 dark:hover:text-dark-200'
@@ -604,7 +666,7 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
             <button
               type="button"
               onClick={() => handleSetViewMode('kanban')}
-              className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-md transition-all ${
+              className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-md transition-all cursor-pointer ${
                 viewMode === 'kanban'
                   ? 'bg-white dark:bg-dark-800 text-primary-600 dark:text-primary-400 shadow-2xs font-bold'
                   : 'text-dark-500 hover:text-dark-900 dark:hover:text-dark-200'
@@ -635,11 +697,21 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
             <Search className="absolute left-3 top-2.5 text-dark-400" size={14} />
             <input
               type="text"
-              placeholder="Search leads..."
+              placeholder="Search by name or phone..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-8 pr-3 py-1.5 border border-dark-200 rounded-lg text-xs bg-white text-dark-800 focus:outline-none focus:ring-2 focus:ring-primary-500 w-52 dark:bg-dark-800 dark:border-dark-700 dark:text-white"
+              className="pl-8 pr-7 py-1.5 border border-dark-200 rounded-lg text-xs bg-white text-dark-800 focus:outline-none focus:ring-2 focus:ring-primary-500 w-52 sm:w-60 dark:bg-dark-800 dark:border-dark-700 dark:text-white"
             />
+            {searchTerm && (
+              <button
+                type="button"
+                onClick={() => setSearchTerm('')}
+                className="absolute right-2 top-2.5 text-dark-400 hover:text-dark-600 dark:hover:text-dark-200 cursor-pointer"
+                title="Clear search"
+              >
+                <X size={13} />
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -742,6 +814,18 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
                                 >
                                   <Mail size={12} />
                                 </button>
+                                {/* Schedule Meeting button */}
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    openScheduleMeeting(lead);
+                                  }}
+                                  className="p-1 rounded-md text-sky-600 hover:bg-sky-50 dark:hover:bg-sky-950/40 cursor-pointer"
+                                  title="Schedule Demo Meeting"
+                                >
+                                  <Calendar size={12} />
+                                </button>
                                 {lead.customerPhone && (
                                   <>
                                     <button
@@ -765,7 +849,7 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
                                       className="p-1 rounded-md text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 cursor-pointer"
                                       title="WhatsApp Customer in CRM"
                                     >
-                                      <PhoneCall size={12} />
+                                      <MessageCircle size={12} />
                                     </button>
                                     <a
                                       href={`tel:${lead.customerPhone}`}
@@ -844,8 +928,29 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
             <tbody className="divide-y divide-dark-200 dark:divide-dark-700">
               {paginated.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-dark-400 dark:text-dark-500">
-                    No leads found matching current filters.
+                  <td colSpan={7} className="px-4 py-12 text-center">
+                    <div className="flex flex-col items-center justify-center max-w-sm mx-auto space-y-3">
+                      <div className="w-12 h-12 rounded-2xl bg-dark-100 dark:bg-dark-700 flex items-center justify-center text-dark-400">
+                        <Search size={22} />
+                      </div>
+                      <h4 className="font-bold text-dark-900 dark:text-white text-sm">No Leads Found</h4>
+                      <p className="text-xs text-dark-500 dark:text-dark-400">
+                        No prospects match your current search or status filter.
+                      </p>
+                      {(statusFilter || searchTerm || telecallerFilter) && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setStatusFilter('');
+                            setSearchTerm('');
+                            setTelecallerFilter('');
+                          }}
+                          className="px-3.5 py-1.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-xs font-semibold transition-colors cursor-pointer shadow-xs"
+                        >
+                          Reset All Filters
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ) : (
@@ -1007,11 +1112,13 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
                       </td>
                       <td className="px-4 py-3 text-center">
                         <button
+                          type="button"
                           onClick={() => setHistoryModal(lead)}
-                          className="p-1 rounded-lg hover:bg-dark-100 dark:hover:bg-dark-700 text-primary-600"
-                          title="View Follow-up History"
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-dark-700 dark:text-dark-300 bg-dark-100 hover:bg-dark-200 dark:bg-dark-700 dark:hover:bg-dark-600 transition-colors cursor-pointer"
+                          title="View complete follow-up log & activities"
                         >
-                          <History size={16} />
+                          <History size={13} className="text-primary-600 shrink-0" />
+                          <span>Logs ({lead.followUpHistory?.length || 0})</span>
                         </button>
                       </td>
                       <td className="px-4 py-3 text-center">
@@ -1023,45 +1130,48 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
                               setCustomer360Lead(lead);
                               setIsCustomer360Open(true);
                             }}
-                            className="p-1.5 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 transition-colors cursor-pointer"
-                            title="Call Customer / View Profile"
+                            className="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/50 dark:hover:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/60 transition-all cursor-pointer shadow-2xs"
+                            title="Call Customer & View 360 Profile"
                           >
-                            <PhoneCall size={16} />
+                            <PhoneCall size={15} />
                           </button>
 
                           {/* Lead Email Communication Hub (Received & Sent) */}
                           <button
                             type="button"
                             onClick={() => openLeadEmailModal(lead, 'history')}
-                            className="p-1.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 transition-colors cursor-pointer"
-                            title="Lead Emails: View Received Emails & Send Email"
+                            className="p-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/50 dark:hover:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 border border-indigo-200/60 dark:border-indigo-800/60 transition-all cursor-pointer shadow-2xs"
+                            title="Lead Email Hub: Inbox & Outbox"
                           >
-                            <Mail size={16} />
+                            <Mail size={15} />
                           </button>
 
                           {/* Schedule Meeting with Customer (Triggers 1-hour email reminder) */}
                           <button
+                            type="button"
                             onClick={() => openScheduleMeeting(lead)}
-                            className="p-1.5 rounded-lg hover:bg-sky-50 dark:hover:bg-sky-950/50 text-sky-600 dark:text-sky-400 transition-colors"
+                            className="p-1.5 rounded-lg bg-sky-50 hover:bg-sky-100 dark:bg-sky-950/50 dark:hover:bg-sky-900/50 text-sky-600 dark:text-sky-400 border border-sky-200/60 dark:border-sky-800/60 transition-all cursor-pointer shadow-2xs"
                             title="Schedule Meeting with Customer (Sends invites & 1-hour prior email reminder)"
                           >
-                            <Calendar size={16} />
+                            <Calendar size={15} />
                           </button>
 
                           <button
+                            type="button"
                             onClick={() => openStatusModal(lead)}
-                            className="p-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-dark-700 text-blue-600"
-                            title="Update Follow-up Status"
+                            className="p-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 dark:bg-dark-700 dark:hover:bg-dark-600 text-blue-600 dark:text-blue-400 border border-blue-200/60 dark:border-dark-600 transition-all cursor-pointer shadow-2xs"
+                            title="Add Note & Detailed Status Update"
                           >
-                            <Edit2 size={16} />
+                            <Edit2 size={15} />
                           </button>
                           {isAdmin && (
                             <button
+                              type="button"
                               onClick={() => setDeleteConfirm(lead)}
-                              className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-dark-700 text-red-600"
+                              className="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 dark:bg-red-950/50 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 border border-red-200/60 dark:border-red-800/60 transition-all cursor-pointer shadow-2xs"
                               title="Delete Lead"
                             >
-                              <Trash2 size={16} />
+                              <Trash2 size={15} />
                             </button>
                           )}
                         </div>

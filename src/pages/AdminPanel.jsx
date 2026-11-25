@@ -57,6 +57,9 @@ import {
   Lock,
   CheckCircle,
   Target,
+  LayoutDashboard,
+  Settings,
+  Shuffle,
 } from 'lucide-react';
 import { PageHeader } from '../components/Common';
 import ApplicationsManager from '../components/ApplicationsManager';
@@ -1264,8 +1267,92 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
     addToast('User roster exported to CSV!', 'success');
   };
 
+  const adminNavTabs = [
+    {
+      id: 'admin-panel',
+      label: 'Overview',
+      icon: LayoutDashboard,
+      isActive:
+        ['admin-panel', 'overview', 'admin'].includes(currentView) ||
+        !['admin-users', 'users', 'admin-agents', 'agents', 'admin-workload', 'workload', 'admin-reports', 'reports', 'admin-portfolio', 'portfolio', 'admin-audit', 'audit', 'admin-system', 'system', 'admin-system-smtp', 'admin-system-whatsapp', 'admin-system-database', 'admin-tasks', 'tasks', 'admin-applications', 'applications'].includes(currentView),
+    },
+    {
+      id: 'admin-users',
+      label: 'Team & Staff',
+      icon: Users,
+      badge: users.length ? `${users.length} Staff` : null,
+      isActive: ['admin-users', 'users', 'admin-agents', 'agents'].includes(currentView),
+    },
+    {
+      id: 'admin-applications',
+      label: 'Applications & KYC',
+      icon: Award,
+      isActive: ['admin-applications', 'applications'].includes(currentView),
+    },
+    {
+      id: 'admin-workload',
+      label: 'Lead Routing & Workload',
+      icon: Shuffle,
+      badge: unassignedList.length > 0 ? `${unassignedList.length} Unassigned` : null,
+      isActive: ['admin-workload', 'workload'].includes(currentView),
+    },
+    {
+      id: 'admin-reports',
+      label: 'Performance & Reports',
+      icon: BarChart3,
+      isActive: ['admin-reports', 'reports'].includes(currentView),
+    },
+    {
+      id: 'admin-system',
+      label: 'System & Integrations',
+      icon: Settings,
+      isActive: ['admin-system', 'system', 'admin-system-smtp', 'admin-system-whatsapp', 'admin-system-database'].includes(currentView),
+    },
+    {
+      id: 'admin-audit',
+      label: 'Security & Audit Logs',
+      icon: Shield,
+      isActive: ['admin-audit', 'audit'].includes(currentView),
+    },
+  ];
+
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
+      {/* ========================================================================= */}
+      {/* PERSISTENT TOP-LEVEL ADMIN NAVIGATION BAR                                  */}
+      {/* ========================================================================= */}
+      <div className="bg-white dark:bg-dark-800 p-2 rounded-2xl border border-dark-200 dark:border-dark-700 shadow-sm flex items-center gap-1.5 overflow-x-auto scrollbar-none sticky top-2 z-30 backdrop-blur-md bg-white/95 dark:bg-dark-800/95">
+        {adminNavTabs.map((tab) => {
+          const TabIcon = tab.icon;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => handleNavigate(tab.id)}
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+                tab.isActive
+                  ? 'bg-primary-600 text-white shadow-xs'
+                  : 'text-dark-600 dark:text-dark-300 hover:bg-dark-100 dark:hover:bg-dark-700 hover:text-dark-900 dark:hover:text-white'
+              }`}
+            >
+              <TabIcon size={15} />
+              <span>{tab.label}</span>
+              {tab.badge && (
+                <span
+                  className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                    tab.isActive
+                      ? 'bg-white/20 text-white'
+                      : 'bg-primary-50 dark:bg-primary-950/60 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800'
+                  }`}
+                >
+                  {tab.badge}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
       {/* 1. DASHBOARD OVERVIEW PAGE */}
       {(currentView === 'admin-panel' ||
         currentView === 'overview' ||
@@ -1280,58 +1367,98 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                 <button
                   onClick={() => loadData(true)}
                   disabled={refreshing}
-                  className="p-2.5 rounded-xl border border-dark-200 dark:border-dark-700 hover:bg-dark-50 dark:hover:bg-dark-800 text-dark-600 dark:text-dark-300 transition-colors shadow-xs"
-                  title="Refresh"
+                  className="p-2.5 rounded-xl border border-dark-200 dark:border-dark-700 hover:bg-dark-50 dark:hover:bg-dark-800 text-dark-600 dark:text-dark-300 transition-colors shadow-xs cursor-pointer"
+                  title="Refresh System Data"
                 >
                   <RefreshCw size={17} className={refreshing ? 'animate-spin text-primary-600' : ''} />
                 </button>
                 <button
-                  onClick={() => onNavigate?.('admin-users')}
-                  className="inline-flex items-center gap-2 px-3.5 py-2.5 border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 hover:bg-dark-50 dark:hover:bg-dark-700 text-dark-700 dark:text-dark-200 rounded-xl text-sm font-medium transition-colors shadow-xs"
+                  onClick={() => {
+                    setEditingUser(null);
+                    setForm(emptyForm);
+                    setIsModalOpen(true);
+                  }}
+                  className="inline-flex items-center gap-2 px-3.5 py-2.5 border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 hover:bg-dark-50 dark:hover:bg-dark-700 text-dark-700 dark:text-dark-200 rounded-xl text-sm font-semibold transition-colors shadow-xs cursor-pointer"
                 >
-                  <Users size={16} />
-                  <span className="hidden sm:inline">Users Roster</span>
-                </button>
-                <button
-                  onClick={() => openAddClientModal(true)}
-                  className="inline-flex items-center gap-2 px-3.5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition-colors shadow-sm cursor-pointer"
-                >
-                  <UserCheck size={17} />
-                  <span>Add Client & Assign</span>
+                  <UserPlus size={16} />
+                  <span>Invite Member</span>
                 </button>
                 <button
                   onClick={() => openAddClientModal(false)}
                   className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-sm font-semibold transition-colors shadow-sm cursor-pointer"
                 >
-                  <UserPlus size={17} />
-                  <span>Add Client</span>
+                  <Plus size={17} />
+                  <span>Add New Client</span>
                 </button>
               </div>
             }
           />
 
-          {/* ========================================================================= */}
-          {/* 10 CORE REQUIRED ADMIN FEATURES: APPLICATION & DOCUMENT LIFECYCLE         */}
-          {/* ========================================================================= */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-base font-bold text-dark-900 dark:text-white flex items-center gap-2">
-                  <Award className="text-blue-600 dark:text-blue-400" size={20} />
-                  <span>User Applications & Document Management</span>
-                </h3>
-                <p className="text-xs text-dark-500 dark:text-dark-400 mt-0.5">
-                  10 Core Requirements: Registered Users, New Apps, Pending Docs, Reviews, Approvals, Rejections, Payments, Folder, Timeline & Certificates
-                </p>
+          {/* Quick Launch Cards for Essential Admin Operations */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div
+              onClick={() => handleNavigate('admin-users')}
+              className="p-4 bg-white dark:bg-dark-800 rounded-2xl border border-dark-200 dark:border-dark-700 hover:border-primary-400 dark:hover:border-primary-600 shadow-xs cursor-pointer transition-all group"
+            >
+              <div className="flex items-center justify-between">
+                <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+                  <Users size={20} />
+                </div>
+                <ArrowRight size={16} className="text-dark-400 group-hover:translate-x-1 group-hover:text-primary-600 transition-all" />
               </div>
+              <h4 className="font-bold text-sm text-dark-900 dark:text-white mt-3">Team & Roles</h4>
+              <p className="text-xs text-dark-500 dark:text-dark-400 mt-1">
+                Manage user roster, approvals, passwords & role permissions.
+              </p>
             </div>
-            <ApplicationsManager
-              onNavigateToCustomers={() => handleNavigate('contacts')}
-              onNavigateToLeads={() => handleNavigate('leads')}
-              totalClients={totalSystemCustomers}
-              totalLeads={totalSystemLeads}
-              onDataRefresh={loadData}
-            />
+
+            <div
+              onClick={() => handleNavigate('admin-applications')}
+              className="p-4 bg-white dark:bg-dark-800 rounded-2xl border border-dark-200 dark:border-dark-700 hover:border-primary-400 dark:hover:border-primary-600 shadow-xs cursor-pointer transition-all group"
+            >
+              <div className="flex items-center justify-between">
+                <div className="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+                  <Award size={20} />
+                </div>
+                <ArrowRight size={16} className="text-dark-400 group-hover:translate-x-1 group-hover:text-primary-600 transition-all" />
+              </div>
+              <h4 className="font-bold text-sm text-dark-900 dark:text-white mt-3">Applications & KYC</h4>
+              <p className="text-xs text-dark-500 dark:text-dark-400 mt-1">
+                Inspect customer applications, verify documents & issue certificates.
+              </p>
+            </div>
+
+            <div
+              onClick={() => handleNavigate('admin-workload')}
+              className="p-4 bg-white dark:bg-dark-800 rounded-2xl border border-dark-200 dark:border-dark-700 hover:border-primary-400 dark:hover:border-primary-600 shadow-xs cursor-pointer transition-all group"
+            >
+              <div className="flex items-center justify-between">
+                <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+                  <Shuffle size={20} />
+                </div>
+                <ArrowRight size={16} className="text-dark-400 group-hover:translate-x-1 group-hover:text-primary-600 transition-all" />
+              </div>
+              <h4 className="font-bold text-sm text-dark-900 dark:text-white mt-3">Lead Routing</h4>
+              <p className="text-xs text-dark-500 dark:text-dark-400 mt-1">
+                Distribute leads, assign accounts & balance agent workloads.
+              </p>
+            </div>
+
+            <div
+              onClick={() => handleNavigate('admin-system')}
+              className="p-4 bg-white dark:bg-dark-800 rounded-2xl border border-dark-200 dark:border-dark-700 hover:border-primary-400 dark:hover:border-primary-600 shadow-xs cursor-pointer transition-all group"
+            >
+              <div className="flex items-center justify-between">
+                <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+                  <Settings size={20} />
+                </div>
+                <ArrowRight size={16} className="text-dark-400 group-hover:translate-x-1 group-hover:text-primary-600 transition-all" />
+              </div>
+              <h4 className="font-bold text-sm text-dark-900 dark:text-white mt-3">System & APIs</h4>
+              <p className="text-xs text-dark-500 dark:text-dark-400 mt-1">
+                WhatsApp Cloud API gateway, SMTP mail delivery & Database health.
+              </p>
+            </div>
           </div>
 
           {/* 4 Clean Executive Team & Operations Summary Cards (No repeating Clients / Leads) */}

@@ -56,6 +56,8 @@ export default function Settings({ onNavigate }) {
     setThemeColor,
     timezone,
     setTimezone,
+    fontFamily,
+    setFontFamily,
   } = useApp();
 
   const isAdmin = isAdminOrOwner(user);
@@ -1448,6 +1450,96 @@ export default function Settings({ onNavigate }) {
                         {themeColor} Accent
                       </span>
                     </div>
+                  </div>
+                </div>
+
+                {/* Typography & Font Family Engine */}
+                <div className="mt-6 pt-5 border-t border-dark-100 dark:border-dark-700">
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <p className="font-semibold text-xs text-dark-700 dark:text-dark-300">
+                        Typography &amp; Font Style
+                      </p>
+                      <p className="text-[11px] text-dark-500 dark:text-dark-400 mt-0.5">
+                        Choose your preferred font family. Automatically optimizes character tracking, spacing, and high-DPI clarity across all panels.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                    {[
+                      {
+                        key: 'jakarta',
+                        name: 'Plus Jakarta Sans',
+                        category: 'Modern SaaS (Default)',
+                        desc: 'Clean, open, highly legible geometry ideal for dashboards, metrics & tables.',
+                        sample: 'Aa Bb 123'
+                      },
+                      {
+                        key: 'inter',
+                        name: 'Inter',
+                        category: 'Corporate Precision',
+                        desc: 'Precision grotesque engineered for high information density.',
+                        sample: 'Aa Bb 123'
+                      },
+                      {
+                        key: 'roboto',
+                        name: 'Roboto',
+                        category: 'Material Modern',
+                        desc: 'Friendly geometric curves with high screen readability.',
+                        sample: 'Aa Bb 123'
+                      },
+                      {
+                        key: 'system',
+                        name: 'Native System',
+                        category: 'Zero-Latency OS',
+                        desc: 'Native operating system typography (Segoe UI / SF Pro).',
+                        sample: 'Aa Bb 123'
+                      }
+                    ].map((f) => {
+                      const isSelected = (fontFamily || 'jakarta') === f.key;
+                      return (
+                        <div
+                          key={f.key}
+                          onClick={() => {
+                            setFontFamily(f.key);
+                            setHasChanges(true);
+                          }}
+                          className={`p-3.5 rounded-xl border flex flex-col justify-between cursor-pointer transition-all ${
+                            isSelected
+                              ? 'border-primary-500 bg-primary-50/60 dark:bg-primary-950/40 ring-2 ring-primary-500/30 shadow-xs'
+                              : 'border-dark-200 dark:border-dark-700 hover:border-dark-300 dark:hover:border-dark-600 bg-white dark:bg-dark-900/30'
+                          }`}
+                        >
+                          <div>
+                            <div className="flex items-center justify-between gap-2 mb-1.5">
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-primary-600 dark:text-primary-400">
+                                {f.category}
+                              </span>
+                              {isSelected && (
+                                <span className="w-4 h-4 rounded-full bg-primary-600 text-white flex items-center justify-center">
+                                  <Check size={11} strokeWidth={3} />
+                                </span>
+                              )}
+                            </div>
+                            <h4 className="font-bold text-sm text-dark-900 dark:text-white">
+                              {f.name}
+                            </h4>
+                            <p className="text-[11px] text-dark-500 dark:text-dark-400 mt-1 leading-relaxed">
+                              {f.desc}
+                            </p>
+                          </div>
+                          <div className="mt-3 pt-2.5 border-t border-dark-100 dark:border-dark-700/60 flex items-center justify-between">
+                            <span className="text-base font-bold text-dark-800 dark:text-dark-200 tracking-wide">
+                              {f.sample}
+                            </span>
+                            <span className="text-[10px] font-medium text-dark-400">
+                              {isSelected ? 'Active' : 'Click to Apply'}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </div>

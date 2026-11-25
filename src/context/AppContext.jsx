@@ -191,6 +191,28 @@ export function AppProvider({ children }) {
     return saved || 'Asia/Kolkata';
   });
 
+  // Font family typography state
+  const [fontFamily, setFontFamilyState] = useState(() => {
+    try {
+      const saved = localStorage.getItem('smartcrm_font');
+      return saved || 'jakarta';
+    } catch {
+      return 'jakarta';
+    }
+  });
+
+  const setFontFamily = (font) => {
+    setFontFamilyState(font);
+    try {
+      localStorage.setItem('smartcrm_font', font);
+      document.documentElement.setAttribute('data-font', font);
+    } catch {}
+  };
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-font', fontFamily);
+  }, [fontFamily]);
+
   // Clean up any legacy language setting in localStorage
   useEffect(() => {
     localStorage.removeItem('language');
@@ -415,6 +437,8 @@ export function AppProvider({ children }) {
       setThemeColor,
       timezone,
       setTimezone,
+      fontFamily,
+      setFontFamily,
       t,
       tValue,
       formatTime,
