@@ -41,6 +41,7 @@ import {
   getWhatsAppConfig,
   updateWhatsAppConfig,
   testWhatsAppConnection,
+  autoDiscoverWhatsAppContact,
   getWhatsAppTemplates,
   createWhatsAppTemplate,
   getWhatsAppDeviceStatus,
@@ -107,6 +108,7 @@ export default function WhatsApp({ onNavigate }) {
   const [waWabaIdInput, setWaWabaIdInput] = useState('');
   const [waSaving, setWaSaving] = useState(false);
   const [waTesting, setWaTesting] = useState(false);
+  const [waDiscovering, setWaDiscovering] = useState(false);
   const [waTestResult, setWaTestResult] = useState(null);
 
   const [liveTemplates, setLiveTemplates] = useState([]);
@@ -151,17 +153,51 @@ export default function WhatsApp({ onNavigate }) {
     } catch (_) {}
   };
 
+  const handleAutoDetectContact = async () => {
+    const token = waTokenInput.trim();
+    if (!token && !metaConfig?.hasToken) {
+      addToast('Please enter a WhatsApp Access Token first', 'error');
+      return;
+    }
+    setWaDiscovering(true);
+    setWaTestResult(null);
+    try {
+      const res = await autoDiscoverWhatsAppContact({
+        token: token || undefined,
+        phoneId: waPhoneIdInput.trim() || undefined,
+        wabaId: waWabaIdInput.trim() || undefined,
+      });
+      if (res.success) {
+        if (res.phoneNumberId) setWaPhoneIdInput(res.phoneNumberId);
+        if (res.wabaId) setWaWabaIdInput(res.wabaId);
+        setWaTestResult({
+          success: true,
+          message: res.message || 'WhatsApp contact details auto-detected successfully!',
+          details: res,
+        });
+        addToast(`Detected contact: ${res.displayPhoneNumber || res.phoneNumberId} (${res.verifiedName || 'Business'})`, 'success');
+      }
+    } catch (err) {
+      const msg = err.response?.data?.message || err.message || 'Auto-detection failed. Verify token permissions.';
+      setWaTestResult({ success: false, message: msg });
+      addToast(msg, 'error');
+    } finally {
+      setWaDiscovering(false);
+    }
+  };
+
   const handleSaveMetaConfig = async (e) => {
     e.preventDefault();
-    if (!waPhoneIdInput.trim()) {
-      addToast('Please enter your Phone Number ID', 'error');
+    if (!waTokenInput.trim() && !metaConfig?.hasToken) {
+      addToast('Please enter your Meta WhatsApp Access Token', 'error');
       return;
     }
     setWaSaving(true);
     try {
       const payload = {
-        phoneNumberId: waPhoneIdInput.trim(),
-        wabaId: waWabaIdInput.trim(),
+        phoneNumberId: waPhoneIdInput.trim() || undefined,
+        wabaId: waWabaIdInput.trim() || undefined,
+        autoDetect: true,
       };
       if (waTokenInput.trim()) payload.accessToken = waTokenInput.trim();
       const res = await updateWhatsAppConfig(payload);
@@ -1695,17 +1731,32 @@ export default function WhatsApp({ onNavigate }) {
 
               <div>
                 <label className="block font-bold text-dark-700 dark:text-dark-300 mb-1">
-                  Phone Number ID <span className="text-rose-500">*</span>
+                  Permanent System User Access Token
+                </label>
+                <input
+                  type="password"
+                  value={waTokenInput}
+                  onChange={(e) => setWaTokenInput(e.target.value)}
+                  placeholder={metaConfig?.hasToken ? `Current token: ${metaConfig.maskedToken}` : 'Paste EAAB... permanent access token'}
+                  className="w-full px-3 py-2 rounded-xl bg-dark-50 dark:bg-dark-900 border border-dark-200 dark:border-dark-700 text-dark-900 dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <p className="text-[10px] text-dark-400 mt-1">
+                  To switch WhatsApp contact, simply paste your new access token. The system automatically detects and links the new contact number.
+                </p>
+              </div>
+
+              <div>
+                <label className="block font-bold text-dark-700 dark:text-dark-300 mb-1">
+                  Phone Number ID
                 </label>
                 <input
                   type="text"
                   value={waPhoneIdInput}
                   onChange={(e) => setWaPhoneIdInput(e.target.value)}
-                  placeholder="e.g. 1408768628982301"
-                  required
+                  placeholder="Auto-detected from token (or enter Phone ID)"
                   className="w-full px-3 py-2 rounded-xl bg-dark-50 dark:bg-dark-900 border border-dark-200 dark:border-dark-700 text-dark-900 dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
-                <p className="text-[10px] text-dark-400 mt-1">Found in Meta App Dashboard &gt; WhatsApp &gt; API Setup &gt; Phone number ID</p>
+                <p className="text-[10px] text-dark-400 mt-1">Leave empty to auto-detect from token, or specify manually</p>
               </div>
 
               <div>
@@ -1716,24 +1767,10 @@ export default function WhatsApp({ onNavigate }) {
                   type="text"
                   value={waWabaIdInput}
                   onChange={(e) => setWaWabaIdInput(e.target.value)}
-                  placeholder="e.g. 1604281820561116"
+                  placeholder="Auto-detected from token (or enter WABA ID)"
                   className="w-full px-3 py-2 rounded-xl bg-dark-50 dark:bg-dark-900 border border-dark-200 dark:border-dark-700 text-dark-900 dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
-                <p className="text-[10px] text-dark-400 mt-1">Found in Meta App Dashboard &gt; WhatsApp &gt; API Setup &gt; WhatsApp Business Account ID</p>
-              </div>
-
-              <div>
-                <label className="block font-bold text-dark-700 dark:text-dark-300 mb-1">
-                  Permanent System User Access Token
-                </label>
-                <input
-                  type="password"
-                  value={waTokenInput}
-                  onChange={(e) => setWaTokenInput(e.target.value)}
-                  placeholder={metaConfig?.hasToken ? `Current token: ${metaConfig.maskedToken}` : 'Paste EAAB... permanent access token'}
-                  className="w-full px-3 py-2 rounded-xl bg-dark-50 dark:bg-dark-900 border border-dark-200 dark:border-dark-700 text-dark-900 dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                <p className="text-[10px] text-dark-400 mt-1">Leave blank to keep existing token. Generate from Meta Business Manager &gt; System Users with whatsapp_business_messaging permission.</p>
+                <p className="text-[10px] text-dark-400 mt-1">Leave empty to auto-detect from token, or specify manually</p>
               </div>
 
               {waTestResult && (
@@ -1752,16 +1789,28 @@ export default function WhatsApp({ onNavigate }) {
                 </div>
               )}
 
-              <div className="pt-2 flex items-center justify-between gap-2 border-t border-dark-100 dark:border-dark-700">
-                <button
-                  type="button"
-                  onClick={handleTestMetaConnection}
-                  disabled={waTesting || (!waPhoneIdInput && !metaConfig?.phoneNumberId)}
-                  className="px-3.5 py-2 rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 text-dark-700 dark:text-dark-200 hover:bg-dark-50 dark:hover:bg-dark-700 font-bold text-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-                >
-                  {waTesting ? <RefreshCw size={13} className="animate-spin" /> : <Lock size={13} />}
-                  <span>Test Handshake</span>
-                </button>
+              <div className="pt-2 flex flex-wrap items-center justify-between gap-2 border-t border-dark-100 dark:border-dark-700">
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleAutoDetectContact}
+                    disabled={waDiscovering || (!waTokenInput.trim() && !metaConfig?.hasToken)}
+                    className="px-3.5 py-2 rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 hover:bg-blue-100 font-bold text-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  >
+                    {waDiscovering ? <RefreshCw size={13} className="animate-spin" /> : <Zap size={13} />}
+                    <span>Auto-Detect Contact</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleTestMetaConnection}
+                    disabled={waTesting || (!waPhoneIdInput && !metaConfig?.phoneNumberId && !waTokenInput.trim())}
+                    className="px-3.5 py-2 rounded-xl border border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 text-dark-700 dark:text-dark-200 hover:bg-dark-50 dark:hover:bg-dark-700 font-bold text-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  >
+                    {waTesting ? <RefreshCw size={13} className="animate-spin" /> : <Lock size={13} />}
+                    <span>Test Handshake</span>
+                  </button>
+                </div>
 
                 <div className="flex items-center gap-2">
                   <button

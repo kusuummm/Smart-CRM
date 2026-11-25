@@ -93,7 +93,7 @@ import { getCustomers, createCustomer, updateCustomer, bulkAssignCustomers } fro
 import { getLeads } from '../api/leads';
 import { getFollowUps, createFollowUp, updateFollowUp, deleteFollowUp } from '../api/followups';
 import { testEmailDelivery } from '../api/emails';
-import { getWhatsAppConfig, updateWhatsAppConfig, testWhatsAppConnection } from '../api/whatsapp';
+import { getWhatsAppConfig, updateWhatsAppConfig, testWhatsAppConnection, autoDiscoverWhatsAppContact } from '../api/whatsapp';
 import CallerProgressReports from '../components/CallerProgressReports';
 
 const emptyForm = { name: '', email: '', password: '', role: 'member', phone: '' };
@@ -387,19 +387,22 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
     addToast('System diagnostics complete: Database active, SMTP mailer reachable, and Cloud APIs configured.', 'success');
   };
 
-  // WhatsApp Business API Config & Handshake State
+  // WhatsApp Business API Config & Dynamic Handshake State
   const [waConfig, setWaConfig] = useState({
     accessToken: '',
-    phoneNumberId: '1408768628982301',
-    wabaId: '1604281820561116',
+    phoneNumberId: '',
+    wabaId: '',
+    displayPhoneNumber: '',
+    verifiedName: '',
     isConfigured: false,
     maskedToken: '',
   });
   const [waTokenInput, setWaTokenInput] = useState('');
-  const [waPhoneIdInput, setWaPhoneIdInput] = useState('1408768628982301');
-  const [waWabaIdInput, setWaWabaIdInput] = useState('1604281820561116');
+  const [waPhoneIdInput, setWaPhoneIdInput] = useState('');
+  const [waWabaIdInput, setWaWabaIdInput] = useState('');
   const [waSaving, setWaSaving] = useState(false);
   const [waTesting, setWaTesting] = useState(false);
+  const [waDiscovering, setWaDiscovering] = useState(false);
   const [waTestResult, setWaTestResult] = useState(null);
   const [showWaToken, setShowWaToken] = useState(false);
 
@@ -409,13 +412,46 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
         .then((data) => {
           if (data) {
             setWaConfig(data);
-            if (data.phoneNumberId) setWaPhoneIdInput(data.phoneNumberId);
-            if (data.wabaId) setWaWabaIdInput(data.wabaId);
+            setWaPhoneIdInput(data.phoneNumberId || '');
+            setWaWabaIdInput(data.wabaId || '');
           }
         })
         .catch(() => {});
     }
   }, [currentView]);
+
+  const handleAutoDiscoverWhatsApp = async () => {
+    const tokenToTest = waTokenInput.trim();
+    if (!tokenToTest && !waConfig.hasToken) {
+      addToast('Please paste a Meta WhatsApp Access Token first to detect contact details', 'error');
+      return;
+    }
+    setWaDiscovering(true);
+    setWaTestResult(null);
+    try {
+      const res = await autoDiscoverWhatsAppContact({
+        token: tokenToTest || undefined,
+        phoneId: waPhoneIdInput.trim() || undefined,
+        wabaId: waWabaIdInput.trim() || undefined,
+      });
+      if (res.success) {
+        if (res.phoneNumberId) setWaPhoneIdInput(res.phoneNumberId);
+        if (res.wabaId) setWaWabaIdInput(res.wabaId);
+        setWaTestResult({
+          success: true,
+          message: res.message || 'WhatsApp contact details auto-detected successfully!',
+          details: res,
+        });
+        addToast(`Detected contact: ${res.displayPhoneNumber || res.phoneNumberId} (${res.verifiedName || 'Business'})`, 'success');
+      }
+    } catch (err) {
+      const msg = err.response?.data?.message || err.message || 'Auto-detection failed. Verify token permissions.';
+      setWaTestResult({ success: false, message: msg });
+      addToast(msg, 'error');
+    } finally {
+      setWaDiscovering(false);
+    }
+  };
 
   const handleSaveWhatsAppConfig = async (e) => {
     e?.preventDefault();
@@ -427,8 +463,9 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
     setWaTestResult(null);
     try {
       const payload = {
-        phoneNumberId: waPhoneIdInput.trim(),
-        wabaId: waWabaIdInput.trim(),
+        phoneNumberId: waPhoneIdInput.trim() || undefined,
+        wabaId: waWabaIdInput.trim() || undefined,
+        autoDetect: true,
       };
       if (waTokenInput.trim()) payload.accessToken = waTokenInput.trim();
       const res = await updateWhatsAppConfig(payload);
@@ -436,9 +473,13 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
       setWaConfig((prev) => ({
         ...prev,
         isConfigured: true,
-        phoneNumberId: waPhoneIdInput,
-        wabaId: waWabaIdInput,
+        phoneNumberId: res.phoneNumberId || waPhoneIdInput,
+        wabaId: res.wabaId || waWabaIdInput,
+        displayPhoneNumber: res.displayPhoneNumber || prev.displayPhoneNumber,
+        verifiedName: res.verifiedName || prev.verifiedName,
       }));
+      if (res.phoneNumberId) setWaPhoneIdInput(res.phoneNumberId);
+      if (res.wabaId) setWaWabaIdInput(res.wabaId);
       setWaTokenInput('');
     } catch (err) {
       addToast(err.response?.data?.message || 'Failed to save WhatsApp config', 'error');
@@ -4742,6 +4783,26 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                   </div>
                 </div>
 
+                {/* Active Sender Account Pill if detected */}
+                {(waConfig.displayPhoneNumber || waConfig.verifiedName) && (
+                  <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 rounded-xl border border-emerald-200 dark:border-emerald-800/60 flex items-center justify-between">
+                    <div>
+                      <p className="font-bold text-emerald-800 dark:text-emerald-200 flex items-center gap-1.5 text-xs">
+                        <CheckCircle2 size={15} /> Active WhatsApp Business Sender
+                      </p>
+                      <p className="text-xs text-emerald-700 dark:text-emerald-300 font-mono mt-0.5">
+                        {waConfig.displayPhoneNumber ? `Line: ${waConfig.displayPhoneNumber} ` : ''}
+                        {waConfig.verifiedName ? `(${waConfig.verifiedName})` : ''}
+                      </p>
+                    </div>
+                    {waConfig.phoneNumberId && (
+                      <span className="text-[11px] font-mono text-dark-500 dark:text-dark-400 bg-white dark:bg-dark-800 px-2 py-1 rounded-lg border border-dark-100 dark:border-dark-700">
+                        Phone ID: {waConfig.phoneNumberId}
+                      </span>
+                    )}
+                  </div>
+                )}
+
                 <form onSubmit={handleSaveWhatsAppConfig} className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
@@ -4752,10 +4813,10 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                         type="text"
                         value={waPhoneIdInput}
                         onChange={(e) => setWaPhoneIdInput(e.target.value)}
-                        placeholder="e.g. 1408768628982301"
+                        placeholder="Auto-detected from token (or paste Phone ID)"
                         className="w-full px-3.5 py-2 text-xs font-mono rounded-xl bg-dark-50 dark:bg-dark-900 border border-dark-200 dark:border-dark-700 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500"
                       />
-                      <p className="text-[11px] text-dark-400 mt-1">Found in Meta WhatsApp Manager &gt; API Setup</p>
+                      <p className="text-[11px] text-dark-400 mt-1">Leave empty to auto-detect from token, or specify manually</p>
                     </div>
 
                     <div>
@@ -4766,7 +4827,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                         type="text"
                         value={waWabaIdInput}
                         onChange={(e) => setWaWabaIdInput(e.target.value)}
-                        placeholder="e.g. 1604281820561116"
+                        placeholder="Auto-detected from token (or paste WABA ID)"
                         className="w-full px-3.5 py-2 text-xs font-mono rounded-xl bg-dark-50 dark:bg-dark-900 border border-dark-200 dark:border-dark-700 text-dark-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500"
                       />
                       <p className="text-[11px] text-dark-400 mt-1">Official Meta Business Account ID</p>
@@ -4799,7 +4860,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                       </button>
                     </div>
                     <p className="text-[11px] text-dark-400 mt-1">
-                      Generate from Meta Developers Portal &gt; WhatsApp &gt; API Setup, or Meta Business Settings &gt; System Users.
+                      To change contact number, simply paste a new Meta Access Token and click "Auto-Detect Contact" or "Save API Token".
                     </p>
                   </div>
 
@@ -4829,7 +4890,7 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                     <button
                       type="submit"
                       disabled={waSaving || (!waTokenInput.trim() && !waConfig.isConfigured)}
-                      className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold inline-flex items-center gap-1.5 transition-colors shadow-xs"
+                      className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold inline-flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer"
                     >
                       {waSaving ? <RefreshCw size={13} className="animate-spin" /> : <Shield size={13} />}
                       <span>{waSaving ? 'Saving Credentials...' : 'Save API Token'}</span>
@@ -4837,9 +4898,19 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
 
                     <button
                       type="button"
+                      onClick={handleAutoDiscoverWhatsApp}
+                      disabled={waDiscovering || (!waTokenInput.trim() && !waConfig.hasToken)}
+                      className="px-4 py-2 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/40 disabled:opacity-50 text-blue-800 dark:text-blue-300 rounded-xl text-xs font-semibold inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      {waDiscovering ? <RefreshCw size={13} className="animate-spin" /> : <Zap size={13} />}
+                      <span>{waDiscovering ? 'Detecting Contact...' : 'Auto-Detect Contact from Token'}</span>
+                    </button>
+
+                    <button
+                      type="button"
                       onClick={handleTestWhatsAppConnection}
                       disabled={waTesting || (!waTokenInput.trim() && !waConfig.isConfigured)}
-                      className="px-4 py-2 bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 hover:bg-dark-50 dark:hover:bg-dark-700 disabled:opacity-50 text-dark-800 dark:text-dark-200 rounded-xl text-xs font-semibold inline-flex items-center gap-1.5 transition-colors"
+                      className="px-4 py-2 bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 hover:bg-dark-50 dark:hover:bg-dark-700 disabled:opacity-50 text-dark-800 dark:text-dark-200 rounded-xl text-xs font-semibold inline-flex items-center gap-1.5 transition-colors cursor-pointer"
                     >
                       {waTesting ? <RefreshCw size={13} className="animate-spin" /> : <Activity size={13} />}
                       <span>{waTesting ? 'Verifying with Meta...' : 'Test Connection Handshake'}</span>
