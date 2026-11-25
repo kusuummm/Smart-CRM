@@ -36,6 +36,7 @@ import { useToast } from '../components/Toast';
 import { useAuth } from '../context/AuthContext';
 import { getCalls, createCall } from '../api/callHistory';
 import { getCustomers, updateCustomer } from '../api/customers';
+import { getTeams } from '../api/teams';
 import CallRecordingModal from '../components/CallRecordingModal';
 import SoftphoneModal from '../components/SoftphoneModal';
 import Customer360Modal from '../components/Customer360Modal';
@@ -69,7 +70,7 @@ export default function CallHistory({ onNavigate, initialCallType = 'all' }) {
   // Search & Filter states matching screenshots
   const [callTypeFilter, setCallTypeFilter] = useState(initialCallType || 'all');
   const [customerSearch, setCustomerSearch] = useState('');
-  const [selectedTeam, setSelectedTeam] = useState('Main Team');
+  const [selectedTeam, setSelectedTeam] = useState('');
   const [selectedStaff, setSelectedStaff] = useState(() => {
     const saved = sessionStorage.getItem('smartcrm_filter_telecaller');
     if (saved) {
@@ -78,7 +79,17 @@ export default function CallHistory({ onNavigate, initialCallType = 'all' }) {
     }
     return 'All staff';
   });
-  const [period, setPeriod] = useState('Sep 09, 2026 – Oct 09, 2026');
+  const [period, setPeriod] = useState(() => {
+    try {
+      const today = new Date();
+      const past = new Date();
+      past.setDate(today.getDate() - 30);
+      const opt = { month: 'short', day: '2-digit', year: 'numeric' };
+      return `${past.toLocaleDateString('en-US', opt)} – ${today.toLocaleDateString('en-US', opt)}`;
+    } catch {
+      return 'Last 30 Days';
+    }
+  });
   const [copiedId, setCopiedId] = useState(null);
 
   useEffect(() => {
@@ -190,16 +201,32 @@ export default function CallHistory({ onNavigate, initialCallType = 'all' }) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Teams list
+  // Teams list loaded from database and localStorage
+  const [dbTeams, setDbTeams] = useState([]);
+  useEffect(() => {
+    getTeams()
+      .then((res) => {
+        if (res.teams && Array.isArray(res.teams)) {
+          setDbTeams(res.teams.map((t) => (typeof t === 'string' ? t : t.name)).filter(Boolean));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const teamsList = useMemo(() => {
+    const list = [...dbTeams];
     try {
       const saved = JSON.parse(localStorage.getItem('smartcrm_teams') || '[]');
       if (Array.isArray(saved) && saved.length > 0) {
-        return saved.map((t) => (typeof t === 'string' ? t : t.name)).filter(Boolean);
+        saved.forEach((t) => {
+          const name = typeof t === 'string' ? t : t.name;
+          if (name && !list.includes(name)) list.push(name);
+        });
       }
     } catch {}
-    return [];
-  }, []);
+    if (!list.includes('Main Team')) list.unshift('Main Team');
+    return list;
+  }, [dbTeams]);
 
   // Staff members
   const staffList = user?.name ? [user.name] : ['All Staff'];
@@ -1817,7 +1844,12 @@ export default function CallHistory({ onNavigate, initialCallType = 'all' }) {
         onNavigate={onNavigate}
         onCallSaved={(newRec) => {
           if (newRec) {
-            setCalls((prev) => [newRec, ...prev]);
+            const formatted = {
+              ...newRec,
+              team: newRec.team || 'Main Team',
+              displayPhone: newRec.displayPhone || (newRec.customerNumber || '').replace('+91', '').trim(),
+            };
+            setCalls((prev) => [formatted, ...prev]);
           }
         }}
       />

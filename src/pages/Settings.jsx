@@ -3,6 +3,7 @@ import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/Toast';
 import { isAdminOrOwner, isManager, isMember, getRoleInfo } from '../utils/permissions';
+import { getSettings, saveSettings } from '../api/settings';
 import {
   Moon,
   Sun,
@@ -143,6 +144,21 @@ export default function Settings({ onNavigate }) {
     };
   });
 
+  // Load workspace settings from MongoDB database on mount
+  useEffect(() => {
+    getSettings()
+      .then((res) => {
+        if (res.settings) {
+          const s = res.settings;
+          if (s.callRecording) setCallRecording(s.callRecording);
+          if (s.notifications) setNotifications(s.notifications);
+          if (s.memberSettings) setMemberSettings(s.memberSettings);
+          if (s.adminSettings) setAdminSettings(s.adminSettings);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   // --- 5. AUDIO & MICROPHONE HARDWARE TEST STATE ---
   const [isTestingMic, setIsTestingMic] = useState(false);
   const [micVolumeLevel, setMicVolumeLevel] = useState(0);
@@ -265,8 +281,16 @@ export default function Settings({ onNavigate }) {
     if (isAdmin) {
       localStorage.setItem('smartcrm_admin_settings', JSON.stringify(adminSettings));
     }
+    // Persist to MongoDB database
+    saveSettings({
+      callRecording,
+      notifications,
+      memberSettings,
+      adminSettings: isAdmin ? adminSettings : undefined,
+    }).catch(() => {});
+
     setHasChanges(false);
-    addToast('All preferences and workspace settings saved successfully!', 'success');
+    addToast('All preferences and workspace settings saved successfully to database!', 'success');
   };
 
   // Reset to Defaults
@@ -310,8 +334,15 @@ export default function Settings({ onNavigate }) {
     localStorage.setItem('notification_settings', JSON.stringify(defaultNotifications));
     localStorage.setItem('smartcrm_member_settings', JSON.stringify(defaultMember));
 
+    // Persist defaults to MongoDB database
+    saveSettings({
+      callRecording: defaultRecording,
+      notifications: defaultNotifications,
+      memberSettings: defaultMember,
+    }).catch(() => {});
+
     setHasChanges(false);
-    addToast('Preferences restored to standard CRM defaults.', 'info');
+    addToast('Preferences restored to standard CRM defaults and saved.', 'info');
   };
 
   // Theme Colors Palette

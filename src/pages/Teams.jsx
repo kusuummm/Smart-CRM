@@ -37,6 +37,7 @@ import { useToast } from '../components/Toast';
 import { useAuth } from '../context/AuthContext';
 import { useConfirm } from '../context/ConfirmContext';
 import { getUsers, updateUser, deleteUser } from '../api/users';
+import { getTeams, createTeam, updateTeam, deleteTeam } from '../api/teams';
 import TeamCallHistoryTable from '../components/TeamCallHistoryTable';
 
 export default function Teams({ onNavigate, onOpenBuyNumber }) {
@@ -52,6 +53,18 @@ export default function Teams({ onNavigate, onOpenBuyNumber }) {
     } catch {}
     return [];
   });
+
+  // Fetch teams from backend MongoDB database on mount
+  useEffect(() => {
+    getTeams()
+      .then((res) => {
+        if (res.teams && Array.isArray(res.teams) && res.teams.length > 0) {
+          setTeams(res.teams);
+          localStorage.setItem('smartcrm_teams', JSON.stringify(res.teams));
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // Create Team Modal State
   const defaultNewTeam = {
@@ -221,6 +234,7 @@ export default function Teams({ onNavigate, onOpenBuyNumber }) {
 
     const updated = [...teams, created];
     setTeams(updated);
+    createTeam(created).catch(() => {});
     try {
       localStorage.setItem('smartcrm_teams', JSON.stringify(updated));
       window.dispatchEvent(new Event('storage'));
@@ -1721,6 +1735,7 @@ export default function Teams({ onNavigate, onOpenBuyNumber }) {
                       currentTeam.name = editTeamName.trim();
                       const updated = [...teams];
                       setTeams(updated);
+                      updateTeam(currentTeam.id, currentTeam).catch(() => {});
                       try {
                         localStorage.setItem('smartcrm_teams', JSON.stringify(updated));
                         window.dispatchEvent(new Event('storage'));
@@ -2070,6 +2085,7 @@ export default function Teams({ onNavigate, onOpenBuyNumber }) {
                           if (!ok) return;
                           const updated = teams.filter((t) => t.id !== team.id);
                           setTeams(updated);
+                          deleteTeam(team.id).catch(() => {});
                           try {
                             localStorage.setItem('smartcrm_teams', JSON.stringify(updated));
                             window.dispatchEvent(new Event('storage'));

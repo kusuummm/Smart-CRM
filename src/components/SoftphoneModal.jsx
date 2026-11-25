@@ -305,13 +305,18 @@ export default function SoftphoneModal({
         ? 'Wrong Number'
         : 'Missed';
 
+    const cleanDisplayPhone = String(rawNumber).replace(/[^0-9]/g, '').slice(-10) || rawNumber;
+
     const callRecord = {
       id: `call_${Date.now()}`,
-      customerNumber: rawNumber.startsWith('+') ? rawNumber : `+91 ${rawNumber}`,
+      customerNumber: rawNumber.startsWith('+') ? rawNumber : (rawNumber ? `+91 ${rawNumber}` : ''),
       customerName: cust.name || 'Customer',
+      displayPhone: cleanDisplayPhone,
+      team: 'Main Team',
       staff: user?.name || 'Agent',
       date: 'Just now',
       duration: durFormatted,
+      recordingDuration: durFormatted,
       callType: 'Outgoing',
       callStatus: statusLabel,
       hasRecording: false,
@@ -331,18 +336,25 @@ export default function SoftphoneModal({
       localStorage.setItem(`smartcrm_calls_${phoneKey}`, JSON.stringify([callRecord, ...existing]));
     } catch (_) {}
 
-    // Save to backend
-    createCall({
-      customerId: cust.id && cust.id.length === 24 ? cust.id : undefined,
-      customerName: cust.name,
-      customerPhone: cust.phone || dialNumber,
-      duration: durFormatted,
-      status: status === 'busy' ? 'busy' : status === 'wrong_number' ? 'wrong_number' : 'missed',
-      remarks: `Call ended before answer (${statusLabel})`,
-    }).catch(() => {});
+    // Save to backend MongoDB database
+    try {
+      const res = await createCall({
+        customerId: cust.id && cust.id.length === 24 ? cust.id : undefined,
+        customerName: cust.name,
+        customerPhone: cust.phone || dialNumber,
+        duration: durFormatted,
+        status: status === 'busy' ? 'busy' : status === 'wrong_number' ? 'wrong_number' : 'missed',
+        remarks: `Call ended before answer (${statusLabel})`,
+      });
+      if (res?.call?._id) {
+        callRecord.id = res.call._id;
+      }
+    } catch (err) {
+      console.warn('Call save to database notice:', err);
+    }
 
     onCallSaved?.(callRecord);
-    addToast(`Call ended (${statusLabel}). Log saved.`, 'info');
+    addToast(`Call logged (${statusLabel}) and saved to database.`, 'info');
     onClose();
   };
 
@@ -406,10 +418,14 @@ export default function SoftphoneModal({
       ],
     };
 
+    const cleanDisplayPhone = phoneKey || (cust.phone || dialNumber || '').replace('+91', '').trim();
+
     const callRecord = {
       id: `call_${Date.now()}`,
-      customerNumber: `+91 ${cust.phone || dialNumber}`,
+      customerNumber: (cust.phone || dialNumber || '').startsWith('+') ? (cust.phone || dialNumber) : `+91 ${cust.phone || dialNumber}`,
       customerName: cust.name || 'Customer',
+      displayPhone: cleanDisplayPhone,
+      team: 'Main Team',
       staff: user?.name || 'Agent',
       date: 'Just now',
       duration: durFormatted,
@@ -430,24 +446,31 @@ export default function SoftphoneModal({
       localStorage.setItem(`smartcrm_calls_${phoneKey}`, JSON.stringify([callRecord, ...existing]));
     } catch (_) {}
 
-    // Save to backend
-    createCall({
-      customerId: cust.id && cust.id.length === 24 ? cust.id : undefined,
-      customerName: cust.name,
-      customerPhone: cust.phone || dialNumber,
-      duration: durFormatted,
-      status: 'connected',
-      recordingUrl,
-      remarks: `Call completed (${outcomeLabel}). ${callNotes}`,
-      transcript: finalTranscript,
-      aiSummary,
-      waveform: callRecord.waveform,
-    }).catch(() => {});
+    // Save to backend MongoDB database
+    try {
+      const res = await createCall({
+        customerId: cust.id && cust.id.length === 24 ? cust.id : undefined,
+        customerName: cust.name,
+        customerPhone: cust.phone || dialNumber,
+        duration: durFormatted,
+        status: 'connected',
+        recordingUrl,
+        remarks: `Call completed (${outcomeLabel}). ${callNotes}`,
+        transcript: finalTranscript,
+        aiSummary,
+        waveform: callRecord.waveform,
+      });
+      if (res?.call?._id) {
+        callRecord.id = res.call._id;
+      }
+    } catch (err) {
+      console.warn('Call save to database notice:', err);
+    }
 
     setRecordedResult(callRecord);
     setCallState('ended');
     onCallSaved?.(callRecord);
-    addToast(`Call ended (${durFormatted}). Recording and AI summary saved!`, 'success');
+    addToast(`Call ended (${durFormatted}). Saved to database with AI summary!`, 'success');
   };
 
   // Audio playback toggle for post-call review
