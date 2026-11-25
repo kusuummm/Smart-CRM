@@ -40,6 +40,9 @@ import {
   Star,
   XCircle,
   Lock,
+  Inbox,
+  ArrowDownLeft,
+  ArrowUpRight,
 } from 'lucide-react';
 import { audioEngine, formatSeconds, generateWaveform } from '../utils/audioPlayer';
 import { useToast } from './Toast';
@@ -51,6 +54,7 @@ import { getFollowUps, createFollowUp, updateFollowUp, deleteFollowUp } from '..
 import { getNotes, createNote, deleteNote } from '../api/notes';
 import { getLeads, updateLeadStatus, createLead } from '../api/leads';
 import { getUsers } from '../api/users';
+import { getLeadEmails, sendLeadEmail, receiveLeadEmail, markEmailAsRead } from '../api/emails';
 
 const FOLLOW_UP_STATUS_OPTIONS = [
   { id: 'new', label: 'New Follow-up', Icon: Sparkles, color: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300' },
@@ -115,6 +119,14 @@ export default function Customer360Modal({ isOpen, onClose, customer, onStartCal
   // Notes & Timeline
   const [notes, setNotes] = useState([]);
   const [newNoteText, setNewNoteText] = useState('');
+
+  // Emails (Received & Sent on CRM system)
+  const [emailsList, setEmailsList] = useState([]);
+  const [loadingEmails, setLoadingEmails] = useState(false);
+  const [emailComposeOpen, setEmailComposeOpen] = useState(false);
+  const [emailForm, setEmailForm] = useState({ subject: '', body: '', type: 'follow-up' });
+  const [sendingEmail, setSendingEmail] = useState(false);
+  const [expandedEmailId, setExpandedEmailId] = useState(null);
 
   // Editable customer details form
   const [isEditingDetails, setIsEditingDetails] = useState(false);
@@ -224,6 +236,7 @@ export default function Customer360Modal({ isOpen, onClose, customer, onStartCal
 
     // 3. Fetch Notes for this customer
     loadCustomerNotes(clean10, rawName);
+    loadCustomerEmails(resolvedLeadId, initialProfile.id, initialProfile.email);
 
     // 4. Also fetch latest Customer doc from server if available
     if (clean10) {
@@ -275,6 +288,7 @@ export default function Customer360Modal({ isOpen, onClose, customer, onStartCal
               leadId: matchLead._id,
               status: matchLead.status || prev.status,
             }));
+            loadCustomerEmails(matchLead._id, initialProfile.id, initialProfile.email);
           }
         })
         .catch(() => {});

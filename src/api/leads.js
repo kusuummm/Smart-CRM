@@ -17,3 +17,8 @@ export const deleteLead = (id) => api.delete(`/leads/${id}`).then((res) => res.d
 
 export const bulkImportLeads = (payload) =>
   api.post('/leads/bulk-import', payload).then((res) => res.data);
+
+// Lead Email APIs
+export const getLeadEmails = (leadId) => api.get(`/leads/${leadId}/emails`).then((res) => res.data);
+export const sendLeadEmail = (payload) => api.post('/emails/send', payload).then((res) => res.data);
+export const receiveLeadEmail = (payload) => api.post('/emails/receive', payload).then((res) => res.data);

@@ -37,6 +37,7 @@ import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import ExcelLeadImportModal from '../components/ExcelLeadImportModal';
 import Customer360Modal from '../components/Customer360Modal';
+import LeadEmailModal from '../components/LeadEmailModal';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../context/ConfirmContext';
@@ -79,6 +80,20 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
   // Customer 360 History Modal
   const [customer360Lead, setCustomer360Lead] = useState(null);
   const [isCustomer360Open, setIsCustomer360Open] = useState(false);
+
+  // Lead Email Communication Modal state (view received emails & send emails)
+  const [leadEmailModal, setLeadEmailModal] = useState({
+    isOpen: false,
+    lead: null,
+    defaultTab: 'history',
+  });
+  const openLeadEmailModal = (targetLead, defaultTab = 'history') => {
+    setLeadEmailModal({
+      isOpen: true,
+      lead: targetLead,
+      defaultTab,
+    });
+  };
   const [statusFilter, setStatusFilter] = useState(selectedLeadStatus || '');
   const [telecallerFilter, setTelecallerFilter] = useState(() => {
     const saved = sessionStorage.getItem('smartcrm_filter_telecaller');
@@ -709,47 +724,61 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
                               <GripVertical size={14} className="text-dark-300 dark:text-dark-600 shrink-0" />
                             </div>
 
-                            {/* Customer Phone & Communication Quick Links */}
-                            {lead.customerPhone && (
-                              <div className="mt-2 flex items-center justify-between text-xs pt-1.5 border-t border-dark-100 dark:border-dark-700/60">
-                                <span className="font-mono text-[11px] text-dark-600 dark:text-dark-300">
-                                  {lead.customerPhone}
-                                </span>
-                                <div className="flex items-center gap-1">
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      try {
-                                        localStorage.setItem('smartcrm_whatsapp_target_customer', JSON.stringify({
-                                          id: lead.customerId || lead.id || lead._id,
-                                          name: lead.customerName || lead.title || 'Customer',
-                                          phone: lead.customerPhone || '',
-                                          leadStatus: lead.stage || lead.status || 'Lead',
-                                        }));
-                                      } catch (_) {}
-                                      if (onNavigate) {
-                                        onNavigate('whatsapp');
-                                      } else {
-                                        window.location.href = '/whatsapp';
-                                      }
-                                    }}
-                                    className="p-1 rounded-md text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 cursor-pointer"
-                                    title="WhatsApp Customer in CRM"
-                                  >
-                                    <PhoneCall size={12} />
-                                  </button>
-                                  <a
-                                    href={`tel:${lead.customerPhone}`}
-                                    className="p-1 rounded-md text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40"
-                                    title="Call Customer"
-                                    onClick={(e) => e.stopPropagation()}
-                                  >
-                                    <Phone size={12} />
-                                  </a>
-                                </div>
+                            {/* Customer Contact & Communication Quick Links */}
+                            <div className="mt-2 flex items-center justify-between text-xs pt-1.5 border-t border-dark-100 dark:border-dark-700/60">
+                              <span className="font-mono text-[11px] text-dark-600 dark:text-dark-300 truncate max-w-[125px]" title={lead.customerPhone || lead.customerId?.email || 'Contact'}>
+                                {lead.customerPhone || lead.customerId?.email || 'Contact'}
+                              </span>
+                              <div className="flex items-center gap-1">
+                                {/* Email Lead (View Received / Send Email) */}
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    openLeadEmailModal(lead, 'history');
+                                  }}
+                                  className="p-1 rounded-md text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 cursor-pointer"
+                                  title="Lead Email Hub: View Received Emails & Send Email"
+                                >
+                                  <Mail size={12} />
+                                </button>
+                                {lead.customerPhone && (
+                                  <>
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        try {
+                                          localStorage.setItem('smartcrm_whatsapp_target_customer', JSON.stringify({
+                                            id: lead.customerId || lead.id || lead._id,
+                                            name: lead.customerName || lead.title || 'Customer',
+                                            phone: lead.customerPhone || '',
+                                            leadStatus: lead.stage || lead.status || 'Lead',
+                                          }));
+                                        } catch (_) {}
+                                        if (onNavigate) {
+                                          onNavigate('whatsapp');
+                                        } else {
+                                          window.location.href = '/whatsapp';
+                                        }
+                                      }}
+                                      className="p-1 rounded-md text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 cursor-pointer"
+                                      title="WhatsApp Customer in CRM"
+                                    >
+                                      <PhoneCall size={12} />
+                                    </button>
+                                    <a
+                                      href={`tel:${lead.customerPhone}`}
+                                      className="p-1 rounded-md text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40"
+                                      title="Call Customer"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      <Phone size={12} />
+                                    </a>
+                                  </>
+                                )}
                               </div>
-                            )}
+                            </div>
 
                             {/* Footer: Assigned Member & Stage Shift arrows */}
                             <div className="mt-2.5 pt-2 border-t border-dark-100 dark:border-dark-700/60 flex items-center justify-between">
@@ -1000,6 +1029,16 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
                             <PhoneCall size={16} />
                           </button>
 
+                          {/* Lead Email Communication Hub (Received & Sent) */}
+                          <button
+                            type="button"
+                            onClick={() => openLeadEmailModal(lead, 'history')}
+                            className="p-1.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 transition-colors cursor-pointer"
+                            title="Lead Emails: View Received Emails & Send Email"
+                          >
+                            <Mail size={16} />
+                          </button>
+
                           {/* Schedule Meeting with Customer (Triggers 1-hour email reminder) */}
                           <button
                             onClick={() => openScheduleMeeting(lead)}
@@ -1083,6 +1122,32 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
                       </button>
                     );
                   })}
+                </div>
+
+                {/* Lead Email Communication Hub */}
+                <div className="pt-2 border-t border-dark-200/60 dark:border-dark-700/60 flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[11px] font-bold text-dark-500 uppercase tracking-wider flex items-center gap-1">
+                      <Mail size={12} className="text-indigo-600" />
+                      <span>Lead Email Hub:</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => openLeadEmailModal(expLead, 'compose')}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 dark:hover:bg-indigo-900/60 text-xs font-semibold cursor-pointer transition-colors shadow-2xs"
+                    >
+                      <Send size={12} />
+                      <span>Send Email to Lead</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => openLeadEmailModal(expLead, 'history')}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 dark:hover:bg-emerald-900/60 text-xs font-semibold cursor-pointer transition-colors shadow-2xs"
+                    >
+                      <Mail size={12} />
+                      <span>View Emails ({expLead.customerId?.email || expLead.customerEmail || 'Lead Inbox'})</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             );
@@ -1547,6 +1612,15 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
           loadLeads();
           addToast('Customers successfully imported & assigned!', 'success');
         }}
+      />
+
+      {/* LEAD EMAIL COMMUNICATION MODAL */}
+      <LeadEmailModal
+        isOpen={leadEmailModal.isOpen}
+        lead={leadEmailModal.lead}
+        defaultTab={leadEmailModal.defaultTab}
+        onClose={() => setLeadEmailModal({ isOpen: false, lead: null, defaultTab: 'history' })}
+        onEmailSent={() => loadLeads()}
       />
     </div>
   );
