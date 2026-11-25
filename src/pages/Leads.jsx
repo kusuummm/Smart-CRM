@@ -478,7 +478,22 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
           setIsCustomer360Open(false);
         }}
         customer={customer360Lead}
-        onStartCall={() => onNavigate?.('call-history')}
+        onStartCall={(prof) => {
+          const phone = prof?.phone || prof?.contactNo || prof?.customerPhone || '';
+          const name = prof?.name || prof?.customerName || 'Lead';
+          window.dispatchEvent(
+            new CustomEvent('smartcrm:open-softphone', {
+              detail: {
+                id: prof?._id || prof?.id,
+                name,
+                phone,
+                customerNumber: phone,
+                displayPhone: phone,
+                leadStatus: prof?.status || 'Lead',
+              },
+            })
+          );
+        }}
         onUpdateContact={() => loadLeads()}
       />
     );
@@ -851,14 +866,28 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
                                     >
                                       <MessageCircle size={12} />
                                     </button>
-                                    <a
-                                      href={`tel:${lead.customerPhone}`}
-                                      className="p-1 rounded-md text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40"
-                                      title="Call Customer"
-                                      onClick={(e) => e.stopPropagation()}
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        window.dispatchEvent(
+                                          new CustomEvent('smartcrm:open-softphone', {
+                                            detail: {
+                                              id: lead.customerId || lead.id || lead._id,
+                                              name: lead.customerName || lead.title || 'Customer',
+                                              phone: lead.customerPhone || '',
+                                              customerNumber: lead.customerPhone || '',
+                                              displayPhone: lead.customerPhone || '',
+                                              leadStatus: lead.stage || lead.status || 'Lead',
+                                            },
+                                          })
+                                        );
+                                      }}
+                                      className="p-1 rounded-md text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 cursor-pointer"
+                                      title="Call Customer in CRM"
                                     >
                                       <Phone size={12} />
-                                    </a>
+                                    </button>
                                   </>
                                 )}
                               </div>

@@ -432,17 +432,17 @@ export default function ToDos({ onNavigate }) {
   };
 
   const handleCallNumber = (phone, name) => {
-    audioEngine.playRingTone();
-    addToast(`Initiating call to ${name} (+91 ${phone})...`, 'success');
-    const clean = phone.replace(/[^0-9]/g, '');
-    if (clean) {
-      try {
-        window.open(`tel:${clean}`, '_self');
-      } catch {}
-    }
-    setTimeout(() => {
-      audioEngine.stopRingTone();
-    }, 3000);
+    window.dispatchEvent(
+      new CustomEvent('smartcrm:open-softphone', {
+        detail: {
+          name: name || 'Customer',
+          phone: phone || '',
+          customerNumber: phone || '',
+          displayPhone: phone || '',
+          leadStatus: 'Follow-up Call',
+        },
+      })
+    );
   };
 
   return (

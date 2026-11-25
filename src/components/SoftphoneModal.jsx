@@ -113,10 +113,16 @@ export default function SoftphoneModal({
   useEffect(() => {
     if (isOpen) {
       if (contact) {
-        const cleanDigits = (contact.phone || '').replace(/[^0-9]/g, '').slice(-10);
+        const rawPhone = contact.phone || contact.customerNumber || contact.customerPhone || contact.displayPhone || contact.contactNo || '';
+        const cleanDigits = String(rawPhone).replace(/[^0-9]/g, '').slice(-10);
         setDialNumber(cleanDigits);
-        setTargetContact(contact);
-        startCallSequence(contact);
+        const effective = {
+          ...contact,
+          phone: rawPhone,
+          name: contact.name || contact.customerName || 'Customer',
+        };
+        setTargetContact(effective);
+        startCallSequence(effective);
       } else {
         setTargetContact(null);
         setDialNumber('');
@@ -167,7 +173,13 @@ export default function SoftphoneModal({
       phone: dialNumber,
       leadStatus: 'Direct Lead',
     };
-    setTargetContact(effectiveCust);
+    const rawNumber = effectiveCust.phone || effectiveCust.customerNumber || effectiveCust.customerPhone || effectiveCust.displayPhone || dialNumber || '';
+    const updatedCust = {
+      ...effectiveCust,
+      phone: rawNumber,
+      name: effectiveCust.name || effectiveCust.customerName || 'Customer',
+    };
+    setTargetContact(updatedCust);
     setCallState('ringing');
     setCallTimer(0);
     setRingCountdown(4);
@@ -659,6 +671,23 @@ export default function SoftphoneModal({
                   <PhoneCall size={15} />
                   <span>Customer Answered (Start Talk Time)</span>
                 </button>
+
+                {/* Direct Launch Device / Cellular Dialer (Phone Link / Skype / Mobile) */}
+                {(() => {
+                  const rawNum = targetContact?.phone || dialNumber || '';
+                  const cleanTel = String(rawNum).replace(/[^0-9+]/g, '');
+                  if (!cleanTel) return null;
+                  return (
+                    <a
+                      href={`tel:${cleanTel}`}
+                      className="w-full py-2.5 px-3 rounded-xl bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/50 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 text-xs font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                      title="Launch device dialer (Phone Link, cellular or VoIP)"
+                    >
+                      <Smartphone size={14} />
+                      <span>Launch Device Phone App ({cleanTel})</span>
+                    </a>
+                  );
+                })()}
 
                 <div className="grid grid-cols-2 gap-2">
                   <button

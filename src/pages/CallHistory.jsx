@@ -402,11 +402,14 @@ export default function CallHistory({ onNavigate, initialCallType = 'all' }) {
   // Dial call: starts in RINGING state, plays ringtone, launches tel: protocol on device.
   // TIMING DOES NOT START YET. It only starts when answered by customer or auto-connects after 4s!
   const startCall = (call) => {
+    const rawNumber = call.customerNumber || call.customerPhone || call.displayPhone || call.phone || '';
     setSoftphoneTarget({
-      id: call.customerId || call._id || call.id,
-      name: call.customerName || 'Customer',
-      phone: call.customerNumber || call.displayPhone || '',
-      leadStatus: call.status || 'Lead',
+      id: call.customerId || call._id || call.id || Date.now().toString(),
+      name: call.customerName || call.name || 'Customer',
+      phone: rawNumber,
+      customerNumber: rawNumber,
+      displayPhone: rawNumber,
+      leadStatus: call.status || call.leadStatus || 'Lead',
     });
     setIsSoftphoneOpen(true);
   };
@@ -1765,6 +1768,7 @@ export default function CallHistory({ onNavigate, initialCallType = 'all' }) {
                     customerNumber: num,
                     customerName: manualDialName.trim() || 'Direct Dial Customer',
                     displayPhone: num,
+                    phone: num,
                   });
                 }}
                 className="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs flex items-center justify-center gap-2"
@@ -1801,6 +1805,22 @@ export default function CallHistory({ onNavigate, initialCallType = 'all' }) {
           onStartCall={(cust) => startCall(cust)}
         />
       )}
+
+      {/* Smart In-CRM Softphone Modal */}
+      <SoftphoneModal
+        isOpen={isSoftphoneOpen}
+        onClose={() => {
+          setIsSoftphoneOpen(false);
+          setSoftphoneTarget(null);
+        }}
+        contact={softphoneTarget}
+        onNavigate={onNavigate}
+        onCallSaved={(newRec) => {
+          if (newRec) {
+            setCalls((prev) => [newRec, ...prev]);
+          }
+        }}
+      />
     </div>
   );
 }

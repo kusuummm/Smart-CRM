@@ -318,9 +318,17 @@ function AppLayout() {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isGlobalSoftphoneOpen, setIsGlobalSoftphoneOpen] = useState(false);
+  const [globalSoftphoneContact, setGlobalSoftphoneContact] = useState(null);
 
   useEffect(() => {
-    const handleOpenSoftphone = () => setIsGlobalSoftphoneOpen(true);
+    const handleOpenSoftphone = (e) => {
+      if (e?.detail) {
+        setGlobalSoftphoneContact(e.detail);
+      } else {
+        setGlobalSoftphoneContact(null);
+      }
+      setIsGlobalSoftphoneOpen(true);
+    };
     window.addEventListener('smartcrm:open-softphone', handleOpenSoftphone);
     return () => window.removeEventListener('smartcrm:open-softphone', handleOpenSoftphone);
   }, []);
@@ -689,7 +697,11 @@ function AppLayout() {
       {/* Global Softphone Dialpad & In-CRM Calling */}
       <SoftphoneModal
         isOpen={isGlobalSoftphoneOpen}
-        onClose={() => setIsGlobalSoftphoneOpen(false)}
+        onClose={() => {
+          setIsGlobalSoftphoneOpen(false);
+          setGlobalSoftphoneContact(null);
+        }}
+        contact={globalSoftphoneContact}
         onNavigate={navigateToPage}
       />
 
