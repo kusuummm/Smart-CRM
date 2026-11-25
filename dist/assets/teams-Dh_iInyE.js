@@ -1,1 +1,0 @@
-import{s as e}from"./index-X-4OP5Qu.js";const d=()=>e.get("/teams").then(t=>t.data),n=t=>e.post("/teams",t).then(a=>a.data),o=(t,a)=>e.put(`/teams/${t}`,a).then(s=>s.data),c=t=>e.delete(`/teams/${t}`).then(a=>a.data);export{n as c,c as d,d as g,o as u};

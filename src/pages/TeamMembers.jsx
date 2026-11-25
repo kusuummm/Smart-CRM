@@ -1955,7 +1955,7 @@ export default function TeamMembers({ onNavigate }) {
       )}
 
       {/* =========================================================================
-          MODAL: CONTACT DETAILS (SUPERFONE FULL VIEW)
+          MODAL: CONTACT DETAILS (CRM FULL 360 VIEW)
           ========================================================================= */}
       {viewContact && (
         <div className="fixed inset-0 z-50 bg-[#f8fafc] dark:bg-dark-900 overflow-y-auto">

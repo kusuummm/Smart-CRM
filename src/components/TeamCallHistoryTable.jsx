@@ -300,7 +300,7 @@ export default function TeamCallHistoryTable({ teamName = 'Main Team', sfNumber 
           )}
           {filterSf && (
             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white dark:bg-dark-800 border border-dark-200 dark:border-dark-700 text-dark-800 dark:text-dark-200 text-[11px]">
-              SF: {filterSf}
+              Number: {filterSf}
               <button onClick={() => setFilterSf('')} className="hover:text-rose-600 cursor-pointer"><X size={11} /></button>
             </span>
           )}
@@ -507,7 +507,7 @@ export default function TeamCallHistoryTable({ teamName = 'Main Team', sfNumber 
                   </div>
                 </th>
 
-                {/* 4. SF NUMBER Q */}
+                {/* 4. BUSINESS NUMBER */}
                 <th className="py-3.5 px-4 relative min-w-[160px]">
                   <div className="relative inline-block">
                     <button
@@ -518,9 +518,9 @@ export default function TeamCallHistoryTable({ teamName = 'Main Team', sfNumber 
                         setOpenSfFilter(next);
                       }}
                       className="inline-flex items-center gap-1.5 hover:text-blue-600 transition-colors cursor-pointer group"
-                      title="Filter by Superfone / Smart Number"
+                      title="Filter by Business Number / Smart Line"
                     >
-                      <span>SF NUMBER</span>
+                      <span>BUSINESS NUMBER</span>
                       <Search
                         size={12}
                         className={`${
@@ -535,7 +535,7 @@ export default function TeamCallHistoryTable({ teamName = 'Main Team', sfNumber 
                         <div className="fixed inset-0 z-20" onClick={closeAllFilterMenus} />
                         <div className="absolute left-0 top-full mt-2 z-30 w-52 bg-white dark:bg-dark-800 rounded-xl border border-dark-200 dark:border-dark-700 shadow-xl p-1.5 text-xs normal-case font-normal animate-in fade-in zoom-in-95 font-mono">
                           <div className="px-2 py-1 text-[10px] font-bold text-dark-400 uppercase tracking-wider border-b border-dark-100 dark:border-dark-700/60 mb-1 font-sans">
-                            Filter SF Number
+                            Filter Business Number
                           </div>
                           {[
                             { label: 'All Numbers', val: '' },
