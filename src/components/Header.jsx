@@ -241,9 +241,9 @@ export default function Header({
       >
         <div className="flex items-center gap-2">
           <Search size={14} className="text-blue-400" />
-          <span className="text-slate-300 font-medium">Search CRM pages, leads, actions...</span>
+          <span className="text-slate-100 font-semibold">Search CRM pages, leads, actions...</span>
         </div>
-        <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-semibold rounded bg-[#0b1222] border border-[#2b4172] text-slate-400">
+        <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold rounded bg-[#0b1222] border border-[#2b4172] text-slate-300">
           Ctrl K
         </kbd>
       </button>
@@ -276,8 +276,8 @@ export default function Header({
           >
             <Wallet size={13} />
           </div>
-          <span className="font-medium text-[11.5px] text-slate-300">AVL BAL :</span>
-          <span className="flex items-center gap-1.5 font-bold text-[13px] text-emerald-400">
+          <span className="font-bold text-[11.5px] text-slate-200">AVL BAL :</span>
+          <span className="flex items-center gap-1.5 font-black text-[13px] text-emerald-400">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
             {displayBalance || '₹0.0'}
           </span>
@@ -289,15 +289,15 @@ export default function Header({
           className="cursor-pointer text-right select-none group flex items-center gap-2"
         >
           <div className="hidden xs:block text-right">
-            <p className="text-[14px] font-semibold text-white uppercase tracking-tight leading-tight group-hover:text-sky-300 transition-colors">
+            <p className="text-[14px] font-bold text-white uppercase tracking-tight leading-tight group-hover:text-sky-300 transition-colors">
               {displayName}
             </p>
             {displayPhone ? (
-              <p className="text-[12px] text-slate-400 font-normal leading-tight mt-0.5">
+              <p className="text-[12px] text-slate-300 font-medium leading-tight mt-0.5">
                 {displayPhone}
               </p>
             ) : user?.email ? (
-              <p className="text-[12px] text-slate-400 font-normal leading-tight mt-0.5">
+              <p className="text-[12px] text-slate-300 font-medium leading-tight mt-0.5">
                 {user.email}
               </p>
             ) : null}
@@ -307,7 +307,7 @@ export default function Header({
         {/* Logout Button */}
         <button
           onClick={onLogout}
-          className="px-3.5 py-1.5 text-xs sm:text-sm font-medium text-slate-200 border border-[#2a3a5e] rounded-lg hover:bg-[#182647] hover:text-white hover:border-slate-400 transition-colors cursor-pointer"
+          className="px-3.5 py-1.5 text-xs sm:text-sm font-bold text-slate-100 border border-[#3b5488] bg-[#182647] rounded-lg hover:bg-red-950/40 hover:text-red-300 hover:border-red-500/50 transition-colors cursor-pointer"
         >
           Logout
         </button>

@@ -525,66 +525,66 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
           onClick={() => handleStatusFilter('')}
           className={`p-4 rounded-2xl border transition-all cursor-pointer ${
             statusFilter === ''
-              ? 'bg-primary-50 dark:bg-primary-950/40 border-primary-300 dark:border-primary-700 shadow-xs ring-2 ring-primary-500/20'
+              ? 'bg-primary-50 dark:bg-primary-950/40 border-primary-400 dark:border-primary-600 shadow-xs ring-2 ring-primary-500/20'
               : 'bg-white dark:bg-dark-800 border-dark-200 dark:border-dark-700 hover:border-dark-300 shadow-2xs'
           }`}
         >
-          <div className="flex items-center justify-between text-dark-500 dark:text-dark-400">
-            <span className="text-xs font-semibold">Total Pipeline</span>
-            <Layers size={17} className="text-primary-600 dark:text-primary-400" />
+          <div className="flex items-center justify-between text-dark-800 dark:text-dark-100">
+            <span className="text-xs font-bold text-dark-900 dark:text-white">Total Pipeline</span>
+            <Layers size={18} className="text-primary-600 dark:text-primary-400" />
           </div>
-          <p className="text-2xl font-bold text-dark-900 dark:text-white mt-1.5">{pipelineStats.all || leads.length}</p>
-          <span className="text-[11px] text-dark-400 mt-0.5 block">All active records</span>
+          <p className="text-3xl font-black text-dark-950 dark:text-white mt-1.5">{pipelineStats.all || leads.length}</p>
+          <span className="text-xs font-semibold text-dark-700 dark:text-dark-200 mt-1 block">All active records</span>
         </div>
 
         <div
           onClick={() => handleStatusFilter('new')}
           className={`p-4 rounded-2xl border transition-all cursor-pointer ${
             statusFilter === 'new'
-              ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-700 shadow-xs ring-2 ring-emerald-500/20'
+              ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-400 dark:border-emerald-600 shadow-xs ring-2 ring-emerald-500/20'
               : 'bg-white dark:bg-dark-800 border-dark-200 dark:border-dark-700 hover:border-dark-300 shadow-2xs'
           }`}
         >
-          <div className="flex items-center justify-between text-dark-500 dark:text-dark-400">
-            <span className="text-xs font-semibold">Action Required</span>
-            <Sparkles size={17} className="text-emerald-600 dark:text-emerald-400" />
+          <div className="flex items-center justify-between text-dark-800 dark:text-dark-100">
+            <span className="text-xs font-bold text-dark-900 dark:text-white">Action Required</span>
+            <Sparkles size={18} className="text-emerald-600 dark:text-emerald-400" />
           </div>
-          <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-1.5">
+          <p className="text-3xl font-black text-emerald-600 dark:text-emerald-400 mt-1.5">
             {(pipelineStats.new || 0) + (pipelineStats.contacted || 0)}
           </p>
-          <span className="text-[11px] text-dark-400 mt-0.5 block">New &amp; contacted leads</span>
+          <span className="text-xs font-semibold text-dark-700 dark:text-dark-200 mt-1 block">New &amp; contacted leads</span>
         </div>
 
         <div
           onClick={() => handleStatusFilter('meeting')}
           className={`p-4 rounded-2xl border transition-all cursor-pointer ${
             statusFilter === 'meeting'
-              ? 'bg-sky-50 dark:bg-sky-950/40 border-sky-300 dark:border-sky-700 shadow-xs ring-2 ring-sky-500/20'
+              ? 'bg-sky-50 dark:bg-sky-950/40 border-sky-400 dark:border-sky-600 shadow-xs ring-2 ring-sky-500/20'
               : 'bg-white dark:bg-dark-800 border-dark-200 dark:border-dark-700 hover:border-dark-300 shadow-2xs'
           }`}
         >
-          <div className="flex items-center justify-between text-dark-500 dark:text-dark-400">
-            <span className="text-xs font-semibold">Meetings Booked</span>
-            <Calendar size={17} className="text-sky-600 dark:text-sky-400" />
+          <div className="flex items-center justify-between text-dark-800 dark:text-dark-100">
+            <span className="text-xs font-bold text-dark-900 dark:text-white">Meetings Booked</span>
+            <Calendar size={18} className="text-sky-600 dark:text-sky-400" />
           </div>
-          <p className="text-2xl font-bold text-sky-600 dark:text-sky-400 mt-1.5">{pipelineStats.meeting || 0}</p>
-          <span className="text-[11px] text-dark-400 mt-0.5 block">Scheduled demo meetings</span>
+          <p className="text-3xl font-black text-sky-600 dark:text-sky-400 mt-1.5">{pipelineStats.meeting || 0}</p>
+          <span className="text-xs font-semibold text-dark-700 dark:text-dark-200 mt-1 block">Scheduled demo meetings</span>
         </div>
 
         <div
           onClick={() => handleStatusFilter('converted')}
           className={`p-4 rounded-2xl border transition-all cursor-pointer ${
             statusFilter === 'converted'
-              ? 'bg-teal-50 dark:bg-teal-950/40 border-teal-300 dark:border-teal-700 shadow-xs ring-2 ring-teal-500/20'
+              ? 'bg-teal-50 dark:bg-teal-950/40 border-teal-400 dark:border-teal-600 shadow-xs ring-2 ring-teal-500/20'
               : 'bg-white dark:bg-dark-800 border-dark-200 dark:border-dark-700 hover:border-dark-300 shadow-2xs'
           }`}
         >
-          <div className="flex items-center justify-between text-dark-500 dark:text-dark-400">
-            <span className="text-xs font-semibold">Won / Converted</span>
-            <CheckCircle2 size={17} className="text-teal-600 dark:text-teal-400" />
+          <div className="flex items-center justify-between text-dark-800 dark:text-dark-100">
+            <span className="text-xs font-bold text-dark-900 dark:text-white">Won / Converted</span>
+            <CheckCircle2 size={18} className="text-teal-600 dark:text-teal-400" />
           </div>
-          <p className="text-2xl font-bold text-teal-600 dark:text-teal-400 mt-1.5">{pipelineStats.converted || 0}</p>
-          <span className="text-[11px] text-dark-400 mt-0.5 block">Successfully closed deals</span>
+          <p className="text-3xl font-black text-teal-600 dark:text-teal-400 mt-1.5">{pipelineStats.converted || 0}</p>
+          <span className="text-xs font-semibold text-dark-700 dark:text-dark-200 mt-1 block">Successfully closed deals</span>
         </div>
       </div>
 
@@ -601,19 +601,19 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
                 const nextStatus = isSelected && card.id !== '' ? '' : card.id;
                 handleStatusFilter(nextStatus);
               }}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl border text-xs font-semibold shrink-0 transition-all cursor-pointer ${
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl border text-xs font-bold shrink-0 transition-all cursor-pointer ${
                 isSelected
-                  ? 'border-blue-600 bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-700 font-bold shadow-2xs'
-                  : 'border-dark-200 dark:border-dark-700 bg-white dark:bg-dark-800 text-dark-700 dark:text-dark-300 hover:bg-dark-50 dark:hover:bg-dark-700'
+                  ? 'border-blue-600 bg-blue-600 text-white shadow-xs'
+                  : 'border-dark-300 dark:border-dark-600 bg-white dark:bg-dark-800 text-dark-800 dark:text-dark-100 hover:bg-dark-50 dark:hover:bg-dark-700 hover:border-dark-400'
               }`}
             >
-              <CardIcon size={13} className={card.color} />
-              <span>{card.label}</span>
+              <CardIcon size={14} className={isSelected ? 'text-white' : card.color} />
+              <span className="font-bold">{card.label}</span>
               <span
-                className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                className={`px-2 py-0.5 rounded-full text-[11px] font-black ${
                   isSelected
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-dark-100 dark:bg-dark-700 text-dark-600 dark:text-dark-300'
+                    ? 'bg-white/20 text-white'
+                    : 'bg-dark-100 dark:bg-dark-700 text-dark-800 dark:text-dark-100'
                 }`}
               >
                 {card.count}
@@ -627,21 +627,21 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
         <div className="flex items-center gap-2">
           {statusFilter ? (
             <div className="inline-flex items-center gap-2">
-              <span className="text-xs font-medium text-dark-500 dark:text-dark-400">Filtered by:</span>
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-xs font-semibold rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800">
+              <span className="text-xs font-bold text-dark-700 dark:text-dark-200">Filtered by:</span>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
                 <span>{leadStatusLabels[statusFilter] || statusFilter}</span>
                 <button
                   type="button"
                   onClick={() => setStatusFilter('')}
-                  className="hover:text-blue-800 dark:hover:text-blue-200 cursor-pointer ml-1 p-0.5 rounded text-xs"
+                  className="hover:text-blue-900 dark:hover:text-blue-100 cursor-pointer ml-1 p-0.5 rounded text-xs"
                   title="Clear filter"
                 >
-                  <X size={12} />
+                  <X size={13} />
                 </button>
               </span>
             </div>
           ) : (
-            <span className="text-xs text-dark-500 dark:text-dark-400 font-medium">
+            <span className="text-xs font-bold text-dark-800 dark:text-dark-100">
               All Pipeline Leads ({leads.length})
             </span>
           )}
@@ -653,27 +653,27 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
             <button
               type="button"
               onClick={() => handleSetViewMode('table')}
-              className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-md transition-all cursor-pointer ${
+              className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-md transition-all cursor-pointer ${
                 viewMode === 'table'
-                  ? 'bg-white dark:bg-dark-800 text-primary-600 dark:text-primary-400 shadow-2xs font-bold'
-                  : 'text-dark-500 hover:text-dark-900 dark:hover:text-dark-200'
+                  ? 'bg-white dark:bg-dark-800 text-primary-600 dark:text-primary-400 shadow-2xs'
+                  : 'text-dark-700 dark:text-dark-200 hover:text-dark-950 dark:hover:text-white'
               }`}
               title="Table Grid View"
             >
-              <List size={13} />
+              <List size={14} />
               <span className="hidden sm:inline">Table</span>
             </button>
             <button
               type="button"
               onClick={() => handleSetViewMode('kanban')}
-              className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-md transition-all cursor-pointer ${
+              className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-md transition-all cursor-pointer ${
                 viewMode === 'kanban'
-                  ? 'bg-white dark:bg-dark-800 text-primary-600 dark:text-primary-400 shadow-2xs font-bold'
-                  : 'text-dark-500 hover:text-dark-900 dark:hover:text-dark-200'
+                  ? 'bg-white dark:bg-dark-800 text-primary-600 dark:text-primary-400 shadow-2xs'
+                  : 'text-dark-700 dark:text-dark-200 hover:text-dark-950 dark:hover:text-white'
               }`}
               title="Drag-and-Drop Pipeline Kanban Board"
             >
-              <Columns size={13} />
+              <Columns size={14} />
               <span className="hidden sm:inline">Kanban</span>
             </button>
           </div>
@@ -681,7 +681,7 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
             <select
               value={telecallerFilter}
               onChange={(e) => setTelecallerFilter(e.target.value)}
-              className="px-3 py-1.5 border border-dark-200 rounded-lg text-xs bg-white text-dark-800 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-dark-800 dark:border-dark-700 dark:text-white"
+              className="px-3 py-1.5 border border-dark-300 rounded-lg text-xs font-bold bg-white text-dark-900 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-dark-800 dark:border-dark-700 dark:text-white cursor-pointer"
             >
               <option value="">All Members</option>
               <option value="unassigned">Unassigned</option>
@@ -694,13 +694,13 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
           )}
 
           <div className="relative">
-            <Search className="absolute left-3 top-2.5 text-dark-400" size={14} />
+            <Search className="absolute left-3 top-2.5 text-dark-500" size={14} />
             <input
               type="text"
               placeholder="Search by name or phone..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-8 pr-7 py-1.5 border border-dark-200 rounded-lg text-xs bg-white text-dark-800 focus:outline-none focus:ring-2 focus:ring-primary-500 w-52 sm:w-60 dark:bg-dark-800 dark:border-dark-700 dark:text-white"
+              className="pl-8 pr-7 py-1.5 border border-dark-300 rounded-lg text-xs font-medium text-dark-900 dark:text-white placeholder:text-dark-500 placeholder:font-medium focus:outline-none focus:ring-2 focus:ring-primary-500 w-52 sm:w-60 dark:bg-dark-800 dark:border-dark-700"
             />
             {searchTerm && (
               <button
@@ -900,27 +900,27 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
           </div>
         </div>
       ) : (
-        <div className="bg-white rounded-xl border border-dark-200 shadow-sm dark:bg-dark-800 dark:border-dark-700 min-h-[360px]">
+        <div className="bg-white rounded-xl border border-dark-200 shadow-sm dark:bg-dark-800 dark:border-dark-700 min-h-[360px] overflow-hidden">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-dark-50 dark:bg-dark-700">
-                <th className="px-4 py-3 w-10"></th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-dark-500 uppercase tracking-wider dark:text-dark-400">
+              <tr className="bg-slate-100/95 dark:bg-dark-700 border-b border-slate-200 dark:border-dark-600">
+                <th className="px-4 py-3.5 w-10"></th>
+                <th className="px-4 py-3.5 text-left text-xs font-black text-slate-800 uppercase tracking-wider dark:text-slate-100">
                   Customer
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-dark-500 uppercase tracking-wider dark:text-dark-400">
+                <th className="px-4 py-3.5 text-left text-xs font-black text-slate-800 uppercase tracking-wider dark:text-slate-100">
                   Follow-up Status
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-dark-500 uppercase tracking-wider dark:text-dark-400">
+                <th className="px-4 py-3.5 text-left text-xs font-black text-slate-800 uppercase tracking-wider dark:text-slate-100">
                   Assigned Member
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-dark-500 uppercase tracking-wider dark:text-dark-400">
+                <th className="px-4 py-3.5 text-left text-xs font-black text-slate-800 uppercase tracking-wider dark:text-slate-100">
                   Created
                 </th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-dark-500 uppercase tracking-wider dark:text-dark-400">
+                <th className="px-4 py-3.5 text-center text-xs font-black text-slate-800 uppercase tracking-wider dark:text-slate-100">
                   Follow-up History
                 </th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-dark-500 uppercase tracking-wider dark:text-dark-400">
+                <th className="px-4 py-3.5 text-center text-xs font-black text-slate-800 uppercase tracking-wider dark:text-slate-100">
                   Actions
                 </th>
               </tr>
@@ -928,14 +928,14 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
             <tbody className="divide-y divide-dark-200 dark:divide-dark-700">
               {paginated.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-12 text-center">
+                  <td colSpan={7} className="px-4 py-14 text-center">
                     <div className="flex flex-col items-center justify-center max-w-sm mx-auto space-y-3">
-                      <div className="w-12 h-12 rounded-2xl bg-dark-100 dark:bg-dark-700 flex items-center justify-center text-dark-400">
-                        <Search size={22} />
+                      <div className="w-14 h-14 rounded-2xl bg-dark-100 dark:bg-dark-700 flex items-center justify-center text-dark-700 dark:text-dark-200 shadow-2xs">
+                        <Search size={26} strokeWidth={2.5} />
                       </div>
-                      <h4 className="font-bold text-dark-900 dark:text-white text-sm">No Leads Found</h4>
-                      <p className="text-xs text-dark-500 dark:text-dark-400">
-                        No prospects match your current search or status filter.
+                      <h4 className="font-black text-dark-950 dark:text-white text-base">No Leads Found</h4>
+                      <p className="text-xs font-semibold text-dark-700 dark:text-dark-300 leading-relaxed">
+                        No prospects match your current search or status filter. Try clearing filters to see all available leads.
                       </p>
                       {(statusFilter || searchTerm || telecallerFilter) && (
                         <button
@@ -945,7 +945,7 @@ export default function Leads({ onNavigate, selectedCustomer, selectedLeadStatus
                             setSearchTerm('');
                             setTelecallerFilter('');
                           }}
-                          className="px-3.5 py-1.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-xs font-semibold transition-colors cursor-pointer shadow-xs"
+                          className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-xs mt-1"
                         >
                           Reset All Filters
                         </button>

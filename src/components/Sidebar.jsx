@@ -324,10 +324,10 @@ export default function Sidebar({
                     }
                   : undefined
               }
-              className={`w-full flex items-center justify-between px-3 h-10 rounded-xl text-[13.5px] transition-all cursor-pointer group ${
+              className={`w-full flex items-center justify-between px-3 h-10 rounded-xl text-[13.5px] font-semibold transition-all cursor-pointer group ${
                 isActive
                   ? 'text-white font-bold'
-                  : 'text-slate-300 hover:bg-[#182647] hover:text-white'
+                  : 'text-slate-200 hover:bg-[#182647] hover:text-white'
               }`}
             >
               <div className="flex items-center gap-2.5 min-w-0">
@@ -336,11 +336,11 @@ export default function Sidebar({
                   className={`flex-shrink-0 transition-colors ${
                     isActive
                       ? 'text-white'
-                      : 'text-slate-400 group-hover:text-white'
+                      : 'text-slate-300 group-hover:text-white'
                   }`}
                 />
                 {!collapsed && (
-                  <span className={`truncate text-left ${isActive ? 'text-white font-bold' : ''}`}>
+                  <span className={`truncate text-left font-semibold ${isActive ? 'text-white font-bold' : ''}`}>
                     {item.label}
                   </span>
                 )}
