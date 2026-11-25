@@ -71,7 +71,6 @@ export default function ContactDetailView({
   const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
   const [isMessageModalOpen, setIsMessageModalOpen] = useState(false);
   const [isSoftphoneOpen, setIsSoftphoneOpen] = useState(false);
-  const [callingMode, setCallingMode] = useState(() => localStorage.getItem('smartcrm_calling_mode') || 'web_softphone');
 
   const contactName = contact?.name || 'Contact';
   const rawContactPhone = contact?.phone

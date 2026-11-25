@@ -71,15 +71,9 @@ export default function SoftphoneModal({
   const [dialNumber, setDialNumber] = useState('');
   const [targetContact, setTargetContact] = useState(null);
 
-  // Calling Mode: 'web_softphone' | 'superfone' | 'sim'
-  const [callingMode, setCallingMode] = useState(() => {
-    return localStorage.getItem('smartcrm_calling_mode') || 'web_softphone';
-  });
-
   // Call status: 'idle' | 'ringing' | 'connected' | 'ended'
   const [callState, setCallState] = useState('idle');
   const [callTimer, setCallTimer] = useState(0);
-  const [ringCountdown, setRingCountdown] = useState(4);
 
   // In-call toggles
   const [isMuted, setIsMuted] = useState(false);
@@ -156,20 +150,43 @@ export default function SoftphoneModal({
     } catch (_) {}
   };
 
-  // Change calling mode and remember user preference
-  const handleModeChange = (mode) => {
-    setCallingMode(mode);
+// Trigger system/device telephony protocol (Phone Link, cellular phone, Skype, FaceTime, etc.)
+  const triggerDeviceDial = (phoneNumber) => {
+    const raw = String(phoneNumber || '').trim();
+    if (!raw) return;
+    const cleanDigits = raw.replace(/[^0-9+]/g, '');
+    if (!cleanDigits) return;
+
+    const telUri = cleanDigits.startsWith('+')
+      ? `tel:${cleanDigits}`
+      : cleanDigits.length === 10
+      ? `tel:+91${cleanDigits}`
+      : `tel:${cleanDigits}`;
+
     try {
-      localStorage.setItem('smartcrm_calling_mode', mode);
-    } catch (_) {}
-    addToast(`Calling mode set to: ${mode === 'web_softphone' ? 'In-CRM Web Dialer' : mode === 'superfone' ? 'Superfone Mobile Bridge' : 'Device SIM Dialer'}`, 'info');
+      const a = document.createElement('a');
+      a.href = telUri;
+      a.target = '_self';
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        try {
+          document.body.removeChild(a);
+        } catch (_) {}
+      }, 500);
+    } catch (_) {
+      try {
+        window.location.href = telUri;
+      } catch (_) {}
+    }
   };
 
   // 1. Start dialing sequence
   const startCallSequence = (cust) => {
     cleanupCallSession();
     const effectiveCust = cust || targetContact || {
-      name: 'User',
+      name: 'Customer',
       phone: dialNumber,
       leadStatus: 'Direct Lead',
     };
@@ -182,38 +199,16 @@ export default function SoftphoneModal({
     setTargetContact(updatedCust);
     setCallState('ringing');
     setCallTimer(0);
-    setRingCountdown(4);
     setIsMuted(false);
     setDtmfBuffer('');
     setLiveTranscript([]);
     setRecordedResult(null);
 
-    // Play ring tone in web softphone mode
+    // Play ringing tone
     audioEngine.playRingTone();
 
-    // Mode handling
-    if (callingMode === 'sim') {
-      const clean = (effectiveCust.phone || '').replace(/[^0-9+]/g, '');
-      if (clean) {
-        try {
-          window.open(`tel:${clean}`, '_self');
-        } catch (_) {}
-      }
-    } else if (callingMode === 'superfone') {
-      addToast(`Connecting to Superfone bridge for +91 ${effectiveCust.phone}...`, 'info');
-    }
-
-    // Auto-connect timer: simulates realistic telephone answer or gives telecaller time to click Answered
-    countdownIntervalRef.current = setInterval(() => {
-      setRingCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(countdownIntervalRef.current);
-          handleCallConnected(effectiveCust);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+    // Actually trigger outgoing phone call on user's device/cellular/phone app
+    triggerDeviceDial(rawNumber);
   };
 
   // 2. Call answered & connected
@@ -295,28 +290,36 @@ export default function SoftphoneModal({
     setDtmfBuffer((prev) => (prev + key).slice(-16));
   };
 
-  // Reject / No Answer
+  // Reject / No Answer / Line Busy
   const handleEndBeforeAnswer = async (status = 'missed') => {
     cleanupCallSession();
     const cust = targetContact || { name: 'Customer', phone: dialNumber };
     const durFormatted = '0s';
-    const phoneKey = (cust.phone || '').replace(/[^0-9]/g, '').slice(-10);
+    const rawNumber = cust.phone || dialNumber || '';
+    const phoneKey = String(rawNumber).replace(/[^0-9]/g, '').slice(-10);
+
+    const statusLabel =
+      status === 'busy'
+        ? 'Busy'
+        : status === 'wrong_number'
+        ? 'Wrong Number'
+        : 'Missed';
 
     const callRecord = {
       id: `call_${Date.now()}`,
-      customerNumber: `+91 ${cust.phone || dialNumber}`,
+      customerNumber: rawNumber.startsWith('+') ? rawNumber : `+91 ${rawNumber}`,
       customerName: cust.name || 'Customer',
       staff: user?.name || 'Agent',
       date: 'Just now',
       duration: durFormatted,
       callType: 'Outgoing',
-      callStatus: status === 'busy' ? 'Busy' : 'Missed',
+      callStatus: statusLabel,
       hasRecording: false,
       aiSummary: {
         sentiment: 'Neutral',
         score: 70,
-        summary: `Call placed to ${cust.name || 'Customer'} (+91 ${cust.phone || dialNumber}). Result: ${status === 'busy' ? 'Line was busy' : 'No answer'}.`,
-        keyPoints: [`Status: ${status === 'busy' ? 'Line busy' : 'No answer'}`],
+        summary: `Call placed to ${cust.name || 'Customer'} (+91 ${cust.phone || dialNumber}). Result: ${statusLabel}.`,
+        keyPoints: [`Status: ${statusLabel}`],
         followUps: ['Schedule callback task'],
       },
       transcript: [],
@@ -334,12 +337,12 @@ export default function SoftphoneModal({
       customerName: cust.name,
       customerPhone: cust.phone || dialNumber,
       duration: durFormatted,
-      status: status === 'busy' ? 'busy' : 'missed',
-      remarks: `Call ended before answer (${status})`,
+      status: status === 'busy' ? 'busy' : status === 'wrong_number' ? 'wrong_number' : 'missed',
+      remarks: `Call ended before answer (${statusLabel})`,
     }).catch(() => {});
 
     onCallSaved?.(callRecord);
-    addToast(`Call ended (${status === 'busy' ? 'Line Busy' : 'No Answer'}). Log saved.`, 'info');
+    addToast(`Call ended (${statusLabel}). Log saved.`, 'info');
     onClose();
   };
 
@@ -517,7 +520,7 @@ export default function SoftphoneModal({
                 )}
               </div>
               <p className="text-[11px] text-dark-500">
-                {callingMode === 'web_softphone' ? 'Browser Web Dialer' : callingMode === 'superfone' ? 'Superfone Bridge' : 'Device SIM'}
+                In-CRM Web Calling & Live Audio Recorder
               </p>
             </div>
           </div>
@@ -534,49 +537,6 @@ export default function SoftphoneModal({
               className="p-1.5 rounded-xl text-dark-400 hover:text-dark-700 dark:hover:text-dark-200 hover:bg-dark-100 dark:hover:bg-dark-800 transition-colors cursor-pointer"
             >
               <X size={18} />
-            </button>
-          </div>
-        </div>
-
-        {/* Calling Mode Switcher Bar */}
-        <div className="px-5 py-2 bg-dark-50/70 dark:bg-dark-800/40 border-b border-dark-100 dark:border-dark-800 flex items-center justify-between text-xs">
-          <span className="text-[11px] font-semibold text-dark-500 uppercase tracking-wider">Mode:</span>
-          <div className="flex items-center gap-1 bg-white dark:bg-dark-900 p-0.5 rounded-xl border border-dark-200 dark:border-dark-700">
-            <button
-              type="button"
-              onClick={() => handleModeChange('web_softphone')}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer ${
-                callingMode === 'web_softphone'
-                  ? 'bg-blue-600 text-white shadow-xs'
-                  : 'text-dark-600 dark:text-dark-300 hover:text-dark-900'
-              }`}
-            >
-              <Headphones size={12} />
-              <span>Web Dialer</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => handleModeChange('superfone')}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer ${
-                callingMode === 'superfone'
-                  ? 'bg-blue-600 text-white shadow-xs'
-                  : 'text-dark-600 dark:text-dark-300 hover:text-dark-900'
-              }`}
-            >
-              <Smartphone size={12} />
-              <span>Superfone</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => handleModeChange('sim')}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer ${
-                callingMode === 'sim'
-                  ? 'bg-blue-600 text-white shadow-xs'
-                  : 'text-dark-600 dark:text-dark-300 hover:text-dark-900'
-              }`}
-            >
-              <Phone size={12} />
-              <span>SIM</span>
             </button>
           </div>
         </div>
@@ -634,16 +594,14 @@ export default function SoftphoneModal({
                 </button>
               </div>
             </div>
-          )}
-
-          {/* 2. Ringing State */}
+          )}          {/* 2. Ringing State */}
           {callState === 'ringing' && (
             <div className="py-6 text-center space-y-5">
               {/* Animated Avatar with Pulse Rings */}
               <div className="relative inline-flex items-center justify-center">
-                <span className="absolute w-24 h-24 rounded-full bg-amber-400/20 animate-ping" />
-                <span className="absolute w-20 h-20 rounded-full bg-amber-400/30 animate-pulse" />
-                <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-amber-500 to-orange-500 text-white text-2xl font-bold flex items-center justify-center shadow-lg relative z-10">
+                <span className="absolute w-24 h-24 rounded-full bg-emerald-400/20 animate-ping" />
+                <span className="absolute w-20 h-20 rounded-full bg-emerald-400/30 animate-pulse" />
+                <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-600 text-white text-2xl font-bold flex items-center justify-center shadow-lg relative z-10">
                   {targetContact?.name?.charAt(0) || 'C'}
                 </div>
               </div>
@@ -655,54 +613,75 @@ export default function SoftphoneModal({
                 <p className="text-xs font-mono text-dark-500 mt-1">
                   +91 {targetContact?.phone || dialNumber}
                 </p>
-                <p className="text-xs text-amber-600 dark:text-amber-400 font-medium mt-3 flex items-center justify-center gap-1.5">
-                  <Clock size={13} />
-                  <span>Ringing customer phone... (Auto-connecting in {ringCountdown}s)</span>
-                </p>
+                <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs font-semibold">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                  <span>Call placed • Waiting for customer to answer...</span>
+                </div>
               </div>
 
               {/* Action Buttons during Ringing */}
-              <div className="space-y-2 pt-2">
+              <div className="space-y-2.5 pt-2 max-w-sm mx-auto">
                 <button
                   type="button"
                   onClick={() => handleCallConnected(targetContact)}
-                  className="w-full py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98"
+                  className="w-full py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98"
                 >
-                  <PhoneCall size={15} />
+                  <PhoneCall size={16} />
                   <span>Customer Answered (Start Talk Time)</span>
                 </button>
 
-                {/* Direct Launch Device / Cellular Dialer (Phone Link / Skype / Mobile) */}
+                {/* Direct Redial / Launch Device Phone App */}
                 {(() => {
                   const rawNum = targetContact?.phone || dialNumber || '';
                   const cleanTel = String(rawNum).replace(/[^0-9+]/g, '');
                   if (!cleanTel) return null;
                   return (
-                    <a
-                      href={`tel:${cleanTel}`}
+                    <button
+                      type="button"
+                      onClick={() => triggerDeviceDial(rawNum)}
                       className="w-full py-2.5 px-3 rounded-xl bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/50 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 text-xs font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer"
-                      title="Launch device dialer (Phone Link, cellular or VoIP)"
+                      title="Redial using system phone app (Phone Link, cellular or VoIP)"
                     >
                       <Smartphone size={14} />
-                      <span>Launch Device Phone App ({cleanTel})</span>
-                    </a>
+                      <span>Redial / Launch Phone App ({cleanTel})</span>
+                    </button>
                   );
                 })()}
 
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-2 pt-1">
                   <button
                     type="button"
                     onClick={() => handleEndBeforeAnswer('missed')}
-                    className="py-2 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-semibold cursor-pointer transition-colors"
+                    className="py-2.5 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 text-xs font-semibold cursor-pointer transition-colors"
                   >
                     No Answer / Missed
                   </button>
                   <button
                     type="button"
                     onClick={() => handleEndBeforeAnswer('busy')}
-                    className="py-2 px-3 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 text-xs font-semibold cursor-pointer transition-colors"
+                    className="py-2.5 px-3 rounded-xl bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:hover:bg-amber-900/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 text-xs font-semibold cursor-pointer transition-colors"
                   >
                     Line Busy
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => handleEndBeforeAnswer('wrong_number')}
+                    className="flex-1 py-2 px-3 rounded-xl bg-dark-100 hover:bg-dark-200 dark:bg-dark-800 dark:hover:bg-dark-700 text-dark-700 dark:text-dark-300 text-xs font-semibold cursor-pointer transition-colors"
+                  >
+                    Wrong Number
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      cleanupCallSession();
+                      onClose();
+                    }}
+                    className="flex-1 py-2 px-3 rounded-xl border border-dark-200 dark:border-dark-700 text-xs font-semibold text-dark-600 dark:text-dark-300 hover:bg-dark-50 dark:hover:bg-dark-800 transition-colors cursor-pointer"
+                  >
+                    Cancel Call
                   </button>
                 </div>
               </div>
