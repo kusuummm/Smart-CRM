@@ -68,6 +68,7 @@ import ConfirmDialog from '../components/ConfirmDialog';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../context/ConfirmContext';
 import { useAuth } from '../context/AuthContext';
+import { sanitizeUrl } from '../utils/sanitizeUrl';
 import {
   getRoleInfo,
   normalizeRole,
@@ -5639,9 +5640,9 @@ export default function AdminPanel({ onNavigate, targetSection, initialTab = 'ov
                               {task.remarks || 'No specific agenda or instructions provided.'}
                             </p>
                             <div className="flex items-center gap-2 flex-wrap mt-1">
-                              {task.meetingLink && (
+                              {task.meetingLink && sanitizeUrl(task.meetingLink) !== '#' && (
                                 <a
-                                  href={task.meetingLink.startsWith('http') ? task.meetingLink : `https://${task.meetingLink}`}
+                                  href={sanitizeUrl(task.meetingLink)}
                                   target="_blank"
                                   rel="noreferrer"
                                   className="inline-flex items-center gap-1 text-[11px] text-primary-600 dark:text-primary-400 hover:underline font-semibold"

@@ -39,6 +39,7 @@ import { getCustomers } from '../api/customers';
 import { getUpcomingEvents } from '../api/events';
 import { getUsers } from '../api/users';
 import { audioEngine } from '../utils/audioPlayer';
+import { sanitizeUrl } from '../utils/sanitizeUrl';
 
 export default function ToDos({ onNavigate }) {
   const { user } = useAuth();
@@ -938,9 +939,9 @@ export default function ToDos({ onNavigate }) {
                               #{tg}
                             </span>
                           ))}
-                          {task.meetingLink && (
+                          {task.meetingLink && sanitizeUrl(task.meetingLink) !== '#' && (
                             <a
-                              href={task.meetingLink}
+                              href={sanitizeUrl(task.meetingLink)}
                               target="_blank"
                               rel="noreferrer"
                               className="inline-flex items-center gap-1 text-blue-600 hover:underline font-semibold"
