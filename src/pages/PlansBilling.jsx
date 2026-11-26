@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../context/ConfirmContext';
+import { createWalletOrder, calculateCheckoutPricing, payWithWallet } from '../api/wallet';
 
 export default function PlansBilling({ onNavigate }) {
   const { addToast } = useToast();
@@ -36,27 +37,73 @@ export default function PlansBilling({ onNavigate }) {
   const [isManageMandateOpen, setIsManageMandateOpen] = useState(false);
 
   const handleConfirmRenewal = async () => {
-    const ok = await confirm({
-      title: 'Confirm Plan Renewal',
-      message: 'Are you sure you want to renew Unlimited All-in-One Pro plan for ₹14,999/yr?',
-      confirmText: 'Renew Plan',
-      type: 'primary'
-    });
-    if (!ok) return;
-    setIsRenewModalOpen(false);
-    addToast('Plan renewed successfully!', 'success');
+    try {
+      const pricingRes = await calculateCheckoutPricing({
+        items: [{ productId: 'pro_annual', quantity: 1 }],
+      });
+      const pricing = pricingRes.pricing;
+      const ok = await confirm({
+        title: 'Confirm Plan Renewal',
+        message: `Plan: Unlimited All-in-One Pro (Annual)\nBase: ₹${pricing.subtotal.toLocaleString()}\nGST (18%): ₹${pricing.taxAmount.toLocaleString()}\nTotal: ₹${pricing.total.toLocaleString()}\n\nProceed to create verified renewal order?`,
+        confirmText: `Confirm Order (₹${pricing.total.toLocaleString()})`,
+        type: 'primary',
+      });
+      if (!ok) return;
+
+      const orderRes = await createWalletOrder({
+        items: [{ productId: 'pro_annual', quantity: 1 }],
+      });
+
+      if (orderRes?.success) {
+        try {
+          await payWithWallet({ orderId: orderRes.orderId });
+          addToast(`Plan renewed successfully! Order ${orderRes.orderId} fulfilled.`, 'success');
+        } catch (payErr) {
+          addToast(
+            `Order ${orderRes.orderId} created (₹${pricing.total.toLocaleString()}). Please recharge your CRM wallet to complete payment.`,
+            'info'
+          );
+        }
+      }
+      setIsRenewModalOpen(false);
+    } catch (err) {
+      addToast(err.response?.data?.message || err.message || 'Renewal failed', 'error');
+    }
   };
 
   const handlePurchaseAddon = async () => {
-    const ok = await confirm({
-      title: 'Confirm Add-on Purchase',
-      message: 'Are you sure you want to proceed with purchasing selected telephony add-ons?',
-      confirmText: 'Proceed to Checkout',
-      type: 'primary'
-    });
-    if (!ok) return;
-    setIsAddonModalOpen(false);
-    addToast('Add-on activated instantly!', 'success');
+    try {
+      const pricingRes = await calculateCheckoutPricing({
+        items: [{ productId: 'lead_addon_pack', quantity: 1 }],
+      });
+      const pricing = pricingRes.pricing;
+      const ok = await confirm({
+        title: 'Confirm Add-on Purchase',
+        message: `Add-on: Users Lead Add-on Quota (x2)\nBase: ₹${pricing.subtotal.toLocaleString()}\nGST (18%): ₹${pricing.taxAmount.toLocaleString()}\nTotal: ₹${pricing.total.toLocaleString()}\n\nProceed to checkout?`,
+        confirmText: `Purchase Add-on (₹${pricing.total.toLocaleString()})`,
+        type: 'primary',
+      });
+      if (!ok) return;
+
+      const orderRes = await createWalletOrder({
+        items: [{ productId: 'lead_addon_pack', quantity: 1 }],
+      });
+
+      if (orderRes?.success) {
+        try {
+          await payWithWallet({ orderId: orderRes.orderId });
+          addToast(`Add-on activated instantly! Order ${orderRes.orderId} fulfilled.`, 'success');
+        } catch (payErr) {
+          addToast(
+            `Order ${orderRes.orderId} created (₹${pricing.total.toLocaleString()}). Please recharge wallet to complete payment.`,
+            'info'
+          );
+        }
+      }
+      setIsAddonModalOpen(false);
+    } catch (err) {
+      addToast(err.response?.data?.message || err.message || 'Add-on checkout failed', 'error');
+    }
   };
 
   // Plan history data matching reference screenshot 2

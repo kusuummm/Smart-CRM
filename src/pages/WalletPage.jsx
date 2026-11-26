@@ -245,10 +245,12 @@ export default function WalletPage({ onNavigate }) {
       return;
     }
 
+    const targetOrderId = orderData?.orderId || orderData?.order?.id;
     const payload = {
+      orderId: targetOrderId,
       amount: effectiveAmount,
       paymentMethod: 'UPI App / Dynamic QR',
-      paymentId: utrInput.trim() || orderData?.order?.id || `upi_${Date.now()}`,
+      paymentId: utrInput.trim() || targetOrderId || `upi_${Date.now()}`,
       utrNumber: utrInput.trim() || undefined,
     };
 
@@ -299,6 +301,7 @@ export default function WalletPage({ onNavigate }) {
         },
         handler: async function (response) {
           await processSuccessfulRecharge({
+            orderId: response.razorpay_order_id || orderData?.orderId || orderData?.order?.id,
             amount: effectiveAmount,
             paymentMethod: 'Razorpay Gateway',
             paymentId: response.razorpay_payment_id,
@@ -329,6 +332,7 @@ export default function WalletPage({ onNavigate }) {
     if (!ok) return;
 
     await processSuccessfulRecharge({
+      orderId: orderData?.orderId || orderData?.order?.id,
       amount: effectiveAmount,
       paymentMethod: `Net Banking (${selectedBank.toUpperCase()}) / Card`,
       paymentId: `gw_${Date.now()}`,

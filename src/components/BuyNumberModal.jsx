@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { X, Phone, ShieldCheck, Check, Sparkles } from 'lucide-react';
+import { createWalletOrder, payWithWallet } from '../api/wallet';
 
 export default function BuyNumberModal({ isOpen, onClose }) {
   const [selectedCity, setSelectedCity] = useState('delhi');
@@ -28,8 +29,22 @@ export default function BuyNumberModal({ isOpen, onClose }) {
     ],
   };
 
-  const handleBuy = () => {
+  const handleBuy = async () => {
     if (!selectedNumber) return;
+    const productId = selectedCity === 'tollfree' ? 'tollfree_1800' : selectedCity === 'mumbai' ? 'virtual_mumbai' : 'virtual_delhi';
+    try {
+      const orderRes = await createWalletOrder({
+        items: [{ productId, quantity: 1 }],
+      });
+      if (orderRes?.success) {
+        try {
+          await payWithWallet({ orderId: orderRes.orderId });
+        } catch {}
+      }
+    } catch (e) {
+      console.warn('Virtual number order creation:', e.message);
+    }
+
     try {
       const existing = JSON.parse(localStorage.getItem('smartcrm_teams') || '[]');
       const cityName = selectedCity.charAt(0).toUpperCase() + selectedCity.slice(1);
