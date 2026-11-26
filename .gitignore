@@ -16,6 +16,19 @@ dist-ssr
 .env.*
 !.env.example
 *.local
+.env.local
+.env.*.local
+
+# Certificates & Credentials
+*.pem
+*.key
+*.cert
+*.crt
+*.p12
+*.pfx
+credentials.json
+client_secret*.json
+.npmrc
 
 # Editor directories and files
 .vscode/*
