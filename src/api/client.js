@@ -31,12 +31,35 @@ api.interceptors.request.use((config) => {
 });
 
 // If the backend ever says the token is invalid/expired (or signed out by another device),
-// log the user out client-side and display single-device notice.
+// automatically attempt refresh-token rotation or log the user out client-side with single-device notice.
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    const isLoginRequest = error.config?.url?.includes('/auth/login');
-    if (error.response?.status === 401 && !isLoginRequest) {
+  async (error) => {
+    const isLoginOrRefresh =
+      error.config?.url?.includes('/auth/login') || error.config?.url?.includes('/auth/refresh');
+    const originalRequest = error.config;
+
+    if (error.response?.status === 401 && !isLoginOrRefresh && originalRequest && !originalRequest._retry) {
+      const storedRefreshToken = localStorage.getItem('crm_refresh_token');
+      if (storedRefreshToken) {
+        originalRequest._retry = true;
+        try {
+          const res = await axios.post(`${baseURL}/auth/refresh`, {
+            refreshToken: storedRefreshToken,
+          });
+          if (res.data?.token) {
+            localStorage.setItem('crm_token', res.data.token);
+            if (res.data.refreshToken) {
+              localStorage.setItem('crm_refresh_token', res.data.refreshToken);
+            }
+            originalRequest.headers.Authorization = `Bearer ${res.data.token}`;
+            return api(originalRequest);
+          }
+        } catch (refreshErr) {
+          // Token refresh failed, expired or reused; proceed to clean session clearance
+        }
+      }
+
       const errorMsg = error.response?.data?.message || '';
       if (
         errorMsg.includes('another device') ||
@@ -49,6 +72,7 @@ api.interceptors.response.use(
       }
       clearApiCache();
       localStorage.removeItem('crm_token');
+      localStorage.removeItem('crm_refresh_token');
       localStorage.removeItem('crm_user');
       if (typeof window !== 'undefined' && !window.location.href.includes('login')) {
         window.location.reload();

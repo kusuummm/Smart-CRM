@@ -98,6 +98,9 @@ export function AuthProvider({ children }) {
 
   const handleAuthSuccess = (data) => {
     localStorage.setItem('crm_token', data.token);
+    if (data.refreshToken) {
+      localStorage.setItem('crm_refresh_token', data.refreshToken);
+    }
     localStorage.setItem('crm_user', JSON.stringify(data.user));
     setUser(data.user);
     rememberAccount(data.user, data.token);
@@ -138,6 +141,7 @@ export function AuthProvider({ children }) {
     clearApiCache();
     setUser(null);
     localStorage.removeItem('crm_token');
+    localStorage.removeItem('crm_refresh_token');
     localStorage.removeItem('crm_user');
     localStorage.removeItem('crm_accounts');
     localStorage.removeItem('smartcrm_contacts');

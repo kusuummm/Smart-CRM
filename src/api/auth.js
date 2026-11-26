@@ -50,3 +50,8 @@ export const profileSendOtpRequest = () =>
 export const profileChangePasswordOtpRequest = (payload) =>
   api.put('/auth/profile/change-password-otp', payload).then((res) => res.data);
 
+// Refresh Token Rotation Request
+export const refreshTokenRequest = (refreshToken) =>
+  api.post('/auth/refresh', { refreshToken }).then((res) => res.data);
+
+
