@@ -3,3 +3,7 @@ version: 2
 secret:
   ignored_paths:
     - 'src/utils/*'
+    - 'src/tests/*'
+  ignored-paths:
+    - '**/src/utils/**'
+    - '**/src/tests/**'
